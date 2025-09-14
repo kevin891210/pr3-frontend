@@ -1,0 +1,12 @@
+{
+  "name": "hrm-ops-server",
+  "version": "1.0.0",
+  "description": "Minimal ops server for config management",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.0"
+  }
+}

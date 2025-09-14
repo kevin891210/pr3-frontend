@@ -1,0 +1,281 @@
+{
+  "en": {
+    "navigation": {
+      "dashboard": "Dashboard",
+      "system": "System Management", 
+      "brands": "Brand Management",
+      "users": "User Management",
+      "agentMonitor": "Agent Monitor",
+      "schedules": "Schedule Management",
+      "leaves": "Leave Management",
+      "notices": "Notice Management",
+      "agent": "Agent Interface",
+      "logout": "Logout"
+    },
+    "common": {
+      "loading": "Loading...",
+      "save": "Save",
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "edit": "Edit",
+      "add": "Add",
+      "search": "Search",
+      "name": "Name",
+      "email": "Email",
+      "password": "Password",
+      "status": "Status",
+      "actions": "Actions",
+      "active": "Active",
+      "inactive": "Inactive",
+      "logout": "Logout",
+      "days": "days"
+    },
+    "agent": {
+      "dashboard": "Agent Dashboard",
+      "mySchedule": "My Schedule",
+      "leaveBalance": "Leave Balance",
+      "requestLeave": "Request Leave",
+      "latestNotices": "Latest Notices",
+      "noLeaveData": "No leave balance data",
+      "noNotices": "No notices available"
+    },
+    "auth": {
+      "login": "Login",
+      "adminLogin": "Admin Login",
+      "agentLogin": "Agent Login",
+      "agentLoginPlatform": "Agent Login Platform",
+      "agentPortal": "Customer Service Portal",
+      "emailAddress": "Email Address",
+      "selectBrand": "Select Brand",
+      "loggingIn": "Logging in...",
+      "loginFailed": "Login failed",
+      "apiNotImplemented": "Backend API endpoint not implemented, please check backend service status",
+      "systemAdmin": "System Administrator?",
+      "goToAdminLogin": "Go to Admin Login"
+    },
+    "brand": {
+      "management": "Brand Management",
+      "addBrand": "Add Brand",
+      "brandList": "Brand List",
+      "searchBrand": "Search brand name...",
+      "manage": "Manage",
+      "sync": "Sync"
+    },
+    "user": {
+      "management": "User Management",
+      "addUser": "Add User",
+      "userList": "User List",
+      "searchUser": "Search user name..."
+    },
+    "notice": {
+      "management": "Notice Management",
+      "addNotice": "Add Notice",
+      "noticeList": "Notice List",
+      "title": "Title",
+      "content": "Content",
+      "startTime": "Start Time",
+      "endTime": "End Time",
+      "brand": "Brand",
+      "workspace": "Workspace",
+      "selectBrand": "Select Brand",
+      "selectWorkspace": "Select Workspace",
+      "enterTitle": "Enter notice title",
+      "enterContent": "Enter notice content",
+      "published": "Published",
+      "draft": "Draft",
+      "expired": "Expired"
+    },
+    "messages": {
+      "loadFailed": "Load Failed",
+      "addSuccess": "Add Success", 
+      "deleteSuccess": "Delete Success",
+      "updateSuccess": "Update Success"
+    }
+  },
+  "zh": {
+    "navigation": {
+      "dashboard": "儀表板",
+      "system": "系統管理",
+      "brands": "Brand 管理", 
+      "users": "使用者管理",
+      "agentMonitor": "Agent Monitor",
+      "schedules": "排班管理",
+      "leaves": "請假管理",
+      "notices": "公告管理",
+      "agent": "Agent 介面",
+      "logout": "登出"
+    },
+    "common": {
+      "loading": "載入中...",
+      "save": "保存",
+      "cancel": "取消",
+      "delete": "刪除",
+      "edit": "編輯",
+      "add": "新增",
+      "search": "搜尋",
+      "name": "姓名",
+      "email": "Email",
+      "password": "密碼",
+      "status": "狀態",
+      "actions": "操作",
+      "active": "啟用",
+      "inactive": "停用",
+      "logout": "登出",
+      "days": "天"
+    },
+    "agent": {
+      "dashboard": "Agent Dashboard",
+      "mySchedule": "我的排班",
+      "leaveBalance": "請假餘額",
+      "requestLeave": "申請請假",
+      "latestNotices": "最新公告",
+      "noLeaveData": "無請假餘額資料",
+      "noNotices": "暫無公告"
+    },
+    "auth": {
+      "login": "登入",
+      "adminLogin": "管理者登入",
+      "agentLogin": "Agent 登入",
+      "agentLoginPlatform": "Agent 登入平台",
+      "agentPortal": "客服人員專用入口",
+      "emailAddress": "Email 地址",
+      "selectBrand": "選擇 Brand",
+      "loggingIn": "登入中...",
+      "loginFailed": "登入失敗",
+      "apiNotImplemented": "後端 API 尚未實作此端點，請確認後端服務Status",
+      "systemAdmin": "系統管理者？",
+      "goToAdminLogin": "前往管理者登入"
+    },
+    "brand": {
+      "management": "Brand 管理",
+      "addBrand": "新增 Brand",
+      "brandList": "Brand 列表",
+      "searchBrand": "搜尋 Brand 名稱...",
+      "manage": "管理",
+      "sync": "同步"
+    },
+    "user": {
+      "management": "使用者管理",
+      "addUser": "新增使用者",
+      "userList": "使用者列表",
+      "searchUser": "搜尋使用者名稱..."
+    },
+    "notice": {
+      "management": "公告管理",
+      "addNotice": "新增公告",
+      "noticeList": "公告列表",
+      "title": "標題",
+      "content": "內容",
+      "startTime": "開始時間",
+      "endTime": "結束時間",
+      "brand": "Brand",
+      "workspace": "Workspace",
+      "selectBrand": "選擇 Brand",
+      "selectWorkspace": "選擇 Workspace",
+      "enterTitle": "輸入公告標題",
+      "enterContent": "輸入公告內容",
+      "published": "已發布",
+      "draft": "草稿",
+      "expired": "已過期"
+    },
+    "messages": {
+      "loadFailed": "載入失敗",
+      "addSuccess": "新增成功",
+      "deleteSuccess": "刪除成功", 
+      "updateSuccess": "更新成功"
+    }
+  },
+  "ja": {
+    "navigation": {
+      "dashboard": "ダッシュボード",
+      "system": "システム管理",
+      "brands": "ブランド管理",
+      "users": "ユーザー管理",
+      "agentMonitor": "エージェント監視",
+      "schedules": "スケジュール管理",
+      "leaves": "休暇管理",
+      "notices": "お知らせ管理",
+      "agent": "エージェント画面",
+      "logout": "ログアウト"
+    },
+    "common": {
+      "loading": "読み込み中...",
+      "save": "保存",
+      "cancel": "キャンセル",
+      "delete": "削除",
+      "edit": "編集",
+      "add": "追加",
+      "search": "検索",
+      "name": "名前",
+      "email": "メール",
+      "password": "パスワード",
+      "status": "ステータス",
+      "actions": "操作",
+      "active": "有効",
+      "inactive": "無効",
+      "logout": "ログアウト",
+      "days": "日"
+    },
+    "agent": {
+      "dashboard": "エージェントダッシュボード",
+      "mySchedule": "マイスケジュール",
+      "leaveBalance": "休暇残高",
+      "requestLeave": "休暇申請",
+      "latestNotices": "最新のお知らせ",
+      "noLeaveData": "休暇残高データがありません",
+      "noNotices": "お知らせはありません"
+    },
+    "auth": {
+      "login": "ログイン",
+      "adminLogin": "管理者ログイン",
+      "agentLogin": "エージェントログイン",
+      "agentLoginPlatform": "エージェントログインプラットフォーム",
+      "agentPortal": "カスタマーサービスポータル",
+      "emailAddress": "メールアドレス",
+      "selectBrand": "ブランドを選択",
+      "loggingIn": "ログイン中...",
+      "loginFailed": "ログイン失敗",
+      "apiNotImplemented": "バックエンドAPIエンドポイントが実装されていません、バックエンドサービスの状態を確認してください",
+      "systemAdmin": "システム管理者？",
+      "goToAdminLogin": "管理者ログインへ"
+    },
+    "brand": {
+      "management": "ブランド管理",
+      "addBrand": "ブランド追加",
+      "brandList": "ブランド一覧",
+      "searchBrand": "ブランド名を検索...",
+      "manage": "管理",
+      "sync": "同期"
+    },
+    "user": {
+      "management": "ユーザー管理",
+      "addUser": "ユーザー追加",
+      "userList": "ユーザー一覧",
+      "searchUser": "ユーザー名を検索..."
+    },
+    "notice": {
+      "management": "お知らせ管理",
+      "addNotice": "お知らせ追加",
+      "noticeList": "お知らせ一覧",
+      "title": "タイトル",
+      "content": "内容",
+      "startTime": "開始時間",
+      "endTime": "終了時間",
+      "brand": "ブランド",
+      "workspace": "ワークスペース",
+      "selectBrand": "ブランドを選択",
+      "selectWorkspace": "ワークスペースを選択",
+      "enterTitle": "お知らせタイトルを入力",
+      "enterContent": "お知らせ内容を入力",
+      "published": "公開中",
+      "draft": "下書き",
+      "expired": "期限切れ"
+    },
+    "messages": {
+      "loadFailed": "読み込み失敗",
+      "addSuccess": "追加成功",
+      "deleteSuccess": "削除成功",
+      "updateSuccess": "更新成功"
+    }
+  }
+}

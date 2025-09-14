@@ -1,0 +1,23 @@
+version: "3.9"
+services:
+  frontend:
+    build: .
+    image: hrm-frontend:latest
+    container_name: hrm-frontend
+    ports:
+      - "80:80"
+      - "8080:8080"  # ops server port (optional, for debugging)
+    volumes:
+      - ./ops/config/app-config.example.json:/usr/share/nginx/html/config/app-config.json:rw
+      - hrm-logs:/var/log
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost/health"]
+      interval: 30s
+      timeout: 2s
+      retries: 3
+    environment:
+      - NODE_ENV=production
+
+volumes:
+  hrm-logs:
