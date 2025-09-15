@@ -53,7 +53,6 @@ const oldResources = {
       brandList: 'Brand List',
       
       // Agent Monitor
-      agentMonitor: 'Agent Monitor',
       onService: 'On Service',
       online: 'Online',
       warning: 'Warning',
@@ -77,23 +76,17 @@ const oldResources = {
       inactive: 'Inactive',
       enabled: 'Enabled',
       disabled: 'Disabled',
+      busy: 'Busy',
       
       // Brand Management Extended
       brandManagement: 'Brand Management',
       manageBrands: 'Manage all brands and their resources in the system',
-      addBrand: 'Add Brand',
-      brandList: 'Brand List',
       workspaceManagement: 'Workspace Management',
       botManagement: 'Bot Management',
       agentManagement: 'Agent Management',
       searchBrandName: 'Search brand name...',
-      brandName: 'Brand Name',
-      description: 'Description',
-      status: 'Status',
-      actions: 'Actions',
       manage: 'Manage',
       sync: 'Sync',
-      delete: 'Delete',
       backToList: 'Back to List',
       
       // Form Labels
@@ -105,11 +98,6 @@ const oldResources = {
       enterUsername: 'Enter brand username',
       passwordRequired: 'Password *',
       enterPassword: 'Enter brand password',
-      
-      // Status Values
-      online: 'Online',
-      offline: 'Offline',
-      busy: 'Busy',
       
       // Messages
       loadFailed: 'Load Failed',
@@ -130,7 +118,6 @@ const oldResources = {
       removedFromFrontend: 'Backend API not implemented, removed from frontend',
       
       // Confirmation
-      deleteBrand: 'Delete Brand',
       confirmDeleteBrand: 'Are you sure you want to delete',
       cannotUndo: 'This action cannot be undone.',
       
@@ -186,7 +173,6 @@ const oldResources = {
       brandList: 'Brand 列表',
       
       // Agent Monitor
-      agentMonitor: 'Agent Monitor',
       onService: '服務中',
       online: 'Online',
       warning: '警告',
@@ -210,23 +196,17 @@ const oldResources = {
       inactive: 'Inactive',
       enabled: 'Active',
       disabled: 'Inactive',
+      busy: 'Busy',
       
       // Brand Management Extended
       brandManagement: 'Brand 管理',
       manageBrands: '管理系統中的所有 Brand 及其資源',
-      addBrand: 'Add Brand',
-      brandList: 'Brand 列表',
       workspaceManagement: 'Workspace 管理',
       botManagement: 'Bot 管理',
       agentManagement: 'Agent 管理',
       searchBrandName: '搜尋 Brand 名稱...',
-      brandName: 'Brand 名稱',
-      description: '描述',
-      status: 'Status',
-      actions: 'Actions',
       manage: '管理',
       sync: '同步',
-      delete: 'Delete',
       backToList: '返回列表',
       
       // Form Labels
@@ -238,11 +218,6 @@ const oldResources = {
       enterUsername: '輸入 Brand 帳號',
       passwordRequired: '密碼 *',
       enterPassword: '輸入 Brand 密碼',
-      
-      // Status Values
-      online: 'Online',
-      offline: 'Offline',
-      busy: 'Busy',
       
       // Messages
       loadFailed: 'Load Failed',
@@ -263,7 +238,6 @@ const oldResources = {
       removedFromFrontend: '後端 API 尚未實作，已從前端移除',
       
       // Confirmation
-      deleteBrand: 'Delete Brand',
       confirmDeleteBrand: 'Are you sure you want to delete',
       cannotUndo: 'This action cannot be undone。',
       

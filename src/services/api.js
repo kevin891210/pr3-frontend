@@ -18,6 +18,8 @@ class ApiClient {
   async request(endpoint, options = {}) {
     const url = buildApiUrl(endpoint);
     const config = {
+      mode: 'cors',
+      credentials: 'omit',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
@@ -103,10 +105,6 @@ class ApiClient {
   // Dashboard APIs
   async getDashboardStats() {
     return this.request('/api/v1/dashboard/stats');
-  }
-
-  async getAgentMonitor() {
-    return this.request('/api/v1/dashboard/agent-monitor');
   }
 
   // Workspace APIs
@@ -456,12 +454,6 @@ class ApiClient {
     return this.request('/api/v1/leave-requests', {
       method: 'POST',
       body: leaveData
-    });
-  }
-
-  async markNoticeAsRead(noticeId) {
-    return this.request(`/api/v1/agent/notices/${noticeId}/read`, {
-      method: 'POST'
     });
   }
 
