@@ -1,7 +1,7 @@
 {
   "initialized": true,
   "api": {
-    "baseUrl": "http://api.prteam3.com",
+    "baseUrl": "https://api.prteam3.com",
     "authPath": "/api/v1/auth/sign-in",
     "workspacesPath": "/api/v1/users/workspaces",
     "botsPath": "/api/v1/bots/all-bots",
