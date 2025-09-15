@@ -2,11 +2,16 @@
 FROM node:20-alpine AS build
 WORKDIR /app
 
+# Install build dependencies for native modules
+RUN apk add --no-cache python3 make g++
+
 # Copy package files
 COPY package*.json ./
 
-# Clean install with verbose logging
-RUN npm ci --verbose --no-audit --no-fund
+# Clean install and rebuild native modules
+RUN rm -rf node_modules package-lock.json
+RUN npm install
+RUN npm rebuild
 
 # Copy source code
 COPY . .
