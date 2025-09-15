@@ -24,19 +24,7 @@ export default defineConfig({
   server: {
     port: 3000,
     host: true,
-    cors: true,
-    proxy: {
-      '/api': {
-        target: 'http://localhost:8000',
-        changeOrigin: true,
-        secure: false,
-        configure: (proxy, options) => {
-          proxy.on('proxyReq', (proxyReq, req, res) => {
-            proxyReq.setHeader('Access-Control-Allow-Origin', '*');
-          });
-        }
-      }
-    }
+    cors: true
   },
   build: {
     outDir: 'dist',

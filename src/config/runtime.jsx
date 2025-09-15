@@ -20,9 +20,10 @@ export const buildApiUrl = (path) => {
   console.log('API baseUrl:', baseUrl);
   console.log('Requested path:', path);
   
-  if (!baseUrl) {
-    console.warn('No API baseUrl configured, using relative path');
-    return path; // 返回相對路徑，讓瀏覽器使用當前域名
+  if (!baseUrl || baseUrl === '') {
+    console.log('Using relative path for Vite proxy:', path);
+    console.log('========================');
+    return path; // 返回相對路徑，讓 Vite 代理處理
   }
   
   const fullUrl = `${baseUrl.replace(/\/$/, '')}${path}`;

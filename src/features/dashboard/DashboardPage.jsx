@@ -93,7 +93,7 @@ const DashboardPage = () => {
 
   const loadBrands = async () => {
     try {
-      const response = await apiClient.getMonitorBrands();
+      const response = await apiClient.getMonitorBrands({}, false);
       const data = response.data || response;
       setBrands(Array.isArray(data) ? data : []);
       if (data.length > 0) {

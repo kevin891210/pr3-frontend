@@ -266,4 +266,26 @@ i18n
     keySeparator: '.'
   });
 
+// 為了向後相容，添加一些常用的平均化翻譯
+if (resources.en && resources.en.translation) {
+  // 將嵌套的 navigation 翻譯平均化到根層級
+  Object.assign(resources.en.translation, resources.en.translation.navigation || {});
+  Object.assign(resources.en.translation, resources.en.translation.common || {});
+  
+  // 為 agent 添加字串值
+  resources.en.translation.agent = resources.en.translation.navigation?.agent || 'Agent Interface';
+}
+
+if (resources.zh && resources.zh.translation) {
+  Object.assign(resources.zh.translation, resources.zh.translation.navigation || {});
+  Object.assign(resources.zh.translation, resources.zh.translation.common || {});
+  resources.zh.translation.agent = resources.zh.translation.navigation?.agent || 'Agent 介面';
+}
+
+if (resources.ja && resources.ja.translation) {
+  Object.assign(resources.ja.translation, resources.ja.translation.navigation || {});
+  Object.assign(resources.ja.translation, resources.ja.translation.common || {});
+  resources.ja.translation.agent = resources.ja.translation.navigation?.agent || 'エージェント画面';
+}
+
 export default i18n;

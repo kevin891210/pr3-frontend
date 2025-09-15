@@ -305,10 +305,15 @@ class ApiClient {
   }
 
   async updateBrand(brandId, brand) {
-    return this.request(`/api/v1/brands/${brandId}`, {
+    const response = await this.request(`/api/v1/brands/${brandId}`, {
       method: 'PUT',
       body: brand,
     });
+    
+    // 清除 Brand 快取以確保資料一致性
+    storageManager.removeCache(CACHE_KEYS.BRANDS);
+    
+    return response;
   }
 
   async deleteBrand(brandId) {

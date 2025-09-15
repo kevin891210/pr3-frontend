@@ -10,6 +10,7 @@ import { ConfirmDialog, AlertDialog } from '../../components/ui/dialog';
 import EmptyState from '../../components/ui/empty-state';
 
 const BrandPage = () => {
+  console.log('=== BrandPage component loaded ===');
   const { t } = useTranslation();
   const [brands, setBrands] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -35,13 +36,16 @@ const BrandPage = () => {
   const [alertDialog, setAlertDialog] = useState({ open: false, type: 'info', title: '', message: '' });
 
   useEffect(() => {
+    console.log('=== BrandPage useEffect triggered ===');
     loadBrands();
   }, []);
 
   const loadBrands = async () => {
     try {
+      console.log('=== loadBrands function called ===');
+      console.log('apiClient:', apiClient);
       console.log('Loading brands...');
-      const response = await apiClient.getBrands();
+      const response = await apiClient.request('/api/v1/brands');
       console.log('Brand API response:', response);
       const data = response.data || response;
       console.log('Brand data:', data);
@@ -65,13 +69,13 @@ const BrandPage = () => {
     setResourceLoading(true);
     try {
       const [workspacesData, botsData, agentsData] = await Promise.all([
-        apiClient.getBrandWorkspaces(brandId),
-        apiClient.getBrandBots(brandId),
-        apiClient.getBrandAgents(brandId)
+        apiClient.request(`/api/v1/workspaces-by-brand/${brandId}`),
+        apiClient.request(`/api/v1/brands/${brandId}/bots`),
+        apiClient.request(`/api/v1/brands/${brandId}/agents`)
       ]);
-      setWorkspaces(workspacesData);
-      setBots(botsData);
-      setAgents(agentsData);
+      setWorkspaces(workspacesData.data || workspacesData);
+      setBots(botsData.data || botsData);
+      setAgents(agentsData.data || agentsData);
     } catch (error) {
       console.error('Load resources failed:', error);
       setAlertDialog({
@@ -98,8 +102,33 @@ const BrandPage = () => {
     e.preventDefault();
     try {
       if (editingBrand) {
-        const updatedBrand = await apiClient.updateBrand(editingBrand.id, formData);
-        setBrands(brands.map(brand => brand.id === editingBrand.id ? updatedBrand : brand));
+        const brandData = {
+          name: formData.name,
+          description: formData.description,
+          api_url: formData.apiUrl,
+          auth_email: formData.username,
+          auth_password: formData.password,
+          is_active: formData.status === 'active'
+        };
+        console.log('Updating brand with data:', brandData);
+        const response = await apiClient.request(`/api/v1/brands/${editingBrand.id}`, {
+          method: 'PUT',
+          body: brandData
+        });
+        const updatedBrand = response.data || response;
+        
+        // 更新本地狀態，合併原有資料與更新的資料
+        setBrands(brands.map(brand => 
+          brand.id === editingBrand.id 
+            ? { ...brand, ...updatedBrand, ...formData }
+            : brand
+        ));
+        
+        // 如果當前選中的 Brand 被更新，也要更新 selectedBrand
+        if (selectedBrand?.id === editingBrand.id) {
+          setSelectedBrand({ ...selectedBrand, ...updatedBrand, ...formData });
+        }
+        
         setAlertDialog({
           open: true,
           type: 'success',
@@ -107,7 +136,20 @@ const BrandPage = () => {
           message: 'Brand updated successfully'
         });
       } else {
-        const newBrand = await apiClient.createBrand(formData);
+        const brandData = {
+          name: formData.name,
+          description: formData.description,
+          api_url: formData.apiUrl,
+          auth_email: formData.username,
+          auth_password: formData.password,
+          is_active: formData.status === 'active'
+        };
+        console.log('Creating brand with data:', brandData);
+        const response = await apiClient.request('/api/v1/brands', {
+          method: 'POST',
+          body: brandData
+        });
+        const newBrand = response.data || response;
         setBrands([...brands, newBrand]);
         setAlertDialog({
           open: true,
@@ -116,6 +158,10 @@ const BrandPage = () => {
           message: t('brandAddedSuccessfully')
         });
       }
+      
+      // 重新載入列表資料
+      await loadBrands();
+      
       setShowModal(false);
       setEditingBrand(null);
       setFormData({ name: '', description: '', apiUrl: '', username: '', password: '', status: 'active' });
@@ -133,7 +179,9 @@ const BrandPage = () => {
   const handleSyncBrand = async (brandId) => {
     setSyncingBrands(prev => new Set([...prev, brandId]));
     try {
-      const result = await apiClient.syncBrandResources(brandId);
+      const result = await apiClient.request(`/api/v1/brands/${brandId}/sync`, {
+        method: 'POST'
+      });
       setAlertDialog({
         open: true,
         type: 'success',
@@ -178,7 +226,9 @@ const BrandPage = () => {
   const confirmDeleteBrand = async () => {
     const { brandId } = deleteDialog;
     try {
-      await apiClient.deleteBrand(brandId);
+      await apiClient.request(`/api/v1/brands/${brandId}`, {
+        method: 'DELETE'
+      });
       setBrands(brands.filter(brand => brand.id !== brandId));
       if (selectedBrand?.id === brandId) {
         setSelectedBrand(null);
@@ -391,7 +441,7 @@ const BrandPage = () => {
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
                     <p className="mt-2 text-gray-600">Loading...</p>
                   </div>
-                ) : workspaces.length === 0 ? (
+                ) : !Array.isArray(workspaces) || workspaces.length === 0 ? (
                   <EmptyState 
                     type="users" 
                     title="No Workspaces" 
@@ -407,7 +457,7 @@ const BrandPage = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {workspaces.map(workspace => (
+                        {Array.isArray(workspaces) && workspaces.map(workspace => (
                           <tr key={workspace.id} className="border-b hover:bg-gray-50">
                             <td className="py-3 px-4 font-medium">{workspace.name}</td>
                             <td className="py-3 px-4">
@@ -454,7 +504,7 @@ const BrandPage = () => {
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
                     <p className="mt-2 text-gray-600">Loading...</p>
                   </div>
-                ) : bots.length === 0 ? (
+                ) : !Array.isArray(bots) || bots.length === 0 ? (
                   <EmptyState 
                     type="bots" 
                     title="No Bots" 
@@ -470,7 +520,7 @@ const BrandPage = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {bots.map(bot => (
+                        {Array.isArray(bots) && bots.map(bot => (
                           <tr key={bot.id} className="border-b hover:bg-gray-50">
                             <td className="py-3 px-4 font-medium">{bot.name}</td>
                             <td className="py-3 px-4">
@@ -517,7 +567,7 @@ const BrandPage = () => {
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
                     <p className="mt-2 text-gray-600">Loading...</p>
                   </div>
-                ) : agents.length === 0 ? (
+                ) : !Array.isArray(agents) || agents.length === 0 ? (
                   <EmptyState 
                     type="agents" 
                     title="No Agents" 
@@ -533,7 +583,7 @@ const BrandPage = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {agents.map(agent => (
+                        {Array.isArray(agents) && agents.map(agent => (
                           <tr key={agent.id} className="border-b hover:bg-gray-50">
                             <td className="py-3 px-4 font-medium">{agent.name}</td>
                             <td className="py-3 px-4">
@@ -654,7 +704,7 @@ const BrandPage = () => {
         onConfirm={confirmDeleteBrand}
         type="danger"
         title="Delete Brand"
-        message={`Are you sure you want to delete "${deleteDialog.brandName}" 嗎？This action cannot be undone。`}
+        message={`Are you sure you want to delete "${deleteDialog.brandName}"? This action cannot be undone.`}
         confirmText="Delete"
         cancelText="Cancel"
       />

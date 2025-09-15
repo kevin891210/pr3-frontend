@@ -85,7 +85,7 @@ const NoticePage = () => {
     }
     try {
       const data = await apiClient.getBrandWorkspaces(brandId);
-      setWorkspaces(data);
+      setWorkspaces(Array.isArray(data) ? data : (data?.data || []));
     } catch (error) {
       console.error('Load workspaces failed:', error);
       setWorkspaces([
@@ -405,7 +405,7 @@ const NoticePage = () => {
                     disabled={!formData.brandId}
                   >
                     <option value="">{t('notice.selectWorkspace')}</option>
-                    {workspaces.map(workspace => (
+                    {Array.isArray(workspaces) && workspaces.map(workspace => (
                       <option key={workspace.id} value={workspace.id}>{workspace.name}</option>
                     ))}
                   </select>

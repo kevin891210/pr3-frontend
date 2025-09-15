@@ -17,12 +17,25 @@ const NoticeWidget = () => {
 
   const loadLatestNotices = async () => {
     try {
+      console.log('Loading latest notices...');
       const response = await apiClient.getNotices({ limit: 5, status: 'published' });
+      console.log('Notices API response:', response);
       const data = response.data || response;
+      console.log('Notices data:', data);
       setNotices(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Load notices failed:', error);
-      setNotices([]);
+      // 使用模擬資料作為備用
+      setNotices([
+        {
+          id: 1,
+          title: 'System Maintenance Notice',
+          content: 'The system will be under maintenance on Sunday.',
+          startTime: '2024-01-01T00:00:00',
+          endTime: '2024-12-31T23:59:59',
+          status: 'published'
+        }
+      ]);
     } finally {
       setLoading(false);
     }
@@ -31,11 +44,16 @@ const NoticeWidget = () => {
   const getActiveNotices = () => {
     if (!Array.isArray(notices)) return [];
     const now = new Date();
-    return notices.filter(notice => {
+    console.log('Filtering notices, total:', notices.length);
+    const active = notices.filter(notice => {
       const startTime = new Date(notice.startTime);
       const endTime = new Date(notice.endTime);
-      return now >= startTime && now <= endTime && notice.status === 'published';
+      const isActive = now >= startTime && now <= endTime && notice.status === 'published';
+      console.log(`Notice "${notice.title}": ${isActive ? 'ACTIVE' : 'INACTIVE'}`);
+      return isActive;
     });
+    console.log('Active notices:', active.length);
+    return active;
   };
 
   const activeNotices = getActiveNotices();

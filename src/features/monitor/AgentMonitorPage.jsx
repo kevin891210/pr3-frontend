@@ -60,7 +60,7 @@ const AgentMonitorPage = () => {
 
   const loadBrands = async () => {
     try {
-      const response = await apiClient.getMonitorBrands();
+      const response = await apiClient.getMonitorBrands({}, false);
       const data = response.data || response;
       setBrands(Array.isArray(data) ? data : []);
     } catch (error) {
@@ -93,12 +93,7 @@ const AgentMonitorPage = () => {
     setLoading(true);
     try {
       const totalSeconds = refreshInterval.minutes * 60 + refreshInterval.seconds;
-      const response = await apiClient.getAgentMonitor(
-        selectedBrand,
-        selectedWorkspace, 
-        totalSeconds,
-        warningTime
-      );
+      const response = await apiClient.getAgentMonitorStats();
       
       // Handle new API response format
       if (response.success && response.data) {

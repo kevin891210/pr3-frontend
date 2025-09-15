@@ -18,6 +18,7 @@ const UserPage = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    password: '',
     role: 'Agent',
     status: 'active'
   });
@@ -53,6 +54,19 @@ const UserPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log('Form data before submit:', formData);
+    
+    // 檢查新增使用者時是否有密碼
+    if (!editingUser && !formData.password) {
+      setAlertDialog({
+        open: true,
+        type: 'danger',
+        title: 'Validation Error',
+        message: 'Password is required for new users'
+      });
+      return;
+    }
+    
     try {
       if (editingUser) {
         const response = await apiClient.updateUser(editingUser.id, formData);
@@ -65,6 +79,7 @@ const UserPage = () => {
           message: '使用者資料已Update'
         });
       } else {
+        console.log('Creating user with data:', formData);
         const response = await apiClient.createUser(formData);
         const newUser = response.data || response;
         setUsers([...users, newUser]);
@@ -77,7 +92,7 @@ const UserPage = () => {
       }
       setShowModal(false);
       setEditingUser(null);
-      setFormData({ name: '', email: '', role: 'Agent', status: 'active' });
+      setFormData({ name: '', email: '', password: '', role: 'Agent', status: 'active' });
     } catch (error) {
       console.error('Save使用者失敗:', error);
       setAlertDialog({
@@ -94,6 +109,7 @@ const UserPage = () => {
     setFormData({
       name: user.name,
       email: user.email,
+      password: '', // 編輯時不顯示原密碼
       role: user.role,
       status: user.status
     });
@@ -280,6 +296,18 @@ const UserPage = () => {
                   required
                 />
               </div>
+              {!editingUser && (
+                <div>
+                  <label className="block text-sm font-medium mb-1">Password *</label>
+                  <Input
+                    type="password"
+                    value={formData.password}
+                    onChange={(e) => setFormData({...formData, password: e.target.value})}
+                    placeholder="Enter password"
+                    required
+                  />
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium mb-1">Role</label>
                 <select
@@ -312,7 +340,7 @@ const UserPage = () => {
                   onClick={() => {
                     setShowModal(false);
                     setEditingUser(null);
-                    setFormData({ name: '', email: '', role: 'Agent', status: 'active' });
+                    setFormData({ name: '', email: '', password: '', role: 'Agent', status: 'active' });
                   }}
                 >
                   Cancel
