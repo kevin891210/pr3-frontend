@@ -17,6 +17,7 @@ class ApiClient {
 
   async request(endpoint, options = {}) {
     const url = buildApiUrl(endpoint);
+    console.log(`API Request: ${options.method || 'GET'} ${url}`);
     const config = {
       mode: 'cors',
       credentials: 'omit',

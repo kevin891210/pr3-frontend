@@ -13,7 +13,15 @@ export const getApiConfig = () => {
 };
 
 export const buildApiUrl = (path) => {
+  const config = getConfig();
   const { baseUrl } = getApiConfig();
-  if (!baseUrl) return '';
-  return `${baseUrl.replace(/\/$/, '')}${path}`;
+  console.log('Current config:', config);
+  console.log('API baseUrl:', baseUrl);
+  if (!baseUrl) {
+    console.warn('No API baseUrl configured');
+    return '';
+  }
+  const fullUrl = `${baseUrl.replace(/\/$/, '')}${path}`;
+  console.log('Built API URL:', fullUrl);
+  return fullUrl;
 };
