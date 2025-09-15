@@ -1,9 +1,17 @@
 # Build stage
 FROM node:20-alpine AS build
 WORKDIR /app
+
+# Copy package files
 COPY package*.json ./
-RUN npm ci
+
+# Clean install with verbose logging
+RUN npm ci --verbose --no-audit --no-fund
+
+# Copy source code
 COPY . .
+
+# Build application
 RUN npm run build
 
 # Runtime stage with ops server
