@@ -59,7 +59,7 @@ const Layout = ({ children }) => {
           <div className="flex items-center gap-4">
             <LanguageSwitcher />
             <span className="text-sm text-gray-600">
-              {user?.name} ({user?.role})
+              {user?.name || user?.username || user?.email || 'User'} ({user?.role || 'Guest'})
             </span>
             <button
               onClick={handleLogout}

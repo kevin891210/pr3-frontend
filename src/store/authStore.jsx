@@ -32,7 +32,7 @@ export const useAuthStore = create(
         const preferences = storageManager.getUserPreferences();
         storageManager.setUserPreferences({
           ...preferences,
-          language: userData.language || 'en',
+          language: (userData && userData.language) || preferences.language || 'en',
           lastLoginTime: new Date().toISOString()
         });
       },
