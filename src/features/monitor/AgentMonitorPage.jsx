@@ -94,30 +94,41 @@ const AgentMonitorPage = () => {
     try {
       const totalSeconds = refreshInterval.minutes * 60 + refreshInterval.seconds;
       const response = await apiClient.getAgentMonitorStats();
+      console.log('Agent Monitor API response:', response);
       
-      // Handle new API response format
-      if (response.success && response.data) {
-        const agentData = response.data;
-        
-        // 設定分類後的 Agent 數據
-        setAgents({
-          onService: agentData.on_service || [],
-          onLine: agentData.on_line || [],
-          warning: agentData.warning || [],
-          offline: agentData.offline || []
-        });
-        
-        // 設定監控資訊
-        setMonitorInfo({
-          brandName: agentData.brand_name || '',
-          workspaceName: agentData.workspace_name || '',
-          summary: agentData.summary || null
-        });
-        
-        console.log('Agent data loaded:', agentData);
-      } else {
-        throw new Error('無效的 API 回應格式');
+      // Handle API response format
+      const agentData = response.data || response;
+      console.log('Agent data:', agentData);
+      
+      // 處理單一 Agent 或 Agent 陣列
+      let agentList = [];
+      if (Array.isArray(agentData)) {
+        agentList = agentData;
+      } else if (agentData && agentData.id) {
+        agentList = [agentData];
       }
+      
+      // 根據狀態分組 Agent
+      const agentGroups = {
+        onService: agentList.filter(agent => agent.status === 'busy' || agent.status === 'service'),
+        onLine: agentList.filter(agent => agent.status === 'online' || agent.status === 'available'),
+        warning: agentList.filter(agent => agent.status === 'idle' || agent.status === 'warning'),
+        offline: agentList.filter(agent => agent.status === 'offline')
+      };
+      console.log('Agent groups:', agentGroups);
+      setAgents(agentGroups);
+      
+      // 設定監控資訊
+      setMonitorInfo({
+        brandName: agentData.brand_name || 'Unknown Brand',
+        workspaceName: agentData.workspace_name || 'Unknown Workspace',
+        summary: agentData.summary || {
+          on_service_count: agentGroups.onService.length,
+          on_line_count: agentGroups.onLine.length,
+          warning_count: agentGroups.warning.length,
+          offline_count: agentGroups.offline.length
+        }
+      });
     } catch (error) {
       console.error('載入 Agent 失敗:', error);
       
