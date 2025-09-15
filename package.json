@@ -8,9 +8,7 @@
     "start": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
-    "mock-api": "node mock-server.js",
-    "dev:full": "concurrently \"npm run mock-api\" \"npm run dev\""
+    "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0"
   },
   "dependencies": {
     "@fullcalendar/daygrid": "^6.1.0",
@@ -37,10 +35,7 @@
     "recharts": "^2.8.0",
     "tailwind-merge": "^2.0.0",
     "tailwindcss-animate": "^1.0.7",
-    "zustand": "^4.5.7",
-    "concurrently": "^8.2.0",
-    "cors": "^2.8.5",
-    "express": "^4.18.0"
+    "zustand": "^4.5.7"
   },
   "devDependencies": {
     "@types/react": "^18.2.0",

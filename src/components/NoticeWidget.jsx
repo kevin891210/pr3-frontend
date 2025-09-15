@@ -22,25 +22,7 @@ const NoticeWidget = () => {
       setNotices(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Load notices failed:', error);
-      // Mock data for development
-      setNotices([
-        {
-          id: 1,
-          title: 'System Maintenance Notice',
-          content: 'The system will be under maintenance on Sunday from 2:00 AM to 4:00 AM.',
-          startTime: '2024-01-20T02:00:00',
-          endTime: '2024-01-20T04:00:00',
-          status: 'published'
-        },
-        {
-          id: 2,
-          title: 'New Feature Release',
-          content: 'We have released new agent monitoring features.',
-          startTime: '2024-01-15T00:00:00',
-          endTime: '2024-01-30T23:59:59',
-          status: 'published'
-        }
-      ]);
+      setNotices([]);
     } finally {
       setLoading(false);
     }
