@@ -1,7 +1,7 @@
 {
-  "initialized": false,
+  "initialized": true,
   "api": {
-    "baseUrl": "",
+    "baseUrl": "http://api.prteam3.com",
     "authPath": "/api/v1/auth/sign-in",
     "workspacesPath": "/api/v1/users/workspaces",
     "botsPath": "/api/v1/bots/all-bots",
@@ -9,6 +9,6 @@
   },
   "hrm": { "enabled": true },
   "security": { "enforceHttps": false },
-  "envName": "DOCKER",
+  "envName": "PRODUCTION",
   "buildVersion": "0.1.0"
 }
