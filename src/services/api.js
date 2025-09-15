@@ -51,33 +51,23 @@ class ApiClient {
             const error = await response.json();
             errorMessage = error.message || errorMessage;
           } else {
-            // 對於非 JSON 錯誤響應，不拋出錯誤
-            console.warn(`API endpoint returned non-JSON error response: ${endpoint}`);
-            return { data: null, success: false, message: 'Non-JSON error response' };
+            errorMessage = `API endpoint returned non-JSON response: ${endpoint}`;
           }
         } catch (e) {
           errorMessage = `API endpoint error: ${endpoint} (${response.status})`;
         }
       }
       
-      // 對於其他錯誤，也返回安全對象而不是拋出錯誤
-      console.warn(`API request failed: ${errorMessage}`);
-      return { data: null, success: false, message: errorMessage };
+      throw new Error(errorMessage);
     }
 
-    try {
-      const contentType = response.headers.get('content-type');
-      if (!contentType?.includes('application/json')) {
-        // 對於非 JSON 響應，返回空對象而不是拋出錯誤
-        console.warn(`API endpoint returned non-JSON response: ${endpoint}`);
-        return { data: null, success: false, message: 'Non-JSON response' };
-      }
-
-      return await response.json();
-    } catch (e) {
-      console.warn(`Failed to parse response from: ${endpoint}`, e);
-      return { data: null, success: false, message: 'Invalid response format' };
+    const contentType = response.headers.get('content-type');
+    if (!contentType?.includes('application/json')) {
+      const text = await response.text();
+      throw new Error(`API endpoint returned non-JSON response: ${endpoint}`);
     }
+
+    return response.json();
   }
 
   // Auth APIs
