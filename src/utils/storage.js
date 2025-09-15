@@ -25,6 +25,18 @@ export const CACHE_EXPIRY = {
 };
 
 /**
+ * 檢查快取數據是否有效
+ * @param {any} cached - 快取數據
+ * @returns {boolean} 是否有效
+ */
+function isValidCacheData(cached) {
+  if (!cached) return false;
+  if (Array.isArray(cached)) return cached.length > 0;
+  if (typeof cached === 'object') return Object.keys(cached).length > 0;
+  return true;
+}
+
+/**
  * 本地儲存管理類
  */
 class StorageManager {
@@ -146,7 +158,17 @@ class StorageManager {
    * @returns {boolean} 是否有效
    */
   isCacheValid(key) {
-    return this.getCache(key) !== null;
+    const cached = this.getCache(key);
+    return isValidCacheData(cached);
+  }
+
+  /**
+   * 檢查快取數據是否有效（靜態方法）
+   * @param {any} cached - 快取數據
+   * @returns {boolean} 是否有效
+   */
+  static isValidData(cached) {
+    return isValidCacheData(cached);
   }
 }
 

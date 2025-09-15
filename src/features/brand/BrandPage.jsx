@@ -40,9 +40,14 @@ const BrandPage = () => {
 
   const loadBrands = async () => {
     try {
+      console.log('Loading brands...');
       const response = await apiClient.getBrands();
+      console.log('Brand API response:', response);
       const data = response.data || response;
+      console.log('Brand data:', data);
+      console.log('Is array:', Array.isArray(data));
       setBrands(Array.isArray(data) ? data : []);
+      console.log('Brands set to:', Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Load brand list failed:', error);
       setAlertDialog({

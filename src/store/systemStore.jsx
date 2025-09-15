@@ -30,12 +30,11 @@ export const useSystemStore = create(
       isInitialized: false,
       
       loadSettings: async (forceRefresh = false) => {
-        const { isInitialized, lastSyncTime } = get();
+        const { isInitialized, lastSyncTime, settings } = get();
         
-        // 如果已初始化且不是強制刷新，直接使用本地設定
-        if (isInitialized && !forceRefresh) {
+        // 如果已初始化且不是強制刷新，且有有效設定數據
+        if (isInitialized && !forceRefresh && settings && Object.keys(settings).length > 0) {
           console.log('使用本地快取的系統設定');
-          const { settings } = get();
           get().applySettingsToGlobal(settings);
           return settings;
         }
@@ -54,16 +53,7 @@ export const useSystemStore = create(
           return data;
         } catch (error) {
           console.error('載入系統設定失敗:', error);
-          // 使用本地存儲的設定
-          const { settings } = get();
-          get().applySettingsToGlobal(settings);
-          
-          // 如果是首次Load Failed，標記為已初始化避免重複請求
-          if (!isInitialized) {
-            set({ isInitialized: true });
-          }
-          
-          return settings;
+          throw error;
         } finally {
           set({ loading: false });
         }
@@ -125,17 +115,7 @@ export const useSystemStore = create(
           return data;
         } catch (error) {
           console.error('載入系統統計失敗:', error);
-          // 使用模擬數據
-          const mockStats = {
-            totalUsers: 156,
-            activeUsers: 89,
-            systemUptime: '15 天 8 小時',
-            lastBackup: '2024-01-15 02:00:00',
-            diskUsage: '45%',
-            memoryUsage: '68%'
-          };
-          set({ stats: mockStats });
-          return mockStats;
+          throw error;
         }
       },
       
