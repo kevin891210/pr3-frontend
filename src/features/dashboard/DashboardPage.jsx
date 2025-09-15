@@ -84,12 +84,17 @@ const DashboardPage = () => {
       const data = response.data || response;
       setStats(data);
     } catch (error) {
-      console.error('Failed to load dashboard stats:', error);
+      console.warn('Dashboard stats API not available, using fallback data:', error.message);
+      // 使用後備數據，避免顯示錯誤
       setStats({
-        brandCount: 5,
-        workspaceCount: 12,
-        botCount: 8,
-        agentCount: 24
+        total_brands: 0,
+        total_workspaces: 0, 
+        total_bots: 0,
+        total_agents: 0,
+        brandCount: 0,
+        workspaceCount: 0,
+        botCount: 0,
+        agentCount: 0
       });
     } finally {
       setLoading(false);
@@ -105,7 +110,7 @@ const DashboardPage = () => {
         setSelectedBrand(data[0].id);
       }
     } catch (error) {
-      console.error('Failed to load brands:', error);
+      console.warn('Monitor brands API not available:', error.message);
       setBrands([]);
     }
   };
@@ -120,7 +125,7 @@ const DashboardPage = () => {
         setSelectedWorkspace(data[0].id);
       }
     } catch (error) {
-      console.error('Failed to load workspaces:', error);
+      console.warn('Brand workspaces API not available:', error.message);
       setWorkspaces([]);
     }
   };
@@ -138,7 +143,7 @@ const DashboardPage = () => {
         });
       }
     } catch (error) {
-      console.error('Failed to load agent monitor:', error);
+      console.warn('Agent monitor API not available:', error.message);
       setAgentMonitor({
         onService: [],
         onLine: [],

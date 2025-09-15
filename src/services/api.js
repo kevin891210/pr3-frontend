@@ -36,7 +36,9 @@ class ApiClient {
     if (!response.ok) {
       let errorMessage = `HTTP ${response.status}`;
       
-      if (response.status === 403) {
+      if (response.status === 404) {
+        errorMessage = `API endpoint not implemented: ${endpoint}`;
+      } else if (response.status === 403) {
         errorMessage = 'API 存取被拒絕，請檢查認證權限';
       } else if (response.status === 401) {
         errorMessage = 'API 認證失敗，請重新登入';
@@ -47,23 +49,33 @@ class ApiClient {
             const error = await response.json();
             errorMessage = error.message || errorMessage;
           } else {
-            errorMessage = `API endpoint not found: ${endpoint}`;
+            // 對於非 JSON 錯誤響應，不拋出錯誤
+            console.warn(`API endpoint returned non-JSON error response: ${endpoint}`);
+            return { data: null, success: false, message: 'Non-JSON error response' };
           }
         } catch (e) {
-          // 無法解析錯誤響應
+          errorMessage = `API endpoint error: ${endpoint} (${response.status})`;
         }
       }
       
-      throw new Error(errorMessage);
+      // 對於其他錯誤，也返回安全對象而不是拋出錯誤
+      console.warn(`API request failed: ${errorMessage}`);
+      return { data: null, success: false, message: errorMessage };
     }
 
-    const contentType = response.headers.get('content-type');
-    if (!contentType?.includes('application/json')) {
-      const text = await response.text();
-      throw new Error(`API endpoint returned non-JSON response: ${endpoint}`);
-    }
+    try {
+      const contentType = response.headers.get('content-type');
+      if (!contentType?.includes('application/json')) {
+        // 對於非 JSON 響應，返回空對象而不是拋出錯誤
+        console.warn(`API endpoint returned non-JSON response: ${endpoint}`);
+        return { data: null, success: false, message: 'Non-JSON response' };
+      }
 
-    return response.json();
+      return await response.json();
+    } catch (e) {
+      console.warn(`Failed to parse response from: ${endpoint}`, e);
+      return { data: null, success: false, message: 'Invalid response format' };
+    }
   }
 
   // Auth APIs
