@@ -137,6 +137,54 @@ ops/
 - `GET /api/v1/bots/all-bots` - Bot 列表
 - `GET /api/v1/workspaces/:id/members` - 成員列表
 
+### Agent 登入流程
+Agent 登入需要以下必要回應欄位：
+```json
+{
+  "success": true,
+  "data": {
+    "token": "local-uuid-token",
+    "brand_id": "brand_id",
+    "member_id": "third_party_user_id",
+    "member_name": "third_party_user_name",
+    "third_party_token": "third_party_jwt_token"
+  }
+}
+```
+
+### 請假管理 API
+**創建請假申請**：
+```json
+POST /api/v1/leave-requests
+{
+  "member_id": "string (required)",
+  "leave_type_id": "string (required)",
+  "start_date": "string (required)",
+  "end_date": "string (required)",
+  "days": "number (required)",
+  "reason": "string (optional)"
+}
+```
+
+**查詢請假餘額**：
+```json
+GET /api/v1/leave-balance/{member_id}
+{
+  "success": true,
+  "data": [
+    {
+      "id": "balance_id",
+      "leave_type_id": "leave_type_id",
+      "leave_type_name": "Annual Leave",
+      "year": 2024,
+      "total_days": 14.0,
+      "used_days": 5.0,
+      "remaining_days": 9.0
+    }
+  ]
+}
+```
+
 ### 監控與維護
 ```bash
 # 健康檢查
@@ -176,6 +224,23 @@ npm run preview
 
 ---
 
-**版本**: v0.1.0  
-**最後更新**: 2024-01-15  
+**版本**: v0.2.0  
+**最後更新**: 2025-01-17  
 **技術支援**: 開發團隊
+
+## 🔄 更新日誌
+
+### v0.2.0 (2025-01-17)
+- ✅ Agent 登入流程完整整合
+- ✅ 請假申請功能實作 (支援天數自動計算)
+- ✅ 請假餘額顯示 (支援多種假期類型)
+- ✅ Agent Dashboard 顯示真實資料
+- ✅ 排班管理日曆整合
+- ✅ Agent Monitor 即時狀態監控
+- ✅ 多語系支援優化
+
+### v0.1.0 (2024-01-15)
+- 🎯 初始版本發布
+- 🔧 基礎架構建立
+- 👥 使用者管理系統
+- 🏢 Brand 管理功能
