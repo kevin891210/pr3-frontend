@@ -82,7 +82,11 @@ class ApiClient {
   async agentLogin(credentials) {
     return this.request('/api/v1/auth/agent-sign-in', {
       method: 'POST',
-      body: credentials,
+      body: {
+        brand_id: credentials.brandId || credentials.brand_id,
+        email: credentials.email,
+        password: credentials.password
+      },
     });
   }
 
@@ -143,9 +147,23 @@ class ApiClient {
   }
 
   async createScheduleAssignment(assignment) {
+    console.log('Creating schedule assignment with data:', assignment);
     return this.request('/api/v1/schedule-assignments', {
       method: 'POST',
       body: assignment,
+    });
+  }
+
+  async updateScheduleAssignment(scheduleId, assignment) {
+    return this.request(`/api/v1/schedule-assignments/${scheduleId}`, {
+      method: 'PUT',
+      body: assignment,
+    });
+  }
+
+  async deleteScheduleAssignment(scheduleId) {
+    return this.request(`/api/v1/schedule-assignments/${scheduleId}`, {
+      method: 'DELETE',
     });
   }
 
@@ -163,6 +181,10 @@ class ApiClient {
   }
 
   async getLeaveRequests(params = {}) {
+    // 確保包含 member_id 參數
+    if (!params.member_id) {
+      throw new Error('member_id is required for leave requests');
+    }
     const query = new URLSearchParams(params).toString();
     return this.request(`/api/v1/leave-requests${query ? `?${query}` : ''}`);
   }
@@ -426,8 +448,11 @@ class ApiClient {
   }
 
   // Agent APIs
-  async getAgentProfile() {
-    return this.request('/api/v1/agent/profile');
+  async getAgentProfile(userId) {
+    if (!userId) {
+      throw new Error('User ID is required for agent profile');
+    }
+    return this.request(`/api/v1/agent/profile?user_id=${userId}`);
   }
 
   async updateAgentStatus(status) {
@@ -437,16 +462,25 @@ class ApiClient {
     });
   }
 
-  async getAgentSchedule(date) {
-    return this.request(`/api/v1/agent/schedule?date=${date}`);
+  async getAgentSchedule(memberId, date) {
+    if (!memberId) {
+      throw new Error('Member ID is required for agent schedule');
+    }
+    return this.request(`/api/v1/schedule-assignments?memberId=${memberId}&date=${date}`);
   }
 
-  async getAgentNotices() {
-    return this.request('/api/v1/agent/notices');
+  async getAgentNotices(workspaceId) {
+    if (!workspaceId) {
+      throw new Error('Workspace ID is required for agent notices');
+    }
+    return this.request(`/api/v1/agent/notices?workspace_id=${workspaceId}`);
   }
 
-  async getAgentLeaveBalance() {
-    return this.request('/api/v1/agent/leave-balance');
+  async getAgentLeaveBalance(memberId) {
+    if (!memberId) {
+      throw new Error('Member ID is required for agent leave balance');
+    }
+    return this.request(`/api/v1/leave-balance/${memberId}`);
   }
 
   async submitLeaveRequest(leaveData) {
@@ -487,6 +521,7 @@ class ApiClient {
    * 建立後清除相關快取
    */
   async createLeaveType(leaveType) {
+    console.log('Creating leave type with data:', leaveType);
     const response = await this.request('/api/v1/leave-types', {
       method: 'POST',
       body: leaveType,

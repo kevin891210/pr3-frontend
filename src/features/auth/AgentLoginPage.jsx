@@ -46,19 +46,19 @@ const AgentLoginPage = () => {
         brand_id: credentials.brandId
       });
       
-      // 處理 API 響應結構（可能是 { data: { user, token } } 或 { user, token }）
-      const userData = response.data?.user || response.user || {};
-      const token = response.data?.token || response.token;
+      // 檢查必要的回應欄位
+      const data = response.data || response;
+      const { token, brand_id, member_id, member_name, third_party_token } = data;
       
-      if (!token) {
-        throw new Error('No authentication token received');
+      if (!token || !brand_id || !member_id || !member_name || !third_party_token) {
+        throw new Error('Login response missing required fields: token, brand_id, member_id, member_name, third_party_token');
       }
       
       // 設定 API 客戶端 token
       apiClient.setToken(token);
       
       // 儲存用戶資訊
-      login(userData, token);
+      login({ member_name, member_id, brand_id, third_party_token }, token);
       
       // 登入成功後導向 agent dashboard
       window.location.href = '/agent-dashboard';

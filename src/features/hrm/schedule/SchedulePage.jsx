@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import SimpleCalendar from '../../../components/calendar/SimpleCalendar';
+import FullCalendarComponent from '../../../components/calendar/FullCalendarComponent';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -60,33 +60,110 @@ const SchedulePage = () => {
   const loadScheduleData = async () => {
     try {
       const response = await apiClient.getShiftTemplates();
-      const templatesData = response.data || response;
-      setShiftTemplates(Array.isArray(templatesData) ? templatesData : []);
+      console.log('Shift Templates API response:', response);
+      
+      // 直接使用 API 回應的資料
+      let templatesData;
+      if (response.success && response.data) {
+        templatesData = response.data;
+      } else if (Array.isArray(response)) {
+        templatesData = response;
+      } else {
+        templatesData = response.data || response || [];
+      }
+      
+      console.log('Templates data:', templatesData);
+      
+      if (!Array.isArray(templatesData)) {
+        console.error('Templates data is not an array:', templatesData);
+        setShiftTemplates([]);
+        return;
+      }
+      
+      // 轉換 API 資料為前端需要的格式
+      const formattedTemplates = templatesData.map(template => {
+        const formatted = {
+          id: template.id,
+          name: template.name?.trim() || 'Unnamed Shift',
+          start_time: template.start_time,
+          end_time: template.end_time,
+          category: template.category || 'full_day',
+          is_cross_day: template.is_cross_day || false,
+          timezone: template.timezone || 'Asia/Taipei',
+          total_break_minutes: template.total_break_minutes || 60,
+          break_periods: template.break_periods || [{ start_time: '12:00', end_time: '13:00' }],
+          min_staff: template.min_staff || 1,
+          max_staff: template.max_staff || 5
+        };
+        console.log('Formatted template:', formatted);
+        return formatted;
+      });
+      
+      console.log('All formatted shift templates:', formattedTemplates);
+      
+      // 確保至少有資料可以顯示
+      if (formattedTemplates.length === 0) {
+        console.warn('No templates received from API');
+      }
+      
+      setShiftTemplates(formattedTemplates);
+      
+      // 強制觸發重新渲染
+      setTimeout(() => {
+        console.log('Current shiftTemplates state:', formattedTemplates);
+      }, 100);
 
       const scheduleResponse = await apiClient.getScheduleAssignments();
       const scheduleData = scheduleResponse.data || scheduleResponse;
-      const eventsArray = Array.isArray(scheduleData) ? scheduleData : [];
+      const rawAssignments = Array.isArray(scheduleData) ? scheduleData : [];
       
-      console.log('Loaded schedule assignments:', eventsArray);
-      setEvents(eventsArray);
+      console.log('Schedule Assignments API response:', scheduleData);
+      console.log('Raw assignments array:', rawAssignments);
+      
+      // 轉換 API 資料為 FullCalendar 格式
+      const formattedEvents = await Promise.all(rawAssignments.map(async (assignment) => {
+        // 找到對應的 shift template
+        const template = formattedTemplates.find(t => t.id === assignment.shift_template_id);
+        
+        if (!template) {
+          console.warn('Template not found for assignment:', assignment);
+          return null;
+        }
+        
+        // 組合日期和時間
+        const startDateTime = `${assignment.date}T${template.start_time}:00`;
+        const endDateTime = `${assignment.date}T${template.end_time}:00`;
+        
+        const event = {
+          id: assignment.id,
+          title: `${template.name} - Member ${assignment.member_id.substring(0, 8)}`,
+          start: startDateTime,
+          end: endDateTime,
+          backgroundColor: '#3b82f6',
+          borderColor: '#2563eb',
+          extendedProps: {
+            memberId: assignment.member_id,
+            templateId: assignment.shift_template_id,
+            templateName: template.name,
+            assignmentDate: assignment.date,
+            createdAt: assignment.created_at
+          }
+        };
+        
+        return event;
+      }));
+      
+      // 過濾空值
+      const validEvents = formattedEvents.filter(event => event !== null);
+      
+      console.log('Formatted events for calendar:', validEvents);
+      setEvents(validEvents);
 
-      checkConflicts(eventsArray);
+      checkConflicts(validEvents);
     } catch (error) {
       console.error('Failed to load schedule data:', error);
-      // Fallback data with test event
-      setShiftTemplates([
-        { id: 1, name: 'Morning Shift', category: 'full_day', start_time: '08:00', end_time: '16:00', is_cross_day: false, timezone: 'Asia/Taipei', total_break_minutes: 60, break_periods: [{ start_time: '12:00', end_time: '13:00' }], min_staff: 2, max_staff: 5 },
-        { id: 2, name: 'Night Shift', category: 'rotating', start_time: '22:00', end_time: '06:00', is_cross_day: true, timezone: 'Asia/Taipei', total_break_minutes: 30, break_periods: [{ start_time: '02:00', end_time: '02:30' }], min_staff: 1, max_staff: 3 }
-      ]);
-      
-      // Add test event to verify calendar display
-      const testEvent = {
-        id: 'test-1',
-        title: 'Test Shift - John Doe',
-        start: new Date().toISOString(),
-        end: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString()
-      };
-      setEvents([testEvent]);
+      setShiftTemplates([]);
+      setEvents([]);
     }
   };
 
@@ -97,11 +174,7 @@ const SchedulePage = () => {
       setBrands(Array.isArray(brandsData) ? brandsData : []);
     } catch (error) {
       console.error('Failed to load brands:', error);
-      // Fallback data
-      setBrands([
-        { id: '9317607e-6656-409f-89e1-bb50b64901ed', name: 'New Test Brand', is_active: true },
-        { id: 'brand_2', name: 'Demo Brand', is_active: true }
-      ]);
+      setBrands([]);
     }
   };
 
@@ -116,11 +189,7 @@ const SchedulePage = () => {
       setWorkspaces(Array.isArray(workspacesData) ? workspacesData : []);
     } catch (error) {
       console.error('Failed to load brand workspaces:', error);
-      // Fallback data
-      setWorkspaces([
-        { id: 'workspace_1', name: 'Customer Service', description: 'Main customer service team' },
-        { id: 'workspace_2', name: 'Technical Support', description: 'Technical support team' }
-      ]);
+      setWorkspaces([]);
     }
   };
 
@@ -135,12 +204,7 @@ const SchedulePage = () => {
       setWorkspaceMembers(Array.isArray(membersData) ? membersData : []);
     } catch (error) {
       console.error('Failed to load workspace members:', error);
-      // Fallback data
-      setWorkspaceMembers([
-        { id: 1, name: 'John Doe', email: 'john@example.com', role: 'Agent' },
-        { id: 2, name: 'Jane Smith', email: 'jane@example.com', role: 'Agent' },
-        { id: 3, name: 'Mike Johnson', email: 'mike@example.com', role: 'TeamLeader' }
-      ]);
+      setWorkspaceMembers([]);
     }
   };
 
@@ -152,12 +216,12 @@ const SchedulePage = () => {
         const event1 = scheduleEvents[i];
         const event2 = scheduleEvents[j];
         
-        // 安全檢查 extendedProps 和 userId
-        const userId1 = event1.extendedProps?.userId;
-        const userId2 = event2.extendedProps?.userId;
+        // 安全檢查 extendedProps 和 memberId
+        const memberId1 = event1.extendedProps?.memberId;
+        const memberId2 = event2.extendedProps?.memberId;
         
-        // 檢查同一使用者的時間重疊
-        if (userId1 && userId2 && userId1 === userId2) {
+        // 檢查同一成員的時間重疊
+        if (memberId1 && memberId2 && memberId1 === memberId2) {
           const start1 = new Date(event1.start);
           const end1 = new Date(event1.end);
           const start2 = new Date(event2.start);
@@ -325,8 +389,17 @@ End: ${new Date(event.end).toLocaleString()}`);
 
   // Handle shift assignment submission
   const handleAssignmentSubmit = async () => {
+    console.log('Form data before validation:', assignmentFormData);
+    
     // Validate required fields
     if (!assignmentFormData.brand_id || !assignmentFormData.workspace_id || !assignmentFormData.member_id || !assignmentFormData.template_id || !assignmentFormData.date) {
+      console.log('Validation failed:', {
+        brand_id: assignmentFormData.brand_id,
+        workspace_id: assignmentFormData.workspace_id,
+        member_id: assignmentFormData.member_id,
+        template_id: assignmentFormData.template_id,
+        date: assignmentFormData.date
+      });
       setAlertDialog({
         open: true,
         type: 'warning',
@@ -337,7 +410,21 @@ End: ${new Date(event.end).toLocaleString()}`);
     }
 
     try {
-      const response = await apiClient.createScheduleAssignment(assignmentFormData);
+      // 轉換為後端需要的格式 (使用新的 member_id 欄位)
+      const requestData = {
+        member_id: assignmentFormData.member_id,
+        shift_template_id: assignmentFormData.template_id,
+        date: assignmentFormData.date
+      };
+      
+      console.log('Final request data:', requestData);
+      console.log('Request data types:', {
+        member_id: typeof requestData.member_id,
+        shift_template_id: typeof requestData.shift_template_id,
+        date: typeof requestData.date
+      });
+      
+      const response = await apiClient.createScheduleAssignment(requestData);
       const newAssignment = response.data || response;
       
       setAlertDialog({
@@ -453,19 +540,24 @@ End: ${new Date(event.end).toLocaleString()}`);
   };
 
   const ShiftTemplateCard = ({ template }) => {
-    const categoryName = shiftCategories.find(cat => cat.id === template.category)?.name || template.category;
+    console.log('Rendering template card:', template);
+    
+    if (!template) {
+      console.error('Template is null or undefined');
+      return null;
+    }
+    
+    const categoryName = shiftCategories.find(cat => cat.id === template.category)?.name || template.category || 'No Category';
     
     return (
       <Card className="mb-4">
         <CardContent className="p-4">
           <div className="flex items-center justify-between mb-2">
             <div>
-              <h3 className="font-medium">{template.name}</h3>
-              {template.category && (
-                <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded mt-1 inline-block">
-                  {categoryName}
-                </span>
-              )}
+              <h3 className="font-medium">{template.name || 'Unnamed Shift'}</h3>
+              <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded mt-1 inline-block">
+                {categoryName}
+              </span>
             </div>
             <div className="flex items-center gap-2">
               <Button size="sm" variant="outline" onClick={() => handleEditShift(template)}>
@@ -479,20 +571,16 @@ End: ${new Date(event.end).toLocaleString()}`);
           <div className="space-y-2 text-sm text-gray-600">
             <div className="flex items-center gap-2">
               <Clock className="w-4 h-4" />
-              {template.start_time} - {template.end_time}
+              {template.start_time || 'N/A'} - {template.end_time || 'N/A'}
               {template.is_cross_day && <span className="text-orange-600">(Cross Day)</span>}
             </div>
             <div className="flex items-center gap-4">
-              {template.timezone && (
-                <div>TZ: {template.timezone}</div>
-              )}
+              <div>TZ: {template.timezone || 'Asia/Taipei'}</div>
             </div>
-            {template.total_break_minutes && (
-              <div>Break: {template.total_break_minutes} min</div>
-            )}
+            <div>Break: {template.total_break_minutes || 0} min</div>
             {template.break_periods && template.break_periods.length > 0 && (
               <div>
-                Periods: {template.break_periods.map(b => `${b.start_time}-${b.end_time}`).join(', ')}
+                Periods: {template.break_periods.map(b => `${b.start_time || 'N/A'}-${b.end_time || 'N/A'}`).join(', ')}
               </div>
             )}
           </div>
@@ -580,17 +668,21 @@ End: ${new Date(event.end).toLocaleString()}`);
                     <Plus className="w-4 h-4" />
                     Add Shift Template
                   </Button>
-                  {Array.isArray(shiftTemplates) && shiftTemplates.length > 0 ? (
-                    shiftTemplates.map(template => (
-                      <ShiftTemplateCard key={template.id} template={template} />
-                    ))
-                  ) : (
-                    <EmptyState 
-                      type="schedule" 
-                      title="No Shift Templates" 
-                      description="Click 'Add Shift Template' to create your first shift." 
-                    />
-                  )}
+                  <div>
+                    <p className="text-sm text-gray-600 mb-2">Templates: {shiftTemplates.length}</p>
+                    {shiftTemplates.length > 0 ? (
+                      shiftTemplates.map(template => {
+                        console.log('Mapping template:', template);
+                        return <ShiftTemplateCard key={template.id} template={template} />;
+                      })
+                    ) : (
+                      <EmptyState 
+                        type="schedule" 
+                        title="No Shift Templates" 
+                        description="Click 'Add Shift Template' to create your first shift." 
+                      />
+                    )}
+                  </div>
                 </div>
               ) : activeTab === 'categories' ? (
                 <div className="space-y-3">
@@ -679,7 +771,7 @@ End: ${new Date(event.end).toLocaleString()}`);
         <div className="lg:col-span-3">
           <Card>
             <CardContent className="p-6">
-              <SimpleCalendar
+              <FullCalendarComponent
                 events={events}
                 onDateClick={handleDateClick}
                 onEventClick={handleEventClick}

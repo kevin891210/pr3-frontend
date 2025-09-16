@@ -23,6 +23,8 @@ const LeavePage = () => {
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [approvalDialog, setApprovalDialog] = useState({ open: false, requestId: null, action: '', reason: '' });
   const [leaveFormData, setLeaveFormData] = useState({
+    brandId: '',
+    workspaceId: '',
     userId: '',
     typeId: '',
     startDate: '',
@@ -33,6 +35,9 @@ const LeavePage = () => {
     reason: '',
     isHalfDay: false
   });
+  const [brands, setBrands] = useState([]);
+  const [workspaces, setWorkspaces] = useState([]);
+  const [workspaceMembers, setWorkspaceMembers] = useState([]);
   const { user, hasPermission } = useAuthStore();
   const [alertDialog, setAlertDialog] = useState({ open: false, type: 'info', title: '', message: '' });
   const [activeTab, setActiveTab] = useState('requests'); // 'requests', 'categories', or 'manage'
@@ -41,7 +46,7 @@ const LeavePage = () => {
   const [leaveTypeFormData, setLeaveTypeFormData] = useState({
     name: '',
     code: '',
-    quota: 14,
+    days_per_year: 14,
     allow_half_day: true,
     require_attachment: false,
     description: ''
@@ -50,6 +55,7 @@ const LeavePage = () => {
 
   useEffect(() => {
     loadLeaveData();
+    loadBrands();
   }, []);
 
   useEffect(() => {
@@ -64,25 +70,62 @@ const LeavePage = () => {
       const typesData = typesResponse.data || typesResponse;
       setLeaveTypes(Array.isArray(typesData) ? typesData : []);
 
-      const usersResponse = await apiClient.getUsers();
-      const usersData = usersResponse.data || usersResponse;
-      setUsers(Array.isArray(usersData) ? usersData : []);
-
       if (user?.id) {
         const balanceResponse = await apiClient.getLeaveBalance(user.id, new Date().getFullYear());
         const balanceData = balanceResponse.data || balanceResponse;
         setUserBalance(balanceData || {});
       }
 
-      const requestsResponse = await apiClient.getLeaveRequests();
+      const memberId = localStorage.getItem('member_id') || user?.id;
+      const requestsResponse = await apiClient.getLeaveRequests({ member_id: memberId });
       const requestsData = requestsResponse.data || requestsResponse;
       setLeaveRequests(Array.isArray(requestsData) ? requestsData : []);
     } catch (error) {
       console.error('Failed to load leave data:', error);
       setLeaveTypes([]);
-      setUsers([]);
       setUserBalance({});
       setLeaveRequests([]);
+    }
+  };
+
+  const loadBrands = async () => {
+    try {
+      const response = await apiClient.getBrands();
+      const brandsData = response.data || response;
+      setBrands(Array.isArray(brandsData) ? brandsData : []);
+    } catch (error) {
+      console.error('Failed to load brands:', error);
+      setBrands([]);
+    }
+  };
+
+  const loadBrandWorkspaces = async (brandId) => {
+    if (!brandId) {
+      setWorkspaces([]);
+      return;
+    }
+    try {
+      const response = await apiClient.getBrandWorkspaces(brandId);
+      const workspacesData = response.data || response;
+      setWorkspaces(Array.isArray(workspacesData) ? workspacesData : []);
+    } catch (error) {
+      console.error('Failed to load brand workspaces:', error);
+      setWorkspaces([]);
+    }
+  };
+
+  const loadWorkspaceMembers = async (workspaceId) => {
+    if (!workspaceId) {
+      setWorkspaceMembers([]);
+      return;
+    }
+    try {
+      const response = await apiClient.getWorkspaceMembers(workspaceId);
+      const membersData = response.data || response;
+      setWorkspaceMembers(Array.isArray(membersData) ? membersData : []);
+    } catch (error) {
+      console.error('Failed to load workspace members:', error);
+      setWorkspaceMembers([]);
     }
   };
 
@@ -176,7 +219,21 @@ const LeavePage = () => {
     }
 
     try {
-      const response = await apiClient.createLeaveRequest(leaveFormData);
+      // 轉換為後端需要的格式
+      const startDate = new Date(leaveFormData.startDate);
+      const endDate = new Date(leaveFormData.endDate);
+      const days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+      
+      const requestData = {
+        member_id: leaveFormData.userId,
+        leave_type_id: leaveFormData.typeId,
+        start_date: leaveFormData.startDate,
+        end_date: leaveFormData.endDate,
+        days: days,
+        reason: leaveFormData.reason
+      };
+      
+      const response = await apiClient.createLeaveRequest(requestData);
       const newRequest = response.data || response;
       setLeaveRequests(prev => [...prev, newRequest]);
       
@@ -189,6 +246,8 @@ const LeavePage = () => {
       
       setShowApplyDialog(false);
       setLeaveFormData({
+        brandId: '',
+        workspaceId: '',
         userId: '',
         typeId: '',
         startDate: '',
@@ -199,6 +258,8 @@ const LeavePage = () => {
         reason: '',
         isHalfDay: false
       });
+      setWorkspaces([]);
+      setWorkspaceMembers([]);
     } catch (error) {
       setAlertDialog({
         open: true,
@@ -215,7 +276,7 @@ const LeavePage = () => {
     setLeaveTypeFormData({
       name: type.name,
       code: type.code,
-      quota: type.quota,
+      days_per_year: type.days_per_year || type.quota,
       allow_half_day: type.allow_half_day,
       require_attachment: type.require_attachment || false,
       description: type.description || ''
@@ -259,7 +320,7 @@ const LeavePage = () => {
       }
       setShowLeaveTypeModal(false);
       setEditingLeaveType(null);
-      setLeaveTypeFormData({ name: '', code: '', quota: 14, allow_half_day: true, require_attachment: false, description: '' });
+      setLeaveTypeFormData({ name: '', code: '', days_per_year: 14, allow_half_day: true, require_attachment: false, description: '' });
     } catch (error) {
       setAlertDialog({
         open: true,
@@ -322,7 +383,7 @@ const LeavePage = () => {
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-2">
             <User className="w-5 h-5 text-gray-400" />
-            <span className="font-medium">{request.applicant?.name || 'Unknown User'}</span>
+            <span className="font-medium">{request.member_name || request.applicant?.name || request.member?.name || 'Unknown User'}</span>
           </div>
           <div className="flex items-center gap-2">
             <Badge className={getStatusColor(request.status)}>
@@ -336,13 +397,13 @@ const LeavePage = () => {
         <div className="space-y-2 text-sm text-gray-600">
           <div className="flex items-center gap-2">
             <FileText className="w-4 h-4" />
-            <span>{request.type?.name || 'Unknown Type'} - {request.days || 0} days</span>
+            <span>{request.leave_type_name || 'Unknown Type'} - {request.days || 0} days</span>
           </div>
           <div className="flex items-center gap-2">
             <Calendar className="w-4 h-4" />
             <span>
-              {request.start_at ? new Date(request.start_at).toLocaleDateString() : 'N/A'} - 
-              {request.end_at ? new Date(request.end_at).toLocaleDateString() : 'N/A'}
+              {request.start_date ? new Date(request.start_date).toLocaleDateString() : 'N/A'} - 
+              {request.end_date ? new Date(request.end_date).toLocaleDateString() : 'N/A'}
             </span>
           </div>
           <div>
@@ -438,6 +499,8 @@ const LeavePage = () => {
             <Button 
               onClick={() => {
                 setLeaveFormData({
+                  brandId: '',
+                  workspaceId: '',
                   userId: user?.id || '',
                   typeId: '',
                   startDate: '',
@@ -448,6 +511,8 @@ const LeavePage = () => {
                   reason: '',
                   isHalfDay: false
                 });
+                setWorkspaces([]);
+                setWorkspaceMembers([]);
                 setShowApplyDialog(true);
               }}
               className="flex items-center gap-2"
@@ -467,12 +532,7 @@ const LeavePage = () => {
         >
           Leave Requests
         </button>
-        <button
-          className={`px-4 py-2 text-sm font-medium ${activeTab === 'categories' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500'}`}
-          onClick={() => setActiveTab('categories')}
-        >
-          Leave Categories
-        </button>
+
         {hasPermission('leave.admin') && (
           <button
             className={`px-4 py-2 text-sm font-medium ${activeTab === 'manage' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500'}`}
@@ -662,20 +722,63 @@ const LeavePage = () => {
             <form onSubmit={handleLeaveSubmit}>
               <CardContent className="space-y-4">
                 {hasPermission('leave.approve') && (
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Applicant *</label>
-                    <select 
-                      className="w-full p-2 border rounded-md"
-                      value={leaveFormData.userId}
-                      onChange={(e) => setLeaveFormData(prev => ({ ...prev, userId: e.target.value }))}
-                      required
-                    >
-                      <option value="">Select Applicant</option>
-                      {users.map(user => (
-                        <option key={user.id} value={user.id}>{user.name}</option>
-                      ))}
-                    </select>
-                  </div>
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Brand *</label>
+                      <select
+                        className="w-full p-2 border rounded-md"
+                        value={leaveFormData.brandId}
+                        onChange={(e) => {
+                          const brandId = e.target.value;
+                          setLeaveFormData(prev => ({ ...prev, brandId, workspaceId: '', userId: '' }));
+                          setWorkspaceMembers([]);
+                          loadBrandWorkspaces(brandId);
+                        }}
+                        required
+                      >
+                        <option value="">Select Brand</option>
+                        {brands.filter(brand => brand.is_active).map(brand => (
+                          <option key={brand.id} value={brand.id}>{brand.name}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Workspace *</label>
+                      <select
+                        className="w-full p-2 border rounded-md"
+                        value={leaveFormData.workspaceId}
+                        onChange={(e) => {
+                          const workspaceId = e.target.value;
+                          setLeaveFormData(prev => ({ ...prev, workspaceId, userId: '' }));
+                          loadWorkspaceMembers(workspaceId);
+                        }}
+                        required
+                        disabled={!leaveFormData.brandId}
+                      >
+                        <option value="">Select Workspace</option>
+                        {workspaces.map(workspace => (
+                          <option key={workspace.id} value={workspace.id}>{workspace.name}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Member *</label>
+                      <select
+                        className="w-full p-2 border rounded-md"
+                        value={leaveFormData.userId}
+                        onChange={(e) => setLeaveFormData(prev => ({ ...prev, userId: e.target.value }))}
+                        required
+                        disabled={!leaveFormData.workspaceId}
+                      >
+                        <option value="">Select Member</option>
+                        {workspaceMembers.map(member => (
+                          <option key={member.id} value={member.id}>{member.name} ({member.role})</option>
+                        ))}
+                      </select>
+                    </div>
+                  </>
                 )}
                 
                 <div>
@@ -804,11 +907,11 @@ const LeavePage = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-600">Applicant</label>
-                  <p className="font-medium">{selectedRequest.applicant?.name || 'Unknown User'}</p>
+                  <p className="font-medium">{selectedRequest.member_name || selectedRequest.applicant?.name || 'Unknown User'}</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-600">Leave Type</label>
-                  <p className="font-medium">{selectedRequest.type?.name || 'Unknown Type'}</p>
+                  <p className="font-medium">{selectedRequest.leave_type_name || 'Unknown Type'}</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-600">Duration</label>
@@ -826,8 +929,8 @@ const LeavePage = () => {
               <div>
                 <label className="block text-sm font-medium text-gray-600">Period</label>
                 <p className="font-medium">
-                  {new Date(selectedRequest.start_at).toLocaleString()} - 
-                  {new Date(selectedRequest.end_at).toLocaleString()}
+                  {new Date(selectedRequest.start_date).toLocaleDateString()} - 
+                  {new Date(selectedRequest.end_date).toLocaleDateString()}
                 </p>
               </div>
               
@@ -948,8 +1051,11 @@ const LeavePage = () => {
                   <Input
                     type="number"
                     min="0"
-                    value={leaveTypeFormData.quota}
-                    onChange={(e) => setLeaveTypeFormData(prev => ({ ...prev, quota: parseInt(e.target.value) || 0 }))}
+                    value={leaveTypeFormData.days_per_year}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value) || 0;
+                      setLeaveTypeFormData(prev => ({ ...prev, days_per_year: value }));
+                    }}
                   />
                 </div>
                 

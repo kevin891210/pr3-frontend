@@ -46,16 +46,18 @@ const RequestLeaveModal = ({ isOpen, onClose }) => {
     try {
       // Format data for API
       const selectedType = leaveTypes.find(type => (type.code || type.id) === formData.type);
+      const memberId = localStorage.getItem('member_id');
+      const startDate = new Date(formData.startDate);
+      const endDate = new Date(formData.endDate);
+      const days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+      
       const leaveData = {
-        userId: null, // Will be set by backend based on auth token
-        typeId: selectedType?.id || formData.type,
-        startDate: formData.startDate,
-        endDate: formData.endDate,
-        startTime: '09:00',
-        endTime: '18:00',
-        timezone: 'Asia/Taipei',
-        reason: formData.reason,
-        isHalfDay: formData.isHalfDay
+        member_id: memberId,
+        leave_type_id: selectedType?.id || formData.type,
+        start_date: formData.startDate,
+        end_date: formData.endDate,
+        days: formData.isHalfDay ? 0.5 : days,
+        reason: formData.reason
       };
       
       await apiClient.submitLeaveRequest(leaveData);

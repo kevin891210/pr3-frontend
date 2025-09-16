@@ -28,6 +28,20 @@ export const useAuthStore = create(
           isAuthenticated: true
         });
         
+        // 儲存 Agent 相關資訊到 localStorage
+        if (userData?.member_id) {
+          localStorage.setItem('member_id', userData.member_id);
+        }
+        if (userData?.brand_id) {
+          localStorage.setItem('brand_id', userData.brand_id);
+        }
+        if (userData?.third_party_token) {
+          localStorage.setItem('third_party_token', userData.third_party_token);
+        }
+        if (userData?.member_name) {
+          localStorage.setItem('member_name', userData.member_name);
+        }
+        
         // 儲存使用者偏好設定
         const preferences = storageManager.getUserPreferences();
         storageManager.setUserPreferences({
@@ -48,6 +62,12 @@ export const useAuthStore = create(
           token: null,
           isAuthenticated: false
         });
+        
+        // 清除 Agent 相關資訊
+        localStorage.removeItem('member_id');
+        localStorage.removeItem('brand_id');
+        localStorage.removeItem('third_party_token');
+        localStorage.removeItem('member_name');
         
         // 清除 API 快取但保留使用者偏好設定
         apiClient.clearAllCache();

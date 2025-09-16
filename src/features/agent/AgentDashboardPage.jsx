@@ -24,19 +24,25 @@ const AgentDashboardPage = () => {
 
   const loadAgentData = async () => {
     try {
+      const today = new Date().toISOString().split('T')[0];
       const [profileRes, scheduleRes, noticesRes, balanceRes] = await Promise.all([
-        apiClient.getAgentProfile(),
-        apiClient.getScheduleAssignments({ userId: user?.id }),
-        apiClient.getAgentNotices(),
-        apiClient.getAgentLeaveBalance()
+        apiClient.getAgentProfile(user?.id, user?.workspace_id),
+        apiClient.getAgentSchedule(user?.id, today),
+        apiClient.getAgentNotices(user?.workspace_id),
+apiClient.getAgentLeaveBalance(localStorage.getItem('member_id'))
       ]);
 
       setProfile(profileRes.data || profileRes);
-      setSchedule(scheduleRes.data || scheduleRes);
-      setNotices(noticesRes.data || noticesRes);
-      setLeaveBalance(balanceRes.data || balanceRes);
+      setSchedule(Array.isArray(scheduleRes.data) ? scheduleRes.data : (scheduleRes.data ? [scheduleRes.data] : []));
+      setNotices(Array.isArray(noticesRes.data) ? noticesRes.data : (noticesRes.data ? [noticesRes.data] : []));
+      const balanceData = balanceRes.data || balanceRes || [];
+      setLeaveBalance(Array.isArray(balanceData) ? balanceData : []);
     } catch (error) {
       console.error('Failed to load agent data:', error);
+      setProfile(null);
+      setSchedule([]);
+      setNotices([]);
+      setLeaveBalance({});
     } finally {
       setLoading(false);
     }
@@ -62,16 +68,13 @@ const AgentDashboardPage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <h1 className="text-xl font-semibold text-gray-900">{t('agent.dashboard')}</h1>
+              <h1 className="text-xl font-semibold text-gray-900">Agent Dashboard</h1>
             </div>
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <User className="w-5 h-5 text-gray-400" />
-                <span className="text-sm text-gray-700">{profile?.name || user?.name || 'Agent'}</span>
-              </div>
               <Button variant="outline" size="sm" onClick={handleLogout}>
-                <LogOut className="w-4 h-4 mr-2" />
-                {t('common.logout')}
+                <User className="w-4 h-4 mr-2" />
+                {user?.member_name || profile?.name || user?.name || 'Agent'}
+                <LogOut className="w-4 h-4 ml-2" />
               </Button>
             </div>
           </div>
@@ -87,7 +90,7 @@ const AgentDashboardPage = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Calendar className="w-5 h-5" />
-                {t('agent.mySchedule')}
+                My Schedule
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -105,27 +108,27 @@ const AgentDashboardPage = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Calendar className="w-5 h-5" />
-                  {t('agent.leaveBalance')}
+                  Leave Balance
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {Object.keys(leaveBalance).length > 0 ? (
+                {Array.isArray(leaveBalance) && leaveBalance.length > 0 ? (
                   <div className="space-y-2">
-                    {Object.entries(leaveBalance).map(([type, balance]) => (
-                      <div key={type} className="flex justify-between">
-                        <span className="text-sm">{type}:</span>
-                        <span className="font-medium">{balance.remaining || 0} {t('common.days')}</span>
+                    {leaveBalance.map((balance) => (
+                      <div key={balance.id} className="flex justify-between">
+                        <span className="text-sm">{balance.leave_type_name}:</span>
+                        <span className="font-medium">{balance.remaining_days} days</span>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-gray-500">{t('agent.noLeaveData')}</p>
+                  <p className="text-gray-500">No leave balance data</p>
                 )}
                 <Button 
                   className="w-full mt-4" 
                   onClick={() => setShowLeaveModal(true)}
                 >
-                  {t('agent.requestLeave')}
+                  Request Leave
                 </Button>
               </CardContent>
             </Card>
@@ -135,7 +138,7 @@ const AgentDashboardPage = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Bell className="w-5 h-5" />
-                {t('agent.latestNotices')}
+                Latest Notices
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -152,7 +155,7 @@ const AgentDashboardPage = () => {
                   ))}
                 </div>
               ) : (
-                <p className="text-gray-500">{t('agent.noNotices')}</p>
+                <p className="text-gray-500">No notices available</p>
               )}
             </CardContent>
           </Card>

@@ -23,6 +23,7 @@ const AgentMonitorPage = () => {
   const [refreshInterval, setRefreshInterval] = useState({ minutes: 1, seconds: 0 });
   const [warningTime, setWarningTime] = useState(30);
   const [alertDialog, setAlertDialog] = useState({ open: false, type: 'info', title: '', message: '' });
+  const [onlineAgentTimes, setOnlineAgentTimes] = useState({});
   
   const intervalRef = useRef(null);
 
@@ -93,36 +94,67 @@ const AgentMonitorPage = () => {
     setLoading(true);
     try {
       const totalSeconds = refreshInterval.minutes * 60 + refreshInterval.seconds;
-      const response = await apiClient.getAgentMonitorStats();
+      const response = await apiClient.getAgentMonitor(
+        selectedBrand,
+        selectedWorkspace,
+        totalSeconds || 60,
+        warningTime
+      );
       console.log('Agent Monitor API response:', response);
       
-      // Handle API response format
-      const agentData = response.data || response;
-      console.log('Agent data:', agentData);
+      const responseData = response.data || response;
+      const now = Date.now();
       
-      // 處理單一 Agent 或 Agent 陣列
-      let agentList = [];
-      if (Array.isArray(agentData)) {
-        agentList = agentData;
-      } else if (agentData && agentData.id) {
-        agentList = [agentData];
-      }
+      // 處理 online agents 時間記錄
+      const currentOnlineAgents = responseData.on_line || [];
+      const newOnlineAgentTimes = { ...onlineAgentTimes };
       
-      // 根據狀態分組 Agent
+      // 為新的 online agents 記錄時間
+      currentOnlineAgents.forEach(agent => {
+        if (!newOnlineAgentTimes[agent.id]) {
+          newOnlineAgentTimes[agent.id] = now;
+        }
+      });
+      
+      // 移除不再 online 的 agents
+      const currentOnlineIds = currentOnlineAgents.map(agent => agent.id);
+      Object.keys(newOnlineAgentTimes).forEach(agentId => {
+        if (!currentOnlineIds.includes(agentId)) {
+          delete newOnlineAgentTimes[agentId];
+        }
+      });
+      
+      setOnlineAgentTimes(newOnlineAgentTimes);
+      
+      // 根據時間將 online agents 分為 online 和 warning
+      const warningThreshold = warningTime * 60 * 1000; // 轉換為毫秒
+      const onlineAgents = [];
+      const warningAgents = [];
+      
+      currentOnlineAgents.forEach(agent => {
+        const agentOnlineTime = newOnlineAgentTimes[agent.id];
+        if (agentOnlineTime && (now - agentOnlineTime) > warningThreshold) {
+          warningAgents.push(agent);
+        } else {
+          onlineAgents.push(agent);
+        }
+      });
+      
       const agentGroups = {
-        onService: agentList.filter(agent => agent.status === 'busy' || agent.status === 'service'),
-        onLine: agentList.filter(agent => agent.status === 'online' || agent.status === 'available'),
-        warning: agentList.filter(agent => agent.status === 'idle' || agent.status === 'warning'),
-        offline: agentList.filter(agent => agent.status === 'offline')
+        onService: responseData.on_service || [],
+        onLine: onlineAgents,
+        warning: warningAgents,
+        offline: responseData.offline || []
       };
+      
       console.log('Agent groups:', agentGroups);
       setAgents(agentGroups);
       
       // 設定監控資訊
       setMonitorInfo({
-        brandName: agentData.brand_name || 'Unknown Brand',
-        workspaceName: agentData.workspace_name || 'Unknown Workspace',
-        summary: agentData.summary || {
+        brandName: 'Live Data',
+        workspaceName: 'Agent Monitor',
+        summary: {
           on_service_count: agentGroups.onService.length,
           on_line_count: agentGroups.onLine.length,
           warning_count: agentGroups.warning.length,
@@ -131,44 +163,16 @@ const AgentMonitorPage = () => {
       });
     } catch (error) {
       console.error('載入 Agent 失敗:', error);
-      
-      // 如果 API 失敗，使用備用的模擬數據
-      setAgents({
-        onService: [
-          { id: '1', name: 'Agent A', email: 'agenta@example.com' },
-          { id: '5', name: 'Agent E', email: 'agente@example.com' }
-        ],
-        onLine: [
-          { id: '2', name: 'Agent B', email: 'agentb@example.com' }
-        ],
-        warning: [
-          { id: '3', name: 'Agent C', email: 'agentc@example.com' }
-        ],
-        offline: [
-          { id: '4', name: 'Agent D', email: 'agentd@example.com' }
-        ]
-      });
-      
-      setMonitorInfo({
-        brandName: 'Test Brand',
-        workspaceName: 'Test Workspace',
-        summary: {
-          on_service_count: 2,
-          on_line_count: 1,
-          warning_count: 1,
-          offline_count: 1
-        }
-      });
-      
       setAlertDialog({
         open: true,
         type: 'warning',
         title: 'Load Failed',
-        message: `Cannot load Agent Status，顯示模擬數據: ${error.message}`
+        message: `Cannot load Agent Status: ${error.message}`
       });
     } finally {
       setLoading(false);
     }
+
   };
 
 
