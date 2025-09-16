@@ -20,8 +20,10 @@ export const useAuthStore = create(
        * @param {Object} userData - 使用者資料
        * @param {string} token - JWT Token
        */
-      login: (userData, token) => {
-        apiClient.setToken(token);
+      login: (userData, token = null) => {
+        if (token) {
+          apiClient.setToken(token);
+        }
         set({
           user: userData,
           token,
