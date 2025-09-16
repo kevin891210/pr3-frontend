@@ -25,19 +25,15 @@ const LoginPage = () => {
         password: credentials.password
       });
       
-      // 處理 API 響應結構（可能是 { data: { user, token } } 或 { user, token }）
+      // 處理新的 API 響應結構（只返回用戶信息，不包含 token）
       const userData = response.data?.user || response.user || {};
-      const token = response.data?.token || response.token;
       
-      if (!token) {
-        throw new Error('No authentication token received');
+      if (!userData.id) {
+        throw new Error('Invalid user data received');
       }
       
-      // 設定 API 客戶端 token
-      apiClient.setToken(token);
-      
-      // 儲存用戶資訊
-      login(userData, token);
+      // 儲存用戶資訊（不需要 token）
+      login(userData, null);
       
       // 登入成功後導向 dashboard
       window.location.href = '/dashboard';
