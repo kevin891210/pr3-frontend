@@ -137,7 +137,7 @@ const SchedulePage = () => {
         
         const event = {
           id: assignment.id,
-          title: `${template.name} - Member ${assignment.member_id.substring(0, 8)}`,
+          title: `${template.name} - ${assignment.member_name || `Member ${assignment.member_id.substring(0, 8)}`}`,
           start: startDateTime,
           end: endDateTime,
           backgroundColor: '#3b82f6',
@@ -832,7 +832,7 @@ End: ${new Date(event.end).toLocaleString()}`);
                 >
                   <option value="">Select Member</option>
                   {workspaceMembers.map(member => (
-                    <option key={member.id} value={member.id}>{member.name} ({member.role})</option>
+                    <option key={member.id} value={member.id}>{member.name || member.username || member.email || member.id} ({member.role || 'Member'})</option>
                   ))}
                 </select>
               </div>

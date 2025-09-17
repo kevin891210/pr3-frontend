@@ -17,6 +17,9 @@ Object.keys(resources).forEach(lang => {
   if (translation.common) {
     Object.assign(translation, translation.common);
   }
+  if (translation.agentMonitorV2) {
+    Object.assign(translation, translation.agentMonitorV2);
+  }
 });
 
 i18n

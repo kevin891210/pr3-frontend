@@ -29,12 +29,10 @@ const Layout = ({ children }) => {
     { path: '/system', icon: Settings, label: t('system'), permission: 'system.read' },
     { path: '/brands', icon: Building2, label: t('brands'), permission: 'brand.read' },
     { path: '/users', icon: Users, label: t('users'), permission: 'user.read' },
-    { path: '/agent-monitor', icon: Monitor, label: t('agentMonitor'), permission: 'agent.read' },
-    { path: '/agent-monitor-v2', icon: Monitor, label: 'Agent Monitor V2', permission: 'agent.read' },
+    { path: '/agent-monitor-v2', icon: Monitor, label: t('agentMonitorV2'), permission: 'agent.read' },
     { path: '/schedule', icon: Calendar, label: t('schedules'), permission: 'schedule.read' },
     { path: '/leave', icon: FileText, label: t('leaves'), permission: 'leave.read' },
-    { path: '/notice', icon: Bell, label: t('notices'), permission: 'notice.read' },
-    { path: '/test', icon: User, label: 'Test', permission: null }
+    { path: '/notice', icon: Bell, label: t('notices'), permission: 'notice.read' }
   ];
 
   const handleLogout = () => {
