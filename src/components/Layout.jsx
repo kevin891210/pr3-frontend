@@ -32,8 +32,7 @@ const Layout = ({ children }) => {
     { path: '/agent-monitor', icon: Monitor, label: t('agentMonitor'), permission: 'agent.read' },
     { path: '/schedule', icon: Calendar, label: t('schedules'), permission: 'schedule.read' },
     { path: '/leave', icon: FileText, label: t('leaves'), permission: 'leave.read' },
-    { path: '/notice', icon: Bell, label: t('notices'), permission: 'notice.read' },
-    { path: '/agent', icon: User, label: t('agent'), permission: 'agent.read' }
+    { path: '/notice', icon: Bell, label: t('notices'), permission: 'notice.read' }
   ];
 
   const handleLogout = () => {
