@@ -85,6 +85,49 @@
       "draft": "Draft",
       "expired": "Expired"
     },
+    "system": {
+      "management": "System Management",
+      "description": "Manage system settings, monitoring and maintenance",
+      "stats": {
+        "totalUsers": "Total Users",
+        "activeUsers": "Active Users",
+        "systemUptime": "System Uptime"
+      },
+      "settings": {
+        "title": "System Settings",
+        "general": "General Settings",
+        "security": "Security Settings",
+        "notifications": "Notification Settings",
+        "maintenance": "Maintenance Mode",
+        "siteName": "Site Name",
+        "defaultLanguage": "Default Language",
+        "timezone": "Timezone",
+        "debugMode": "Debug Mode",
+        "maxLoginAttempts": "Max Login Attempts",
+        "sessionTimeout": "Session Timeout (hours)",
+        "emailNotifications": "Enable Email Notifications",
+        "maintenanceMode": "Maintenance Mode",
+        "maintenanceDescription": "When maintenance mode is enabled, only administrators can access the system",
+        "refreshFromBackend": "Refresh from Backend",
+        "saveSettings": "Save Settings",
+        "saving": "Saving...",
+        "settingsSaved": "Settings saved successfully",
+        "saveFailed": "Save failed",
+        "backendNotImplemented": "Backend API not implemented, settings cached locally"
+      },
+      "monitoring": {
+        "systemResources": "System Resources",
+        "diskUsage": "Disk Usage",
+        "memoryUsage": "Memory Usage",
+        "backupInfo": "Backup Information",
+        "lastBackup": "Last Backup",
+        "createBackup": "Create Backup Now",
+        "backupCreated": "System backup created successfully",
+        "backupFailed": "Backup failed",
+        "backupNotImplemented": "Backend API backup feature not implemented",
+        "unknown": "Unknown"
+      }
+    },
     "messages": {
       "loadFailed": "Load Failed",
       "addSuccess": "Add Success", 
@@ -178,6 +221,49 @@
       "draft": "草稿",
       "expired": "已過期"
     },
+    "system": {
+      "management": "系統管理",
+      "description": "管理系統設定、監控和維護",
+      "stats": {
+        "totalUsers": "總使用者數",
+        "activeUsers": "活躍使用者",
+        "systemUptime": "系統運行時間"
+      },
+      "settings": {
+        "title": "系統設定",
+        "general": "一般設定",
+        "security": "安全設定",
+        "notifications": "通知設定",
+        "maintenance": "維護模式",
+        "siteName": "網站名稱",
+        "defaultLanguage": "預設語言",
+        "timezone": "時區",
+        "debugMode": "除錯模式",
+        "maxLoginAttempts": "最大登入嘗試次數",
+        "sessionTimeout": "會話超時 (小時)",
+        "emailNotifications": "啟用 Email 通知",
+        "maintenanceMode": "維護模式",
+        "maintenanceDescription": "啟用維護模式後，只有管理員可以訪問系統",
+        "refreshFromBackend": "從後端刷新",
+        "saveSettings": "保存設定",
+        "saving": "保存中...",
+        "settingsSaved": "設定已保存",
+        "saveFailed": "保存失敗",
+        "backendNotImplemented": "後端 API 尚未實作，設定已暫存於前端"
+      },
+      "monitoring": {
+        "systemResources": "系統資源",
+        "diskUsage": "磁碟使用率",
+        "memoryUsage": "記憶體使用率",
+        "backupInfo": "備份資訊",
+        "lastBackup": "最後備份時間",
+        "createBackup": "立即備份",
+        "backupCreated": "系統備份已建立",
+        "backupFailed": "備份失敗",
+        "backupNotImplemented": "後端 API 尚未實作備份功能",
+        "unknown": "未知"
+      }
+    },
     "messages": {
       "loadFailed": "載入失敗",
       "addSuccess": "新增成功",
@@ -270,6 +356,49 @@
       "published": "公開中",
       "draft": "下書き",
       "expired": "期限切れ"
+    },
+    "system": {
+      "management": "システム管理",
+      "description": "システム設定、監視、メンテナンスの管理",
+      "stats": {
+        "totalUsers": "総ユーザー数",
+        "activeUsers": "アクティブユーザー",
+        "systemUptime": "システム稼働時間"
+      },
+      "settings": {
+        "title": "システム設定",
+        "general": "一般設定",
+        "security": "セキュリティ設定",
+        "notifications": "通知設定",
+        "maintenance": "メンテナンスモード",
+        "siteName": "サイト名",
+        "defaultLanguage": "デフォルト言語",
+        "timezone": "タイムゾーン",
+        "debugMode": "デバッグモード",
+        "maxLoginAttempts": "最大ログイン試行回数",
+        "sessionTimeout": "セッションタイムアウト (時間)",
+        "emailNotifications": "メール通知を有効にする",
+        "maintenanceMode": "メンテナンスモード",
+        "maintenanceDescription": "メンテナンスモードが有効な場合、管理者のみがシステムにアクセスできます",
+        "refreshFromBackend": "バックエンドから更新",
+        "saveSettings": "設定を保存",
+        "saving": "保存中...",
+        "settingsSaved": "設定が保存されました",
+        "saveFailed": "保存に失敗しました",
+        "backendNotImplemented": "バックエンドAPIが実装されていません、設定はローカルにキャッシュされました"
+      },
+      "monitoring": {
+        "systemResources": "システムリソース",
+        "diskUsage": "ディスク使用量",
+        "memoryUsage": "メモリ使用量",
+        "backupInfo": "バックアップ情報",
+        "lastBackup": "最後のバックアップ",
+        "createBackup": "今すぐバックアップ",
+        "backupCreated": "システムバックアップが作成されました",
+        "backupFailed": "バックアップに失敗しました",
+        "backupNotImplemented": "バックエンドAPIバックアップ機能が実装されていません",
+        "unknown": "不明"
+      }
     },
     "messages": {
       "loadFailed": "読み込み失敗",

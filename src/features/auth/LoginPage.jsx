@@ -56,9 +56,6 @@ const LoginPage = () => {
           <p className="text-center text-sm text-gray-600">{t('adminLogin')}</p>
         </CardHeader>
         <CardContent>
-          <div className="text-xs text-blue-600 bg-blue-50 p-2 rounded text-center mb-4">
-            Default Admin: admin@hrm.com / admin123
-          </div>
           <form onSubmit={handleLogin} className="space-y-4">
             <Input
               type="email"

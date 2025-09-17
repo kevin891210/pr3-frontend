@@ -6,8 +6,8 @@ export const useSystemStore = create(
   persist(
     (set, get) => ({
       settings: {
-        siteName: 'HRM 管理系統',
-        defaultLanguage: 'zh-TW',
+        siteName: 'HRM Management System',
+        defaultLanguage: 'zh',
         timezone: 'Asia/Taipei',
         debugMode: false,
         maxLoginAttempts: 5,
@@ -19,8 +19,8 @@ export const useSystemStore = create(
       stats: {
         totalUsers: 0,
         activeUsers: 0,
-        systemUptime: '0 天',
-        lastBackup: '未知',
+        systemUptime: '0 days',
+        lastBackup: 'Unknown',
         diskUsage: '0%',
         memoryUsage: '0%'
       },
@@ -32,16 +32,16 @@ export const useSystemStore = create(
       loadSettings: async (forceRefresh = false) => {
         const { isInitialized, lastSyncTime, settings } = get();
         
-        // 如果已初始化且不是強制刷新，且有有效設定數據
         if (isInitialized && !forceRefresh && settings && Object.keys(settings).length > 0) {
-          console.log('使用本地快取的系統設定');
+          // console.log('Using cached system settings');
           get().applySettingsToGlobal(settings);
           return settings;
         }
         
         set({ loading: true });
         try {
-          const data = await apiClient.getSystemSettings();
+          const response = await apiClient.getSystemSettings();
+          const data = response.data || response;
           set({ 
             settings: data, 
             lastSyncTime: Date.now(),
@@ -49,10 +49,14 @@ export const useSystemStore = create(
           });
           
           get().applySettingsToGlobal(data);
-          console.log('從後端載入系統設定成功');
+          // console.log('System settings loaded from backend successfully');
           return data;
         } catch (error) {
-          console.error('載入系統設定失敗:', error);
+          console.error('Failed to load system settings:', error);
+          // Use default settings if backend fails
+          const defaultSettings = get().settings;
+          get().applySettingsToGlobal(defaultSettings);
+          set({ isInitialized: true });
           throw error;
         } finally {
           set({ loading: false });
@@ -73,9 +77,8 @@ export const useSystemStore = create(
         set({ loading: true });
         try {
           const updatedSettings = { ...get().settings, ...newSettings };
-          await apiClient.updateSystemSettings(updatedSettings);
+          const response = await apiClient.updateSystemSettings(updatedSettings);
           
-          // Update本地Status和同步時間
           set({ 
             settings: updatedSettings,
             lastSyncTime: Date.now()
@@ -83,16 +86,15 @@ export const useSystemStore = create(
           
           get().applySettingsToGlobal(updatedSettings);
           
-          // 觸發全局Update事件
           window.dispatchEvent(new CustomEvent('systemSettingsUpdated', {
             detail: updatedSettings
           }));
           
-          console.log('系統設定已Save並同步到本地');
+          // console.log('System settings saved and synced successfully');
           return updatedSettings;
         } catch (error) {
-          console.error('Save設定失敗:', error);
-          // 如果後端失敗，仍Update本地Status
+          console.error('Failed to save settings:', error);
+          // If backend fails, still update local state
           const updatedSettings = { ...get().settings, ...newSettings };
           set({ settings: updatedSettings });
           
@@ -110,24 +112,32 @@ export const useSystemStore = create(
       
       loadStats: async () => {
         try {
-          const data = await apiClient.getSystemStats();
+          const response = await apiClient.getSystemStats();
+          const data = response.data || response;
           set({ stats: data });
+          // console.log('System stats loaded successfully');
           return data;
         } catch (error) {
-          console.error('載入系統統計失敗:', error);
-          throw error;
+          console.error('Failed to load system stats:', error);
+          // Keep existing stats if API fails
+          return get().stats;
         }
       },
       
       createBackup: async () => {
+        set({ loading: true });
         try {
-          const result = await apiClient.createBackup();
-          // 重新載入統計以Update備份時間
+          const response = await apiClient.createBackup();
+          const result = response.data || response;
+          // Reload stats to update backup time
           await get().loadStats();
+          // console.log('System backup created successfully');
           return result;
         } catch (error) {
-          console.error('建立備份失敗:', error);
+          console.error('Failed to create backup:', error);
           throw error;
+        } finally {
+          set({ loading: false });
         }
       },
       
@@ -137,7 +147,7 @@ export const useSystemStore = create(
         }));
       },
       
-      // 重置本地快取，強制下次載入時從後端獲取
+      // Reset local cache, force next load from backend
       resetCache: () => {
         set({ 
           isInitialized: false, 
@@ -145,12 +155,12 @@ export const useSystemStore = create(
         });
       },
       
-      // 檢查是否需要同步（可用於定期檢查）
+      // Check if sync is needed (for periodic checks)
       shouldSync: () => {
         const { lastSyncTime } = get();
         if (!lastSyncTime) return true;
         
-        // 超過 1 小時自動同步
+        // Auto sync after 1 hour
         const oneHour = 60 * 60 * 1000;
         return Date.now() - lastSyncTime > oneHour;
       }

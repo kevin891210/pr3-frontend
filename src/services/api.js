@@ -17,7 +17,7 @@ class ApiClient {
 
   async request(endpoint, options = {}) {
     const url = buildApiUrl(endpoint);
-    console.log(`API Request: ${options.method || 'GET'} ${url}`);
+    // console.log(`API Request: ${options.method || 'GET'} ${url}`);
     const config = {
       mode: 'cors',
       credentials: 'omit',
@@ -264,6 +264,21 @@ class ApiClient {
     });
   }
 
+  async getSystemHealth() {
+    return this.request('/api/v1/system/health');
+  }
+
+  async getSystemLogs(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return this.request(`/api/v1/system/logs${query ? `?${query}` : ''}`);
+  }
+
+  async restartSystem() {
+    return this.request('/api/v1/system/restart', {
+      method: 'POST',
+    });
+  }
+
   // Brand APIs - 使用快取機制
   /**
    * 取得 Brand 列表
@@ -274,12 +289,12 @@ class ApiClient {
     if (useCache && Object.keys(params).length === 0) {
       const cached = storageManager.getCache(CACHE_KEYS.BRANDS);
       if (cached && cached.length > 0) {
-        console.log('從快取載入 Brand 資料');
+        // console.log('從快取載入 Brand 資料');
         return { data: cached };
       }
     }
 
-    console.log('向 API 請求 Brand 資料');
+    // console.log('向 API 請求 Brand 資料');
     const query = new URLSearchParams(params).toString();
     const response = await this.request(`/api/v1/brands${query ? `?${query}` : ''}`);
     
@@ -302,12 +317,12 @@ class ApiClient {
     if (useCache && Object.keys(params).length === 0) {
       const cached = storageManager.getCache(cacheKey);
       if (cached && cached.length > 0) {
-        console.log('從快取載入監控 Brand 資料');
+        // console.log('從快取載入監控 Brand 資料');
         return { data: cached };
       }
     }
 
-    console.log('向 API 請求監控 Brand 資料');
+    // console.log('向 API 請求監控 Brand 資料');
     const query = new URLSearchParams(params).toString();
     const response = await this.request(`/api/v1/monitor-brands${query ? `?${query}` : ''}`);
     
@@ -367,12 +382,12 @@ class ApiClient {
     if (useCache) {
       const cached = storageManager.getCache(cacheKey);
       if (cached && cached.length > 0) {
-        console.log(`從快取載入 Brand ${brandId} 的 Workspace 資料`);
+        // console.log(`從快取載入 Brand ${brandId} 的 Workspace 資料`);
         return { data: cached };
       }
     }
 
-    console.log(`向 API 請求 Brand ${brandId} 的 Workspace 資料`);
+    // console.log(`向 API 請求 Brand ${brandId} 的 Workspace 資料`);
     const response = await this.request(`/api/v1/workspaces-by-brand/${brandId}`);
     
     // 儲存到快取
@@ -500,12 +515,12 @@ class ApiClient {
     if (useCache) {
       const cached = storageManager.getCache(CACHE_KEYS.LEAVE_TYPES);
       if (cached && cached.length > 0) {
-        console.log('從快取載入請假類型資料');
+        // console.log('從快取載入請假類型資料');
         return { data: cached };
       }
     }
 
-    console.log('向 API 請求請假類型資料');
+    // console.log('向 API 請求請假類型資料');
     const response = await this.request('/api/v1/leave-types');
     
     // 儲存到快取
@@ -570,7 +585,7 @@ class ApiClient {
    */
   clearAllCache() {
     storageManager.clearAllCache();
-    console.log('已清除所有快取資料');
+    // console.log('已清除所有快取資料');
   }
 }
 

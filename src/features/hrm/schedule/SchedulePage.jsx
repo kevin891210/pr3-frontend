@@ -3,6 +3,7 @@ import FullCalendarComponent from '../../../components/calendar/FullCalendarComp
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, Clock, Users, AlertTriangle, Edit, Trash2 } from 'lucide-react';
 import apiClient from '../../../services/api';
 import { ConfirmDialog, AlertDialog } from '../../../components/ui/dialog';
@@ -49,7 +50,7 @@ const SchedulePage = () => {
   const [categoryFormData, setCategoryFormData] = useState({ name: '' });
   const [deleteCategoryDialog, setDeleteCategoryDialog] = useState({ open: false, categoryId: null, categoryName: '' });
   const [deleteDialog, setDeleteDialog] = useState({ open: false, shiftId: null, shiftName: '' });
-  const [activeTab, setActiveTab] = useState('templates'); // 'templates', 'categories', or 'assignments'
+  const [mainTab, setMainTab] = useState('main'); // 'setup' or 'main'
   const [showAssignmentModal, setShowAssignmentModal] = useState(false);
 
   useEffect(() => {
@@ -594,20 +595,7 @@ End: ${new Date(event.end).toLocaleString()}`);
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Schedule Management</h1>
         <div className="flex gap-2">
-          {activeTab === 'assignments' && (
-            <Button 
-              className="flex items-center gap-2"
-              onClick={() => {
-                setAssignmentFormData({ brand_id: '', workspace_id: '', member_id: '', template_id: '', date: '', break_schedule: [] });
-                setWorkspaces([]);
-                setWorkspaceMembers([]);
-                setShowAssignmentModal(true);
-              }}
-            >
-              <Plus className="w-4 h-4" />
-              Assign Shift
-            </Button>
-          )}
+          {/* Removed activeTab condition since we're using mainTab now */}
         </div>
       </div>
 
@@ -628,158 +616,171 @@ End: ${new Date(event.end).toLocaleString()}`);
         </Card>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* 班別模板 */}
-        <div className="lg:col-span-1">
-          <Card>
-            <CardHeader>
-              <div className="flex border-b">
-                <button
-                  className={`px-4 py-2 text-sm font-medium ${activeTab === 'templates' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500'}`}
-                  onClick={() => setActiveTab('templates')}
-                >
-                  Shift Templates
-                </button>
-                <button
-                  className={`px-4 py-2 text-sm font-medium ${activeTab === 'categories' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500'}`}
-                  onClick={() => setActiveTab('categories')}
-                >
-                  Categories
-                </button>
-                <button
-                  className={`px-4 py-2 text-sm font-medium ${activeTab === 'assignments' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500'}`}
-                  onClick={() => setActiveTab('assignments')}
-                >
-                  Shift Management
-                </button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {activeTab === 'templates' ? (
-                <div>
-                  <Button 
-                    className="w-full flex items-center gap-2 mb-4"
-                    onClick={() => {
-                      setEditingShift(null);
-                      setShiftFormData({ name: '', category: '', start_time: '', end_time: '', is_cross_day: false, timezone: 'Asia/Taipei', total_break_minutes: 60, break_periods: [{ start_time: '12:00', end_time: '13:00' }] });
-                      setShowShiftModal(true);
-                    }}
-                  >
-                    <Plus className="w-4 h-4" />
-                    Add Shift Template
-                  </Button>
-                  <div>
-                    <p className="text-sm text-gray-600 mb-2">Templates: {shiftTemplates.length}</p>
-                    {shiftTemplates.length > 0 ? (
-                      shiftTemplates.map(template => {
-                        console.log('Mapping template:', template);
-                        return <ShiftTemplateCard key={template.id} template={template} />;
-                      })
-                    ) : (
+      <Tabs value={mainTab} onValueChange={setMainTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="main">Main</TabsTrigger>
+          <TabsTrigger value="setup">Setup</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="setup" className="space-y-4">
+          <div className="grid grid-cols-10 gap-4">
+            {/* Categories - 30% */}
+            <div className="col-span-3">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Categories</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <Button 
+                      className="w-full flex items-center gap-2"
+                      onClick={() => {
+                        setEditingCategory(null);
+                        setCategoryFormData({ name: '' });
+                        setShowCategoryModal(true);
+                      }}
+                    >
+                      <Plus className="w-4 h-4" />
+                      Add Category
+                    </Button>
+                    {shiftCategories.map(category => (
+                      <Card key={category.id} className="p-3">
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium text-sm">{category.name}</span>
+                          <div className="flex gap-1">
+                            <Button size="sm" variant="outline" onClick={() => handleEditCategory(category)}>
+                              <Edit className="w-3 h-3" />
+                            </Button>
+                            <Button size="sm" variant="destructive" onClick={() => handleDeleteCategory(category)}>
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+                    {shiftCategories.length === 0 && (
                       <EmptyState 
                         type="schedule" 
-                        title="No Shift Templates" 
-                        description="Click 'Add Shift Template' to create your first shift." 
+                        title="No Categories" 
+                        description="Click 'Add Category' to create your first category." 
                       />
                     )}
                   </div>
-                </div>
-              ) : activeTab === 'categories' ? (
-                <div className="space-y-3">
-                  <Button 
-                    className="w-full flex items-center gap-2 mb-4"
-                    onClick={() => {
-                      setEditingCategory(null);
-                      setCategoryFormData({ name: '' });
-                      setShowCategoryModal(true);
-                    }}
-                  >
-                    <Plus className="w-4 h-4" />
-                    Add Category
-                  </Button>
-                  {shiftCategories.map(category => (
-                    <Card key={category.id} className="p-3">
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium">{category.name}</span>
-                        <div className="flex gap-2">
-                          <Button size="sm" variant="outline" onClick={() => handleEditCategory(category)}>
-                            <Edit className="w-3 h-3" />
-                          </Button>
-                          <Button size="sm" variant="destructive" onClick={() => handleDeleteCategory(category)}>
-                            <Trash2 className="w-3 h-3" />
-                          </Button>
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
-                  {shiftCategories.length === 0 && (
-                    <EmptyState 
-                      type="schedule" 
-                      title="No Categories" 
-                      description="Click 'Add Category' to create your first category." 
-                    />
-                  )}
-                </div>
-              ) : (
-                <div>
-                  <Button 
-                    className="w-full flex items-center gap-2 mb-4"
-                    onClick={() => {
-                      setAssignmentFormData({ brand_id: '', workspace_id: '', member_id: '', template_id: '', date: '', break_schedule: [] });
-                      setWorkspaces([]);
-                      setWorkspaceMembers([]);
-                      setShowAssignmentModal(true);
-                    }}
-                  >
-                    <Plus className="w-4 h-4" />
-                    Assign Shift
-                  </Button>
-                  
-                  <div className="space-y-3">
-                    <h3 className="text-sm font-medium text-gray-700">Recent Assignments</h3>
-                    {Array.isArray(events) && events.length > 0 ? (
-                      events.slice(0, 5).map(event => (
-                        <Card key={event.id} className="p-3">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <div className="font-medium text-sm">{event.title}</div>
-                              <div className="text-xs text-gray-500">
-                                {new Date(event.start).toLocaleDateString()} - {new Date(event.start).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Shift Templates - 70% */}
+            <div className="col-span-7">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Shift Templates</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div>
+                    <Button 
+                      className="w-full flex items-center gap-2 mb-4"
+                      onClick={() => {
+                        setEditingShift(null);
+                        setShiftFormData({ name: '', category: '', start_time: '', end_time: '', is_cross_day: false, timezone: 'Asia/Taipei', total_break_minutes: 60, break_periods: [{ start_time: '12:00', end_time: '13:00' }] });
+                        setShowShiftModal(true);
+                      }}
+                    >
+                      <Plus className="w-4 h-4" />
+                      Add Template
+                    </Button>
+                    <div>
+                      {shiftTemplates.length > 0 ? (
+                        shiftTemplates.map(template => {
+                          return <ShiftTemplateCard key={template.id} template={template} />;
+                        })
+                      ) : (
+                        <EmptyState 
+                          type="schedule" 
+                          title="No Shift Templates" 
+                          description="Click 'Add Template' to create your first shift." 
+                        />
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="main" className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            {/* Shift Management Widget */}
+            <div className="lg:col-span-1">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Shift Management</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div>
+                    <Button 
+                      className="w-full flex items-center gap-2 mb-4"
+                      onClick={() => {
+                        setAssignmentFormData({ brand_id: '', workspace_id: '', member_id: '', template_id: '', date: '', break_schedule: [] });
+                        setWorkspaces([]);
+                        setWorkspaceMembers([]);
+                        setShowAssignmentModal(true);
+                      }}
+                    >
+                      <Plus className="w-4 h-4" />
+                      Assign Shift
+                    </Button>
+                    
+                    <div className="space-y-3">
+                      <h3 className="text-sm font-medium text-gray-700">Recent Assignments</h3>
+                      {Array.isArray(events) && events.length > 0 ? (
+                        events.slice(0, 5).map(event => (
+                          <Card key={event.id} className="p-3">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <div className="font-medium text-sm">{event.title}</div>
+                                <div className="text-xs text-gray-500">
+                                  {new Date(event.start).toLocaleDateString()} - {new Date(event.start).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                </div>
+                              </div>
+                              <div className="text-xs text-gray-400">
+                                {new Date(event.start).toLocaleDateString() === new Date().toLocaleDateString() ? 'Today' : ''}
                               </div>
                             </div>
-                            <div className="text-xs text-gray-400">
-                              {new Date(event.start).toLocaleDateString() === new Date().toLocaleDateString() ? 'Today' : ''}
-                            </div>
-                          </div>
-                        </Card>
-                      ))
-                    ) : (
-                      <EmptyState 
-                        type="schedule" 
-                        title="No Assignments" 
-                        description="No shift assignments found. Click 'Assign Shift' to create one." 
-                      />
-                    )}
+                          </Card>
+                        ))
+                      ) : (
+                        <EmptyState 
+                          type="schedule" 
+                          title="No Assignments" 
+                          description="No shift assignments found. Click 'Assign Shift' to create one." 
+                        />
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+                </CardContent>
+              </Card>
+            </div>
 
-        {/* 排班日曆 */}
-        <div className="lg:col-span-3">
-          <Card>
-            <CardContent className="p-6">
-              <FullCalendarComponent
-                events={events}
-                onDateClick={handleDateClick}
-                onEventClick={handleEventClick}
-              />
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+            {/* Calendar Widget */}
+            <div className="lg:col-span-3">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Schedule Calendar</CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <FullCalendarComponent
+                    events={events}
+                    onDateClick={handleDateClick}
+                    onEventClick={handleEventClick}
+                  />
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </TabsContent>
+      </Tabs>
 
       {/* Shift Assignment Modal */}
       {showAssignmentModal && (
