@@ -17,6 +17,8 @@ import NoticePage from './features/hrm/notice/NoticePage';
 import AgentPage from './features/agent/AgentPage';
 import AgentDashboardPage from './features/agent/AgentDashboardPage';
 import AgentMonitorPage from './features/monitor/AgentMonitorPage';
+import AgentMonitorV2Page from './features/monitor/AgentMonitorV2Page';
+import TestPage from './features/test/TestPage';
 import { useSystemStore } from './store/systemStore';
 
 function App() {
@@ -158,6 +160,14 @@ function App() {
         <Route 
           path="/agent-monitor" 
           element={<ProtectedRoute><AgentMonitorPage /></ProtectedRoute>} 
+        />
+        <Route 
+          path="/agent-monitor-v2" 
+          element={<ProtectedRoute><AgentMonitorV2Page /></ProtectedRoute>} 
+        />
+        <Route 
+          path="/test" 
+          element={<ProtectedRoute><TestPage /></ProtectedRoute>} 
         />
         <Route 
           path="/" 

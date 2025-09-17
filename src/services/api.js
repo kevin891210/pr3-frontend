@@ -279,6 +279,39 @@ class ApiClient {
     });
   }
 
+  // Third-party Brand APIs for Test page and Agent Monitor V2
+  async getThirdPartyTeams(brandApiUrl, brandToken, workspaceId) {
+    const url = `${brandApiUrl}/api/v1/teams?workspace_id=${workspaceId}&activate_state=active`;
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${brandToken}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    return response.json();
+  }
+
+  async getThirdPartyTeamCapacity(brandApiUrl, brandToken, teamId) {
+    const url = `${brandApiUrl}/api/v1/teams/${teamId}/workload-capacity`;
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${brandToken}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    return response.json();
+  }
+
   // Brand APIs - 使用快取機制
   /**
    * 取得 Brand 列表
