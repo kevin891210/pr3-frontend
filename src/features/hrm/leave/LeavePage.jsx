@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import apiClient from '../../../services/api';
-import { ConfirmDialog, AlertDialog } from '../../../components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../../components/ui/dialog.jsx';
 import EmptyState from '../../../components/ui/empty-state';
 
 const LeavePage = () => {
@@ -1051,7 +1051,7 @@ const LeavePage = () => {
                   <Input
                     type="number"
                     min="0"
-                    value={leaveTypeFormData.days_per_year}
+                    value={leaveTypeFormData.days_per_year || ''}
                     onChange={(e) => {
                       const value = parseInt(e.target.value) || 0;
                       setLeaveTypeFormData(prev => ({ ...prev, days_per_year: value }));
@@ -1109,24 +1109,30 @@ const LeavePage = () => {
       )}
 
       {/* Delete Leave Type Confirmation */}
-      <ConfirmDialog
-        open={deleteLeaveTypeDialog.open}
-        onClose={() => setDeleteLeaveTypeDialog({ open: false, typeId: null, typeName: '' })}
-        onConfirm={confirmDeleteLeaveType}
-        type="danger"
-        title={activeTab === 'categories' ? 'Delete Leave Category' : 'Delete Leave Type'}
-        message={`Are you sure you want to delete "${deleteLeaveTypeDialog.typeName}"? This action cannot be undone.`}
-        confirmText="Delete"
-        cancelText="Cancel"
-      />
+      <Dialog open={deleteLeaveTypeDialog.open} onOpenChange={(open) => !open && setDeleteLeaveTypeDialog({ open: false, typeId: null, typeName: '' })}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{activeTab === 'categories' ? 'Delete Leave Category' : 'Delete Leave Type'}</DialogTitle>
+          </DialogHeader>
+          <p>Are you sure you want to delete "{deleteLeaveTypeDialog.typeName}"? This action cannot be undone.</p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteLeaveTypeDialog({ open: false, typeId: null, typeName: '' })}>Cancel</Button>
+            <Button variant="destructive" onClick={confirmDeleteLeaveType}>Delete</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-      <AlertDialog
-        open={alertDialog.open}
-        onClose={() => setAlertDialog({ open: false, type: 'info', title: '', message: '' })}
-        type={alertDialog.type}
-        title={alertDialog.title}
-        message={alertDialog.message}
-      />
+      <Dialog open={alertDialog.open} onOpenChange={(open) => !open && setAlertDialog({ open: false, type: 'info', title: '', message: '' })}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{alertDialog.title}</DialogTitle>
+          </DialogHeader>
+          <p>{alertDialog.message}</p>
+          <DialogFooter>
+            <Button onClick={() => setAlertDialog({ open: false, type: 'info', title: '', message: '' })}>OK</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

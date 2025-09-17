@@ -1,157 +1,107 @@
-import React from 'react';
-import { X, AlertTriangle, CheckCircle, Info, XCircle } from 'lucide-react';
+import * as React from "react"
+import * as DialogPrimitive from "@radix-ui/react-dialog"
+import { X } from "lucide-react"
+import { cn } from "@/lib/utils.jsx"
 
-export const Dialog = ({ open, onClose, children }) => {
-  if (!open) return null;
+const Dialog = DialogPrimitive.Root
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-4 animate-in fade-in-0 zoom-in-95">
-        {children}
-      </div>
-    </div>
-  );
-};
+const DialogTrigger = DialogPrimitive.Trigger
 
-export const DialogContent = ({ children, className = "" }) => (
-  <div className={`p-6 ${className}`}>
-    {children}
-  </div>
-);
+const DialogPortal = DialogPrimitive.Portal
 
-export const DialogHeader = ({ children }) => (
-  <div className="flex items-center justify-between mb-4">
-    {children}
-  </div>
-);
+const DialogClose = DialogPrimitive.Close
 
-export const DialogTitle = ({ children, className = "" }) => (
-  <h3 className={`text-lg font-semibold text-gray-900 ${className}`}>
-    {children}
-  </h3>
-);
+const DialogOverlay = React.forwardRef(({ className, ...props }, ref) => (
+  <DialogPrimitive.Overlay
+    ref={ref}
+    className={cn(
+      "fixed inset-0 z-50 bg-background/80 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+      className
+    )}
+    {...props}
+  />
+))
+DialogOverlay.displayName = DialogPrimitive.Overlay.displayName
 
-export const DialogFooter = ({ children }) => (
-  <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
-    {children}
-  </div>
-);
+const DialogContent = React.forwardRef(({ className, children, ...props }, ref) => (
+  <DialogPortal>
+    <DialogOverlay />
+    <DialogPrimitive.Content
+      ref={ref}
+      className={cn(
+        "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg",
+        className
+      )}
+      {...props}
+    >
+      {children}
+      <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
+        <X className="h-4 w-4" />
+        <span className="sr-only">Close</span>
+      </DialogPrimitive.Close>
+    </DialogPrimitive.Content>
+  </DialogPortal>
+))
+DialogContent.displayName = DialogPrimitive.Content.displayName
 
-export const ConfirmDialog = ({ 
-  open, 
-  onClose, 
-  onConfirm, 
-  title = "確認Actions", 
-  message = "您確定要執行此Actions嗎？", 
-  type = "warning",
-  confirmText = "確認",
-  cancelText = "Cancel"
-}) => {
-  const icons = {
-    warning: <AlertTriangle className="w-6 h-6 text-amber-500" />,
-    danger: <XCircle className="w-6 h-6 text-red-500" />,
-    success: <CheckCircle className="w-6 h-6 text-green-500" />,
-    info: <Info className="w-6 h-6 text-blue-500" />
-  };
+const DialogHeader = ({
+  className,
+  ...props
+}) => (
+  <div
+    className={cn(
+      "flex flex-col space-y-1.5 text-center sm:text-left",
+      className
+    )}
+    {...props}
+  />
+)
+DialogHeader.displayName = "DialogHeader"
 
-  const colors = {
-    warning: "bg-amber-50 border-amber-200",
-    danger: "bg-red-50 border-red-200", 
-    success: "bg-green-50 border-green-200",
-    info: "bg-blue-50 border-blue-200"
-  };
+const DialogFooter = ({
+  className,
+  ...props
+}) => (
+  <div
+    className={cn(
+      "flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2",
+      className
+    )}
+    {...props}
+  />
+)
+DialogFooter.displayName = "DialogFooter"
 
-  return (
-    <Dialog open={open} onClose={onClose}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-3">
-            {icons[type]}
-            {title}
-          </DialogTitle>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-            <X className="w-5 h-5" />
-          </button>
-        </DialogHeader>
-        
-        <div className={`p-4 rounded-lg border ${colors[type]}`}>
-          <p className="text-gray-700">{message}</p>
-        </div>
+const DialogTitle = React.forwardRef(({ className, ...props }, ref) => (
+  <DialogPrimitive.Title
+    ref={ref}
+    className={cn(
+      "text-lg font-semibold leading-none tracking-tight",
+      className
+    )}
+    {...props}
+  />
+))
+DialogTitle.displayName = DialogPrimitive.Title.displayName
 
-        <DialogFooter>
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
-          >
-            {cancelText}
-          </button>
-          <button
-            onClick={() => {
-              onConfirm();
-              onClose();
-            }}
-            className={`px-4 py-2 text-white rounded-md transition-colors ${
-              type === 'danger' 
-                ? 'bg-red-600 hover:bg-red-700' 
-                : 'bg-blue-600 hover:bg-blue-700'
-            }`}
-          >
-            {confirmText}
-          </button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-};
+const DialogDescription = React.forwardRef(({ className, ...props }, ref) => (
+  <DialogPrimitive.Description
+    ref={ref}
+    className={cn("text-sm text-muted-foreground", className)}
+    {...props}
+  />
+))
+DialogDescription.displayName = DialogPrimitive.Description.displayName
 
-export const AlertDialog = ({ 
-  open, 
-  onClose, 
-  title = "提示", 
-  message, 
-  type = "info" 
-}) => {
-  const icons = {
-    warning: <AlertTriangle className="w-6 h-6 text-amber-500" />,
-    danger: <XCircle className="w-6 h-6 text-red-500" />,
-    success: <CheckCircle className="w-6 h-6 text-green-500" />,
-    info: <Info className="w-6 h-6 text-blue-500" />
-  };
-
-  const colors = {
-    warning: "bg-amber-50 border-amber-200",
-    danger: "bg-red-50 border-red-200",
-    success: "bg-green-50 border-green-200", 
-    info: "bg-blue-50 border-blue-200"
-  };
-
-  return (
-    <Dialog open={open} onClose={onClose}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-3">
-            {icons[type]}
-            {title}
-          </DialogTitle>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-            <X className="w-5 h-5" />
-          </button>
-        </DialogHeader>
-        
-        <div className={`p-4 rounded-lg border ${colors[type]}`}>
-          <p className="text-gray-700">{message}</p>
-        </div>
-
-        <DialogFooter>
-          <button
-            onClick={onClose}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
-          >
-            確定
-          </button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-};
+export {
+  Dialog,
+  DialogPortal,
+  DialogOverlay,
+  DialogClose,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+  DialogDescription,
+}

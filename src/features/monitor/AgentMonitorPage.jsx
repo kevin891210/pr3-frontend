@@ -7,7 +7,7 @@ import {
   Users, UserCheck, AlertTriangle, UserX 
 } from 'lucide-react';
 import apiClient from '../../services/api';
-import { AlertDialog } from '../../components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../components/ui/dialog.jsx';
 import AgentCard from '../../components/agent/AgentCard';
 import AgentGrid from '../../components/agent/AgentGrid';
 

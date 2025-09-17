@@ -25,6 +25,7 @@
 - **使用者管理**：角色權限與帳號管理
 - **排班管理**：視覺化日曆排班與班別模板
 - **請假管理**：請假申請、審核與餘額追蹤
+- **薪資管理**：薪資等級、計算引擎、調整記錄、統計報表
 - **公告管理**：系統公告發布與管理
 - **Agent Monitor**：即時 Agent 狀態監控
 
@@ -185,6 +186,35 @@ GET /api/v1/leave-balance/{member_id}
 }
 ```
 
+### 薪資管理 API
+**薪資等級管理**：
+```json
+GET /api/v1/salary/grades
+POST /api/v1/salary/grades
+PUT /api/v1/salary/grades/{id}
+DELETE /api/v1/salary/grades/{id}
+```
+
+**薪資計算**：
+```json
+POST /api/v1/salary/calculations
+{
+  "member_id": "string (required)",
+  "period_start": "string (required)",
+  "period_end": "string (required)",
+  "overtime_weekday": "number",
+  "overtime_weekend": "number",
+  "overtime_holiday": "number",
+  "absence_days": "number"
+}
+```
+
+**薪資報表**：
+```json
+GET /api/v1/salary/reports
+GET /api/v1/salary/statistics
+```
+
 ### 監控與維護
 ```bash
 # 健康檢查
@@ -237,6 +267,7 @@ npm run preview
 - ✅ Agent Dashboard 顯示真實資料
 - ✅ 排班管理日曆整合
 - ✅ Agent Monitor 即時狀態監控
+- ✅ 薪資管理系統 (等級、計算、調整、報表)
 - ✅ 多語系支援優化
 
 ### v0.1.0 (2024-01-15)

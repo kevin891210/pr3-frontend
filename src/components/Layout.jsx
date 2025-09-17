@@ -6,7 +6,7 @@ import { useSystemStore } from '../store/systemStore';
 import LanguageSwitcher from './LanguageSwitcher';
 import { 
   Menu, X, Home, Settings, Building2, Calendar, 
-  FileText, Bell, Users, LogOut, User, Monitor 
+  FileText, Bell, Users, LogOut, User, Monitor, DollarSign 
 } from 'lucide-react';
 
 const Layout = ({ children }) => {
@@ -32,6 +32,7 @@ const Layout = ({ children }) => {
     { path: '/agent-monitor-v2', icon: Monitor, label: t('agentMonitorV2'), permission: 'agent.read' },
     { path: '/schedule', icon: Calendar, label: t('schedules'), permission: 'schedule.read' },
     { path: '/leave', icon: FileText, label: t('leaves'), permission: 'leave.read' },
+    { path: '/salary', icon: DollarSign, label: t('navigation.salaryManagement'), permission: 'salary.read' },
     { path: '/notice', icon: Bell, label: t('notices'), permission: 'notice.read' }
   ];
 

@@ -19,6 +19,7 @@ import AgentDashboardPage from './features/agent/AgentDashboardPage';
 import AgentMonitorPage from './features/monitor/AgentMonitorPage';
 import AgentMonitorV2Page from './features/monitor/AgentMonitorV2Page';
 import TestPage from './features/test/TestPage.jsx';
+import SalaryPage from './features/hrm/salary/SalaryPage.jsx';
 import { useSystemStore } from './store/systemStore';
 
 function App() {
@@ -168,6 +169,10 @@ function App() {
         <Route 
           path="/test" 
           element={<ProtectedRoute><TestPage /></ProtectedRoute>} 
+        />
+        <Route 
+          path="/salary" 
+          element={<ProtectedRoute><SalaryPage /></ProtectedRoute>} 
         />
         <Route 
           path="/" 

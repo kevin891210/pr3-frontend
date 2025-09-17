@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Plus, Edit, Trash2, Search, Bell, Calendar } from 'lucide-react';
 import apiClient from '../../../services/api';
-import { ConfirmDialog, AlertDialog } from '../../../components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../../components/ui/dialog.jsx';
 import EmptyState from '../../../components/ui/empty-state';
 
 const NoticePage = () => {
@@ -446,25 +446,31 @@ const NoticePage = () => {
       )}
 
       {/* Delete Confirmation Dialog */}
-      <ConfirmDialog
-        open={deleteDialog.open}
-        onClose={() => setDeleteDialog({ open: false, noticeId: null, noticeTitle: '' })}
-        onConfirm={confirmDeleteNotice}
-        type="danger"
-        title="Delete Notice"
-        message={`Are you sure you want to delete "${deleteDialog.noticeTitle}"? This action cannot be undone.`}
-        confirmText={t('common.delete')}
-        cancelText={t('common.cancel')}
-      />
+      <Dialog open={deleteDialog.open} onOpenChange={(open) => !open && setDeleteDialog({ open: false, noticeId: null, noticeTitle: '' })}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Notice</DialogTitle>
+          </DialogHeader>
+          <p>Are you sure you want to delete "{deleteDialog.noticeTitle}"? This action cannot be undone.</p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteDialog({ open: false, noticeId: null, noticeTitle: '' })}>{t('common.cancel')}</Button>
+            <Button variant="destructive" onClick={confirmDeleteNotice}>{t('common.delete')}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Alert Dialog */}
-      <AlertDialog
-        open={alertDialog.open}
-        onClose={() => setAlertDialog({ open: false, type: 'info', title: '', message: '' })}
-        type={alertDialog.type}
-        title={alertDialog.title}
-        message={alertDialog.message}
-      />
+      <Dialog open={alertDialog.open} onOpenChange={(open) => !open && setAlertDialog({ open: false, type: 'info', title: '', message: '' })}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{alertDialog.title}</DialogTitle>
+          </DialogHeader>
+          <p>{alertDialog.message}</p>
+          <DialogFooter>
+            <Button onClick={() => setAlertDialog({ open: false, type: 'info', title: '', message: '' })}>OK</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

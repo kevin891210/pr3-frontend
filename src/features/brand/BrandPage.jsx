@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, Edit, Trash2, Search, Building2, Users, Bot, UserCheck } from 'lucide-react';
 import apiClient from '../../services/api';
-import { ConfirmDialog, AlertDialog } from '../../components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../components/ui/dialog.jsx';
 import EmptyState from '../../components/ui/empty-state';
 
 const BrandPage = () => {
@@ -833,25 +833,31 @@ const BrandPage = () => {
       )}
 
       {/* Delete確認對話框 */}
-      <ConfirmDialog
-        open={deleteDialog.open}
-        onClose={() => setDeleteDialog({ open: false, brandId: null, brandName: '' })}
-        onConfirm={confirmDeleteBrand}
-        type="danger"
-        title="Delete Brand"
-        message={`Are you sure you want to delete "${deleteDialog.brandName}"? This action cannot be undone.`}
-        confirmText="Delete"
-        cancelText="Cancel"
-      />
+      <Dialog open={deleteDialog.open} onOpenChange={(open) => !open && setDeleteDialog({ open: false, brandId: null, brandName: '' })}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Brand</DialogTitle>
+          </DialogHeader>
+          <p>Are you sure you want to delete "{deleteDialog.brandName}"? This action cannot be undone.</p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteDialog({ open: false, brandId: null, brandName: '' })}>Cancel</Button>
+            <Button variant="destructive" onClick={confirmDeleteBrand}>Delete</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* 提示對話框 */}
-      <AlertDialog
-        open={alertDialog.open}
-        onClose={() => setAlertDialog({ open: false, type: 'info', title: '', message: '' })}
-        type={alertDialog.type}
-        title={alertDialog.title}
-        message={alertDialog.message}
-      />
+      <Dialog open={alertDialog.open} onOpenChange={(open) => !open && setAlertDialog({ open: false, type: 'info', title: '', message: '' })}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{alertDialog.title}</DialogTitle>
+          </DialogHeader>
+          <p>{alertDialog.message}</p>
+          <DialogFooter>
+            <Button onClick={() => setAlertDialog({ open: false, type: 'info', title: '', message: '' })}>OK</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

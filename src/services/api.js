@@ -612,6 +612,171 @@ class ApiClient {
     return response;
   }
 
+  // Salary Management APIs
+  
+  // Salary Settings APIs
+  async getSalarySettings(workspaceId) {
+    return this.request(`/api/v1/salary/settings/${workspaceId}`);
+  }
+
+  async updateSalarySettings(workspaceId, settings) {
+    return this.request(`/api/v1/salary/settings/${workspaceId}`, {
+      method: 'POST',
+      body: settings,
+    });
+  }
+
+  // Salary Grades APIs
+  async getSalaryGrades() {
+    return this.request('/api/v1/salary/grades');
+  }
+
+  async createSalaryGrade(grade) {
+    return this.request('/api/v1/salary/grades', {
+      method: 'POST',
+      body: grade,
+    });
+  }
+
+  async updateSalaryGrade(gradeId, grade) {
+    return this.request(`/api/v1/salary/grades/${gradeId}`, {
+      method: 'PUT',
+      body: grade,
+    });
+  }
+
+  async deleteSalaryGrade(gradeId) {
+    return this.request(`/api/v1/salary/grades/${gradeId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Employee Salary APIs
+  async getEmployeeSalaries() {
+    return this.request('/api/v1/salary/employees');
+  }
+
+  async setEmployeeSalary(employeeId, salaryData) {
+    return this.request(`/api/v1/salary/employees/${employeeId}`, {
+      method: 'POST',
+      body: salaryData,
+    });
+  }
+
+  async updateEmployeeSalary(employeeId, salaryData) {
+    return this.request(`/api/v1/salary/employees/${employeeId}`, {
+      method: 'PUT',
+      body: salaryData,
+    });
+  }
+
+  async deleteEmployeeSalary(employeeId) {
+    return this.request(`/api/v1/salary/employees/${employeeId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getEmployeeSalaryHistory(employeeId) {
+    return this.request(`/api/v1/salary/employees/${employeeId}/history`);
+  }
+
+  // Salary Adjustment Type APIs
+  async getSalaryAdjustmentTypes() {
+    return this.request('/api/v1/salary/adjustment-types');
+  }
+
+  async createSalaryAdjustmentType(type) {
+    return this.request('/api/v1/salary/adjustment-types', {
+      method: 'POST',
+      body: type,
+    });
+  }
+
+  async updateSalaryAdjustmentType(typeId, type) {
+    return this.request(`/api/v1/salary/adjustment-types/${typeId}`, {
+      method: 'PUT',
+      body: type,
+    });
+  }
+
+  async deleteSalaryAdjustmentType(typeId) {
+    return this.request(`/api/v1/salary/adjustment-types/${typeId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Salary Adjustments APIs
+  async getSalaryAdjustments() {
+    return this.request('/api/v1/salary/adjustments');
+  }
+
+  async createSalaryAdjustment(adjustment) {
+    return this.request('/api/v1/salary/adjustments', {
+      method: 'POST',
+      body: adjustment,
+    });
+  }
+
+  async processSalaryAdjustment(adjustmentId) {
+    return this.request(`/api/v1/salary/adjustments/${adjustmentId}/process`, {
+      method: 'PUT',
+    });
+  }
+
+  async deleteSalaryAdjustment(adjustmentId) {
+    return this.request(`/api/v1/salary/adjustments/${adjustmentId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Salary Calculations APIs
+  async getSalaryCalculations() {
+    return this.request('/api/v1/salary/calculations');
+  }
+
+  async createSalaryCalculation(calculation) {
+    return this.request('/api/v1/salary/calculations', {
+      method: 'POST',
+      body: calculation,
+    });
+  }
+
+  async updateSalaryCalculation(calculationId, calculation) {
+    return this.request(`/api/v1/salary/calculations/${calculationId}`, {
+      method: 'PUT',
+      body: calculation,
+    });
+  }
+
+  async deleteSalaryCalculation(calculationId) {
+    return this.request(`/api/v1/salary/calculations/${calculationId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async confirmSalaryCalculation(calculationId) {
+    return this.request(`/api/v1/salary/calculations/${calculationId}/confirm`, {
+      method: 'PUT',
+    });
+  }
+
+  async paySalaryCalculation(calculationId) {
+    return this.request(`/api/v1/salary/calculations/${calculationId}/pay`, {
+      method: 'PUT',
+    });
+  }
+
+  // Salary Reports APIs
+  async getSalaryReports(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return this.request(`/api/v1/salary/reports${query ? `?${query}` : ''}`);
+  }
+
+  async getSalaryStatistics(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return this.request(`/api/v1/salary/statistics${query ? `?${query}` : ''}`);
+  }
+
   /**
    * 清除所有快取
    * 用於登出或需要強制重新載入資料時

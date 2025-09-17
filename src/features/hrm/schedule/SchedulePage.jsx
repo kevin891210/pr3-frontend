@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, Clock, Users, AlertTriangle, Edit, Trash2 } from 'lucide-react';
 import apiClient from '../../../services/api';
-import { ConfirmDialog, AlertDialog } from '../../../components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../../components/ui/dialog.jsx';
 import EmptyState from '../../../components/ui/empty-state';
 
 const SchedulePage = () => {
@@ -52,6 +52,8 @@ const SchedulePage = () => {
   const [deleteDialog, setDeleteDialog] = useState({ open: false, shiftId: null, shiftName: '' });
   const [mainTab, setMainTab] = useState('main'); // 'setup' or 'main'
   const [showAssignmentModal, setShowAssignmentModal] = useState(false);
+  const [editingAssignment, setEditingAssignment] = useState(null);
+  const [deleteAssignmentDialog, setDeleteAssignmentDialog] = useState({ open: false, assignmentId: null, assignmentTitle: '' });
 
   useEffect(() => {
     loadScheduleData();
@@ -388,6 +390,51 @@ End: ${new Date(event.end).toLocaleString()}`);
     loadWorkspaceMembers(workspaceId);
   };
 
+  // Handle assignment edit
+  const handleEditAssignment = (event) => {
+    setEditingAssignment(event);
+    setAssignmentFormData({
+      brand_id: '',
+      workspace_id: '',
+      member_id: event.extendedProps.memberId,
+      template_id: event.extendedProps.templateId,
+      date: event.extendedProps.assignmentDate,
+      break_schedule: []
+    });
+    setShowAssignmentModal(true);
+  };
+
+  // Handle assignment delete
+  const handleDeleteAssignment = (event) => {
+    setDeleteAssignmentDialog({
+      open: true,
+      assignmentId: event.id,
+      assignmentTitle: event.title
+    });
+  };
+
+  // Confirm delete assignment
+  const confirmDeleteAssignment = async () => {
+    try {
+      await apiClient.deleteScheduleAssignment(deleteAssignmentDialog.assignmentId);
+      setAlertDialog({
+        open: true,
+        type: 'success',
+        title: 'Delete Success',
+        message: 'Assignment deleted successfully'
+      });
+      await loadScheduleData();
+    } catch (error) {
+      setAlertDialog({
+        open: true,
+        type: 'danger',
+        title: 'Delete Failed',
+        message: `Failed to delete assignment: ${error.message}`
+      });
+    }
+    setDeleteAssignmentDialog({ open: false, assignmentId: null, assignmentTitle: '' });
+  };
+
   // Handle shift assignment submission
   const handleAssignmentSubmit = async () => {
     console.log('Form data before validation:', assignmentFormData);
@@ -425,17 +472,26 @@ End: ${new Date(event.end).toLocaleString()}`);
         date: typeof requestData.date
       });
       
-      const response = await apiClient.createScheduleAssignment(requestData);
-      const newAssignment = response.data || response;
-      
-      setAlertDialog({
-        open: true,
-        type: 'success',
-        title: 'Assignment Success',
-        message: 'Shift assigned successfully'
-      });
+      if (editingAssignment) {
+        const response = await apiClient.updateScheduleAssignment(editingAssignment.id, requestData);
+        setAlertDialog({
+          open: true,
+          type: 'success',
+          title: 'Update Success',
+          message: 'Assignment updated successfully'
+        });
+      } else {
+        const response = await apiClient.createScheduleAssignment(requestData);
+        setAlertDialog({
+          open: true,
+          type: 'success',
+          title: 'Assignment Success',
+          message: 'Shift assigned successfully'
+        });
+      }
       
       setShowAssignmentModal(false);
+      setEditingAssignment(null);
       setAssignmentFormData({ brand_id: '', workspace_id: '', member_id: '', template_id: '', date: '', break_schedule: [] });
       setWorkspaces([]);
       setWorkspaceMembers([]);
@@ -446,8 +502,8 @@ End: ${new Date(event.end).toLocaleString()}`);
       setAlertDialog({
         open: true,
         type: 'danger',
-        title: 'Assignment Failed',
-        message: `Failed to assign shift: ${error.message}`
+        title: editingAssignment ? 'Update Failed' : 'Assignment Failed',
+        message: `Failed to ${editingAssignment ? 'update' : 'assign'} shift: ${error.message}`
       });
     }
   };
@@ -722,6 +778,7 @@ End: ${new Date(event.end).toLocaleString()}`);
                     <Button 
                       className="w-full flex items-center gap-2 mb-4"
                       onClick={() => {
+                        setEditingAssignment(null);
                         setAssignmentFormData({ brand_id: '', workspace_id: '', member_id: '', template_id: '', date: '', break_schedule: [] });
                         setWorkspaces([]);
                         setWorkspaceMembers([]);
@@ -738,14 +795,19 @@ End: ${new Date(event.end).toLocaleString()}`);
                         events.slice(0, 5).map(event => (
                           <Card key={event.id} className="p-3">
                             <div className="flex items-center justify-between">
-                              <div>
+                              <div className="flex-1">
                                 <div className="font-medium text-sm">{event.title}</div>
                                 <div className="text-xs text-gray-500">
                                   {new Date(event.start).toLocaleDateString()} - {new Date(event.start).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                                 </div>
                               </div>
-                              <div className="text-xs text-gray-400">
-                                {new Date(event.start).toLocaleDateString() === new Date().toLocaleDateString() ? 'Today' : ''}
+                              <div className="flex items-center gap-1">
+                                <Button size="sm" variant="outline" onClick={() => handleEditAssignment(event)}>
+                                  <Edit className="w-3 h-3" />
+                                </Button>
+                                <Button size="sm" variant="destructive" onClick={() => handleDeleteAssignment(event)}>
+                                  <Trash2 className="w-3 h-3" />
+                                </Button>
                               </div>
                             </div>
                           </Card>
@@ -787,7 +849,7 @@ End: ${new Date(event.end).toLocaleString()}`);
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <Card className="w-full max-w-md mx-4">
             <CardHeader>
-              <CardTitle>Assign Shift</CardTitle>
+              <CardTitle>{editingAssignment ? 'Edit Assignment' : 'Assign Shift'}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
@@ -876,7 +938,7 @@ End: ${new Date(event.end).toLocaleString()}`);
                   className="flex-1"
                   onClick={handleAssignmentSubmit}
                 >
-                  Assign Shift
+                  {editingAssignment ? 'Update Assignment' : 'Assign Shift'}
                 </Button>
               </div>
             </CardContent>
@@ -929,8 +991,6 @@ End: ${new Date(event.end).toLocaleString()}`);
                     value={shiftFormData.start_time}
                     onChange={(e) => setShiftFormData(prev => ({ ...prev, start_time: e.target.value }))}
                     required
-                    readOnly={!!shiftFormData.category}
-                    className={shiftFormData.category ? 'bg-gray-100' : ''}
                   />
                 </div>
                 <div>
@@ -940,17 +1000,11 @@ End: ${new Date(event.end).toLocaleString()}`);
                     value={shiftFormData.end_time}
                     onChange={(e) => setShiftFormData(prev => ({ ...prev, end_time: e.target.value }))}
                     required
-                    readOnly={!!shiftFormData.category}
-                    className={shiftFormData.category ? 'bg-gray-100' : ''}
                   />
                 </div>
               </div>
               
-              {shiftFormData.category && (
-                <div className="text-sm text-blue-600 bg-blue-50 p-2 rounded">
-                  ℹ️ Times are automatically set based on the selected category
-                </div>
-              )}
+
 
               <div>
                 <label className="block text-sm font-medium mb-2">Timezone</label>
@@ -974,8 +1028,7 @@ End: ${new Date(event.end).toLocaleString()}`);
                   min="0"
                   value={shiftFormData.total_break_minutes}
                   onChange={(e) => setShiftFormData(prev => ({ ...prev, total_break_minutes: parseInt(e.target.value) || 0 }))}
-                  readOnly={!!shiftFormData.category}
-                  className={shiftFormData.category ? 'bg-gray-100' : ''}
+
                 />
               </div>
 
@@ -1037,9 +1090,9 @@ End: ${new Date(event.end).toLocaleString()}`);
                     type="checkbox"
                     checked={shiftFormData.is_cross_day}
                     onChange={(e) => setShiftFormData(prev => ({ ...prev, is_cross_day: e.target.checked }))}
-                    disabled={!!shiftFormData.category}
+
                   />
-                  <span className={`text-sm ${shiftFormData.category ? 'text-gray-400' : ''}`}>Cross Day Shift</span>
+                  <span className="text-sm">Cross Day Shift</span>
                 </label>
               </div>
               <div className="flex gap-2 pt-4">
@@ -1091,36 +1144,58 @@ End: ${new Date(event.end).toLocaleString()}`);
       )}
 
       {/* Delete Confirmation Dialog */}
-      <ConfirmDialog
-        open={deleteDialog.open}
-        onClose={() => setDeleteDialog({ open: false, shiftId: null, shiftName: '' })}
-        onConfirm={confirmDeleteShift}
-        type="danger"
-        title="Delete Shift Template"
-        message={`Are you sure you want to delete "${deleteDialog.shiftName}"? This action cannot be undone.`}
-        confirmText="Delete"
-        cancelText="Cancel"
-      />
+      <Dialog open={deleteDialog.open} onOpenChange={(open) => !open && setDeleteDialog({ open: false, shiftId: null, shiftName: '' })}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Shift Template</DialogTitle>
+          </DialogHeader>
+          <p>Are you sure you want to delete "{deleteDialog.shiftName}"? This action cannot be undone.</p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteDialog({ open: false, shiftId: null, shiftName: '' })}>Cancel</Button>
+            <Button variant="destructive" onClick={confirmDeleteShift}>Delete</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Category Confirmation Dialog */}
-      <ConfirmDialog
-        open={deleteCategoryDialog.open}
-        onClose={() => setDeleteCategoryDialog({ open: false, categoryId: null, categoryName: '' })}
-        onConfirm={confirmDeleteCategory}
-        type="danger"
-        title="Delete Category"
-        message={`Are you sure you want to delete "${deleteCategoryDialog.categoryName}"? This action cannot be undone.`}
-        confirmText="Delete"
-        cancelText="Cancel"
-      />
+      <Dialog open={deleteCategoryDialog.open} onOpenChange={(open) => !open && setDeleteCategoryDialog({ open: false, categoryId: null, categoryName: '' })}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Category</DialogTitle>
+          </DialogHeader>
+          <p>Are you sure you want to delete "{deleteCategoryDialog.categoryName}"? This action cannot be undone.</p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteCategoryDialog({ open: false, categoryId: null, categoryName: '' })}>Cancel</Button>
+            <Button variant="destructive" onClick={confirmDeleteCategory}>Delete</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-      <AlertDialog
-        open={alertDialog.open}
-        onClose={() => setAlertDialog({ open: false, type: 'info', title: '', message: '' })}
-        type={alertDialog.type}
-        title={alertDialog.title}
-        message={alertDialog.message}
-      />
+      {/* Delete Assignment Confirmation Dialog */}
+      <Dialog open={deleteAssignmentDialog.open} onOpenChange={(open) => !open && setDeleteAssignmentDialog({ open: false, assignmentId: null, assignmentTitle: '' })}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Assignment</DialogTitle>
+          </DialogHeader>
+          <p>Are you sure you want to delete "{deleteAssignmentDialog.assignmentTitle}"? This action cannot be undone.</p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteAssignmentDialog({ open: false, assignmentId: null, assignmentTitle: '' })}>Cancel</Button>
+            <Button variant="destructive" onClick={confirmDeleteAssignment}>Delete</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={alertDialog.open} onOpenChange={(open) => !open && setAlertDialog({ open: false, type: 'info', title: '', message: '' })}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{alertDialog.title}</DialogTitle>
+          </DialogHeader>
+          <p>{alertDialog.message}</p>
+          <DialogFooter>
+            <Button onClick={() => setAlertDialog({ open: false, type: 'info', title: '', message: '' })}>OK</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
