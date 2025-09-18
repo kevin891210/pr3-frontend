@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import apiClient from '../../../../services/api.js';
+import { useAuthStore } from '../../../../store/authStore.jsx';
+import { useToast } from '@/components/ui/toast.jsx';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card.jsx';
 import { Button } from '@/components/ui/button.jsx';
 import { Badge } from '@/components/ui/badge.jsx';
 import { Input } from '@/components/ui/input.jsx';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog.jsx';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog.jsx';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs.jsx';
 import { Plus, Check, Trash2, TrendingUp, TrendingDown, Gift, AlertTriangle, Settings, Edit } from 'lucide-react';
 
 const SalaryAdjustments = () => {
   const { t } = useTranslation();
+  const toast = useToast();
   const [activeTab, setActiveTab] = useState('adjustments');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isTypeDialogOpen, setIsTypeDialogOpen] = useState(false);
@@ -48,9 +51,12 @@ const SalaryAdjustments = () => {
       
       setEmployees(employeesRes.data || []);
       setAdjustmentTypes(typesRes.data || []);
-      setAdjustments(adjustmentsRes.data || []);
+      const adjustmentsData = adjustmentsRes.data || [];
+      console.log('Adjustments data:', adjustmentsData);
+      setAdjustments(adjustmentsData);
     } catch (error) {
       console.error('Failed to load adjustment data:', error);
+      toast.error('載入資料失敗：' + error.message);
     } finally {
       setLoading(false);
     }
@@ -81,12 +87,18 @@ const SalaryAdjustments = () => {
 
   const handleSave = async () => {
     try {
-      await apiClient.createSalaryAdjustment(formData);
+      const { user } = useAuthStore.getState();
+      const adjustmentData = {
+        ...formData,
+        created_by: user?.id || user?.user_id || 'system'
+      };
+      await apiClient.createSalaryAdjustment(adjustmentData);
       await loadData();
       setIsDialogOpen(false);
+      toast.success('薪資調整創建成功');
     } catch (error) {
       console.error('Failed to create adjustment:', error);
-      alert('創建失敗：' + error.message);
+      toast.error('創建失敗：' + error.message);
     }
   };
 
@@ -115,20 +127,23 @@ const SalaryAdjustments = () => {
       }
       await loadData();
       setIsTypeDialogOpen(false);
+      toast.success(editingType ? '調整類型更新成功' : '調整類型創建成功');
     } catch (error) {
       console.error('Failed to save adjustment type:', error);
-      alert('保存失敗：' + error.message);
+      toast.error('保存失敗：' + error.message);
     }
   };
 
   const handleDeleteType = async (id) => {
-    if (confirm('確定要刪除此調整類型嗎？')) {
+    const confirmed = await toast.confirm('確定要刪除此調整類型嗎？');
+    if (confirmed) {
       try {
         await apiClient.deleteSalaryAdjustmentType(id);
         await loadData();
+        toast.success('調整類型刪除成功');
       } catch (error) {
         console.error('Failed to delete adjustment type:', error);
-        alert('刪除失敗：' + error.message);
+        toast.error('刪除失敗：' + error.message);
       }
     }
   };
@@ -137,20 +152,23 @@ const SalaryAdjustments = () => {
     try {
       await apiClient.processSalaryAdjustment(id);
       await loadData();
+      toast.success('薪資調整處理成功');
     } catch (error) {
       console.error('Failed to process adjustment:', error);
-      alert('處理失敗：' + error.message);
+      toast.error('處理失敗：' + error.message);
     }
   };
 
   const handleDelete = async (id) => {
-    if (confirm('確定要刪除此薪資調整嗎？')) {
+    const confirmed = await toast.confirm('確定要刪除此薪資調整嗎？');
+    if (confirmed) {
       try {
         await apiClient.deleteSalaryAdjustment(id);
         await loadData();
+        toast.success('薪資調整刪除成功');
       } catch (error) {
         console.error('Failed to delete adjustment:', error);
-        alert('刪除失敗：' + error.message);
+        toast.error('刪除失敗：' + error.message);
       }
     }
   };
@@ -165,7 +183,8 @@ const SalaryAdjustments = () => {
   };
 
   const isPositiveAdjustment = (typeName) => {
-    return typeName.includes('獎金') || typeName.includes('津貼');
+    if (!typeName) return false;
+    return typeName.includes('獎金') || typeName.includes('津貼') || typeName.includes('bonus') || typeName.includes('allowance');
   };
 
   return (
@@ -219,47 +238,59 @@ const SalaryAdjustments = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {adjustments.map((adj) => (
-                        <tr key={adj.id} className="border-b hover:bg-gray-50">
-                          <td className="p-4">
-                            <span className="font-medium">{adj.member_name}</span>
-                          </td>
-                          <td className="p-4">
-                            <span>{adj.adjustment_type_name}</span>
-                          </td>
-                          <td className="p-4">
-                            <span className={`font-medium ${
-                              isPositiveAdjustment(adj.adjustment_type_name)
-                                ? 'text-green-600' 
-                                : 'text-red-600'
-                            }`}>
-                              {isPositiveAdjustment(adj.adjustment_type_name) ? '+' : '-'}
-                              ${adj.amount.toLocaleString()}
-                            </span>
-                          </td>
-                          <td className="p-4">
-                            <span className="text-sm">{adj.reason}</span>
-                          </td>
-                          <td className="p-4">
-                            <span className="text-sm">{adj.effective_date}</span>
-                          </td>
-                          <td className="p-4">
-                            {getStatusBadge(adj.status)}
-                          </td>
-                          <td className="p-4">
-                            <div className="flex gap-2">
-                              {adj.status === 'pending' && (
-                                <Button onClick={() => handleProcess(adj.id)} variant="ghost" size="sm">
-                                  <Check className="h-4 w-4" />
-                                </Button>
-                              )}
-                              <Button onClick={() => handleDelete(adj.id)} variant="ghost" size="sm" className="text-red-600">
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                      {adjustments.length === 0 ? (
+                        <tr>
+                          <td colSpan="7" className="p-8 text-center text-gray-500">
+                            <div className="flex flex-col items-center gap-2">
+                              <TrendingUp className="h-8 w-8 text-gray-300" />
+                              <p>沒有薪資調整記錄</p>
+                              <p className="text-sm">點擊「新增調整」來創建第一筆記錄</p>
                             </div>
                           </td>
                         </tr>
-                      ))}
+                      ) : (
+                        adjustments.map((adj) => (
+                          <tr key={adj.id} className="border-b hover:bg-gray-50">
+                            <td className="p-4">
+                              <span className="font-medium">{adj.member_name || adj.employee_name || 'N/A'}</span>
+                            </td>
+                            <td className="p-4">
+                              <span>{adj.adjustment_type_name || adj.type_name || 'N/A'}</span>
+                            </td>
+                            <td className="p-4">
+                              <span className={`font-medium ${
+                                isPositiveAdjustment(adj.adjustment_type_name || adj.type_name)
+                                  ? 'text-green-600' 
+                                  : 'text-red-600'
+                              }`}>
+                                {isPositiveAdjustment(adj.adjustment_type_name || adj.type_name) ? '+' : '-'}
+                                ${(adj.amount || 0).toLocaleString()}
+                              </span>
+                            </td>
+                            <td className="p-4">
+                              <span className="text-sm">{adj.reason || 'N/A'}</span>
+                            </td>
+                            <td className="p-4">
+                              <span className="text-sm">{adj.effective_date || 'N/A'}</span>
+                            </td>
+                            <td className="p-4">
+                              {getStatusBadge(adj.status)}
+                            </td>
+                            <td className="p-4">
+                              <div className="flex gap-2">
+                                {adj.status === 'pending' && (
+                                  <Button onClick={() => handleProcess(adj.id)} variant="ghost" size="sm">
+                                    <Check className="h-4 w-4" />
+                                  </Button>
+                                )}
+                                <Button onClick={() => handleDelete(adj.id)} variant="ghost" size="sm" className="text-red-600">
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -289,32 +320,44 @@ const SalaryAdjustments = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {adjustmentTypes.map((type) => (
-                      <tr key={type.id} className="border-b hover:bg-gray-50">
-                        <td className="p-4">
-                          <div className="flex items-center gap-2">
-                            {getTypeIcon(type.type_code)}
-                            <span className="font-medium">{type.type_name}</span>
-                          </div>
-                        </td>
-                        <td className="p-4">
-                          <Badge variant="outline">{type.type_code}</Badge>
-                        </td>
-                        <td className="p-4">
-                          <span className="text-sm text-gray-600">{type.description}</span>
-                        </td>
-                        <td className="p-4">
-                          <div className="flex gap-2">
-                            <Button onClick={() => handleEditType(type)} variant="ghost" size="sm">
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button onClick={() => handleDeleteType(type.id)} variant="ghost" size="sm" className="text-red-600">
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                    {adjustmentTypes.length === 0 ? (
+                      <tr>
+                        <td colSpan="4" className="p-8 text-center text-gray-500">
+                          <div className="flex flex-col items-center gap-2">
+                            <Settings className="h-8 w-8 text-gray-300" />
+                            <p>沒有調整類型</p>
+                            <p className="text-sm">點擊「新增類型」來創建第一個調整類型</p>
                           </div>
                         </td>
                       </tr>
-                    ))}
+                    ) : (
+                      adjustmentTypes.map((type) => (
+                        <tr key={type.id} className="border-b hover:bg-gray-50">
+                          <td className="p-4">
+                            <div className="flex items-center gap-2">
+                              {getTypeIcon(type.type_code)}
+                              <span className="font-medium">{type.type_name}</span>
+                            </div>
+                          </td>
+                          <td className="p-4">
+                            <Badge variant="outline">{type.type_code}</Badge>
+                          </td>
+                          <td className="p-4">
+                            <span className="text-sm text-gray-600">{type.description}</span>
+                          </td>
+                          <td className="p-4">
+                            <div className="flex gap-2">
+                              <Button onClick={() => handleEditType(type)} variant="ghost" size="sm">
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button onClick={() => handleDeleteType(type.id)} variant="ghost" size="sm" className="text-red-600">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -327,6 +370,7 @@ const SalaryAdjustments = () => {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>{t('salary.addAdjustment')}</DialogTitle>
+            <DialogDescription>{t('salary.adjustmentsDescription')}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -394,6 +438,7 @@ const SalaryAdjustments = () => {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>{editingType ? t('common.edit') : t('common.add')}{t('salary.adjustmentType')}</DialogTitle>
+            <DialogDescription>{t('salary.adjustmentTypeManagement')}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>

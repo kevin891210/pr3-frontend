@@ -3,12 +3,15 @@ import { useTranslation } from 'react-i18next';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card.jsx';
 import { Button } from '@/components/ui/button.jsx';
 import { Input } from '@/components/ui/input.jsx';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog.jsx';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { FileText, Download, Calendar, TrendingUp, Users, DollarSign } from 'lucide-react';
 import { apiClient } from '@/services/api.js';
+import { useAuthStore } from '@/store/authStore.jsx';
 
 const SalaryReports = () => {
   const { t } = useTranslation();
+  const { user } = useAuthStore();
   const [salaryTrend, setSalaryTrend] = useState([]);
   const [gradeDistribution, setGradeDistribution] = useState([]);
   const [statistics, setStatistics] = useState({
@@ -18,6 +21,12 @@ const SalaryReports = () => {
     growthRate: 0
   });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [selectedPeriod, setSelectedPeriod] = useState({
+    startDate: '',
+    endDate: ''
+  });
+  const [showPeriodDialog, setShowPeriodDialog] = useState(false);
 
   useEffect(() => {
     loadReportData();
@@ -26,9 +35,18 @@ const SalaryReports = () => {
   const loadReportData = async () => {
     try {
       setLoading(true);
+      setError(null);
+      
+      // Get workspace_id from user data or localStorage
+      const workspaceId = user?.workspace_id || localStorage.getItem('workspace_id') || '1';
+      
+      if (!workspaceId) {
+        throw new Error('Workspace ID not found. Please login again.');
+      }
+      
       const [reportsRes, statsRes] = await Promise.all([
-        apiClient.getSalaryReports(),
-        apiClient.getSalaryStatistics()
+        apiClient.getSalaryReports(workspaceId),
+        apiClient.getSalaryStatistics(workspaceId)
       ]);
       
       if (reportsRes.data) {
@@ -41,10 +59,41 @@ const SalaryReports = () => {
       }
     } catch (error) {
       console.error('Failed to load report data:', error);
+      setError(error.message);
       // Keep default empty arrays for graceful degradation
     } finally {
       setLoading(false);
     }
+  };
+
+  const handlePeriodSelect = () => {
+    // TODO: 實作期間篩選邏輯
+    console.log('Selected period:', selectedPeriod);
+    setShowPeriodDialog(false);
+  };
+
+  const handleExportReport = () => {
+    // TODO: 實作報表匯出邏輯
+    console.log('Exporting report...');
+    // 模擬匯出過程
+    const reportData = {
+      statistics,
+      salaryTrend,
+      gradeDistribution,
+      period: selectedPeriod
+    };
+    
+    // 創建並下載 JSON 文件（示例）
+    const dataStr = JSON.stringify(reportData, null, 2);
+    const dataBlob = new Blob([dataStr], {type: 'application/json'});
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `salary-report-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
@@ -57,11 +106,18 @@ const SalaryReports = () => {
           <p className="text-gray-600">{t('salary.reportsDescription')}</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            className="flex items-center gap-2"
+            onClick={() => setShowPeriodDialog(true)}
+          >
             <Calendar className="h-4 w-4" />
             {t('salary.selectPeriod')}
           </Button>
-          <Button className="flex items-center gap-2">
+          <Button 
+            className="flex items-center gap-2"
+            onClick={handleExportReport}
+          >
             <Download className="h-4 w-4" />
             {t('salary.exportReport')}
           </Button>
@@ -71,6 +127,11 @@ const SalaryReports = () => {
       {loading ? (
         <div className="text-center py-8">
           <div className="text-gray-500">{t('common.loading')}</div>
+        </div>
+      ) : error ? (
+        <div className="text-center py-8">
+          <div className="text-red-500">Error: {error}</div>
+          <Button onClick={loadReportData} className="mt-4">Retry</Button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -211,6 +272,36 @@ const SalaryReports = () => {
           </div>
         </CardContent>
       </Card>
+
+      <Dialog open={showPeriodDialog} onOpenChange={setShowPeriodDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t('salary.selectPeriod')}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">{t('salary.startDate')}</label>
+              <Input 
+                type="date" 
+                value={selectedPeriod.startDate}
+                onChange={(e) => setSelectedPeriod({...selectedPeriod, startDate: e.target.value})}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">{t('salary.endDate')}</label>
+              <Input 
+                type="date" 
+                value={selectedPeriod.endDate}
+                onChange={(e) => setSelectedPeriod({...selectedPeriod, endDate: e.target.value})}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowPeriodDialog(false)}>{t('common.cancel')}</Button>
+            <Button onClick={handlePeriodSelect}>{t('common.apply')}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { loadAppConfig, isInitialized } from './config/bootstrap';
 import { useAuthStore } from './store/authStore';
+import { ToastProvider } from './components/ui/toast.jsx';
 import './locales/i18n';
 import Layout from './components/Layout.jsx';
 import SetupPage from './features/setup/SetupPage';
@@ -20,6 +21,7 @@ import AgentMonitorPage from './features/monitor/AgentMonitorPage';
 import AgentMonitorV2Page from './features/monitor/AgentMonitorV2Page';
 import TestPage from './features/test/TestPage.jsx';
 import SalaryPage from './features/hrm/salary/SalaryPage.jsx';
+import AttendancePage from './features/hrm/attendance/AttendancePage.jsx';
 import { useSystemStore } from './store/systemStore';
 
 function App() {
@@ -102,7 +104,8 @@ function App() {
   }
 
   return (
-    <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+    <ToastProvider>
+      <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <Routes>
         <Route 
           path="/setup" 
@@ -175,6 +178,10 @@ function App() {
           element={<ProtectedRoute><SalaryPage /></ProtectedRoute>} 
         />
         <Route 
+          path="/attendance" 
+          element={<ProtectedRoute><AttendancePage /></ProtectedRoute>} 
+        />
+        <Route 
           path="/" 
           element={
             !initialized ? <Navigate to="/setup" /> : 
@@ -184,7 +191,8 @@ function App() {
         />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
-    </Router>
+      </Router>
+    </ToastProvider>
   );
 }
 

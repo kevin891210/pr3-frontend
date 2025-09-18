@@ -499,60 +499,7 @@ const AgentMonitorV2Page = () => {
           </CardContent>
         </Card>
 
-        {/* Brand Status */}
-        {selectedBrand && (
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('brandStatus')}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {(() => {
-                const brand = brands.find(b => b.id === selectedBrand);
-                if (!brand) return null;
-                return (
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span>{t('status')}:</span>
-                      <span className={`px-2 py-1 rounded-full text-xs ${
-                        brand.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                      }`}>
-                        {brand.status === 'active' ? t('online') : t('offline')}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>{t('apiConnection')}:</span>
-                      <span className={`px-2 py-1 rounded-full text-xs ${
-                        brand.api_status === 'online' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                      }`}>
-                        {brand.api_status === 'online' ? t('normal') : t('abnormal')}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>{t('workspaceCount')}:</span>
-                      <span className="font-medium">{brand.workspace_count || 0}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>{t('authStatus')}:</span>
-                      <span className={`px-2 py-1 rounded-full text-xs ${
-                        brand.auth_status === 'valid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {brand.auth_status === 'valid' ? t('valid') : t('invalid')}
-                      </span>
-                    </div>
-                    {brand.last_check && (
-                      <div className="flex justify-between">
-                        <span>{t('lastCheck')}:</span>
-                        <span className="text-gray-600">
-                          {new Date(brand.last_check).toLocaleString()}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                );
-              })()} 
-            </CardContent>
-          </Card>
-        )}
+
 
 
       </div>

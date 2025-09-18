@@ -180,13 +180,24 @@ class ApiClient {
     return this.request(`/api/v1/users/${userId}/leave-balance${year ? `?year=${year}` : ''}`);
   }
 
+
+
   async getLeaveRequests(params = {}) {
-    // 確保包含 member_id 參數
-    if (!params.member_id) {
-      throw new Error('member_id is required for leave requests');
-    }
     const query = new URLSearchParams(params).toString();
     return this.request(`/api/v1/leave-requests${query ? `?${query}` : ''}`);
+  }
+
+  async getLeaveRequestsByDateRange(memberId, startDate, endDate, status = null) {
+    const params = {
+      member_id: memberId,
+      start_date: startDate,
+      end_date: endDate
+    };
+    if (status) {
+      params.status = status;
+    }
+    const query = new URLSearchParams(params).toString();
+    return this.request(`/api/v1/leave-requests?${query}`);
   }
 
   async createLeaveRequest(request) {
@@ -730,8 +741,13 @@ class ApiClient {
   }
 
   // Salary Calculations APIs
-  async getSalaryCalculations() {
-    return this.request('/api/v1/salary/calculations');
+  async getSalaryCalculations(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return this.request(`/api/v1/salary/calculations${query ? `?${query}` : ''}`);
+  }
+
+  async getSalaryCalculationById(calculationId) {
+    return this.request(`/api/v1/salary/calculations/${calculationId}`);
   }
 
   async createSalaryCalculation(calculation) {
@@ -767,14 +783,125 @@ class ApiClient {
   }
 
   // Salary Reports APIs
-  async getSalaryReports(params = {}) {
-    const query = new URLSearchParams(params).toString();
-    return this.request(`/api/v1/salary/reports${query ? `?${query}` : ''}`);
+  async getSalaryReports(workspaceId, params = {}) {
+    if (!workspaceId) {
+      throw new Error('workspace_id is required for salary reports');
+    }
+    const allParams = { workspace_id: workspaceId, ...params };
+    const query = new URLSearchParams(allParams).toString();
+    return this.request(`/api/v1/salary/reports?${query}`);
   }
 
-  async getSalaryStatistics(params = {}) {
-    const query = new URLSearchParams(params).toString();
-    return this.request(`/api/v1/salary/statistics${query ? `?${query}` : ''}`);
+  async getSalaryStatistics(workspaceId, params = {}) {
+    if (!workspaceId) {
+      throw new Error('workspace_id is required for salary statistics');
+    }
+    const allParams = { workspace_id: workspaceId, ...params };
+    const query = new URLSearchParams(allParams).toString();
+    return this.request(`/api/v1/salary/statistics?${query}`);
+  }
+
+  // Attendance Management APIs
+  
+  // Attendance Records APIs
+  async getAttendanceRecords(workspaceId, params = {}) {
+    if (!workspaceId) {
+      throw new Error('workspace_id is required for attendance records');
+    }
+    const allParams = { workspace_id: workspaceId, ...params };
+    const query = new URLSearchParams(allParams).toString();
+    return this.request(`/api/v1/attendance/records?${query}`);
+  }
+
+  async createAttendanceRecord(record) {
+    return this.request('/api/v1/attendance/records', {
+      method: 'POST',
+      body: record,
+    });
+  }
+
+  async updateAttendanceRecord(recordId, record) {
+    return this.request(`/api/v1/attendance/records/${recordId}`, {
+      method: 'PUT',
+      body: record,
+    });
+  }
+
+  async deleteAttendanceRecord(recordId) {
+    return this.request(`/api/v1/attendance/records/${recordId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Attendance Settings APIs
+  async getAttendanceSettings(workspaceId) {
+    if (!workspaceId) {
+      throw new Error('workspace_id is required for attendance settings');
+    }
+    return this.request(`/api/v1/attendance/settings/${workspaceId}`);
+  }
+
+  async updateAttendanceSettings(workspaceId, settings) {
+    return this.request(`/api/v1/attendance/settings/${workspaceId}`, {
+      method: 'PUT',
+      body: settings,
+    });
+  }
+
+  // Attendance API Logs APIs
+  async getAttendanceApiLogs(workspaceId, params = {}) {
+    if (!workspaceId) {
+      throw new Error('workspace_id is required for attendance API logs');
+    }
+    const allParams = { workspace_id: workspaceId, ...params };
+    const query = new URLSearchParams(allParams).toString();
+    return this.request(`/api/v1/attendance/api-logs?${query}`);
+  }
+
+  async exportAttendanceProof(workspaceId, params = {}) {
+    if (!workspaceId) {
+      throw new Error('workspace_id is required for attendance proof export');
+    }
+    const allParams = { workspace_id: workspaceId, ...params };
+    const query = new URLSearchParams(allParams).toString();
+    return this.request(`/api/v1/attendance/export-proof?${query}`);
+  }
+
+  // Attendance Statistics APIs
+  async getAttendanceStatistics(workspaceId, params = {}) {
+    if (!workspaceId) {
+      throw new Error('workspace_id is required for attendance statistics');
+    }
+    const allParams = { workspace_id: workspaceId, ...params };
+    const query = new URLSearchParams(allParams).toString();
+    return this.request(`/api/v1/attendance/statistics?${query}`);
+  }
+
+  // Attendance Monitoring APIs
+  async getAttendanceMonitoring(workspaceId) {
+    if (!workspaceId) {
+      throw new Error('workspace_id is required for attendance monitoring');
+    }
+    return this.request(`/api/v1/attendance/monitoring/${workspaceId}`);
+  }
+
+  async testAttendanceApiConnection(workspaceId) {
+    if (!workspaceId) {
+      throw new Error('workspace_id is required for attendance API test');
+    }
+    return this.request(`/api/v1/attendance/test-connection/${workspaceId}`, {
+      method: 'POST',
+    });
+  }
+
+  async syncAttendanceData(workspaceId, params = {}) {
+    if (!workspaceId) {
+      throw new Error('workspace_id is required for attendance sync');
+    }
+    return this.request(`/api/v1/attendance/sync/${workspaceId}`, {
+      method: 'POST',
+      body: params,
+    });
   }
 
   /**

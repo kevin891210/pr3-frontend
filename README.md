@@ -26,6 +26,7 @@
 - **排班管理**：視覺化日曆排班與班別模板
 - **請假管理**：請假申請、審核與餘額追蹤
 - **薪資管理**：薪資等級、計算引擎、調整記錄、統計報表
+- **智能打卡系統**：自動化出勤監控、API 整合、異常偵測、統計報表、連線測試
 - **公告管理**：系統公告發布與管理
 - **Agent Monitor**：即時 Agent 狀態監控
 
@@ -82,6 +83,7 @@ src/
 │   └── hrm/            # HRM 核心功能
 │       ├── schedule/   # 排班管理
 │       ├── leave/      # 請假管理
+│       ├── attendance/ # 智能打卡系統
 │       └── notice/     # 公告管理
 ├── services/           # API 服務層
 ├── store/              # 狀態管理
@@ -105,7 +107,8 @@ ops/
   "api": {
     "baseUrl": "https://api.your-domain.com",
     "authPath": "/api/v1/auth/sign-in",
-    "workspacesPath": "/api/v1/users/workspaces",
+    "brandsPath": "/api/v1/brands",
+    "workspacesPath": "/api/v1/workspaces-by-brand",
     "botsPath": "/api/v1/bots/all-bots",
     "membersPath": "/api/v1/workspaces/:id/members"
   },
@@ -134,9 +137,12 @@ ops/
 - `GET /health` - 服務健康檢查
 - `POST /api/v1/auth/sign-in` - 管理者認證
 - `POST /api/v1/auth/agent-sign-in` - Agent 認證
-- `GET /api/v1/users/workspaces` - 工作區列表
+- `GET /api/v1/brands` - 品牌列表
+- `GET /api/v1/workspaces-by-brand/{brand_id}` - 品牌工作區列表
 - `GET /api/v1/bots/all-bots` - Bot 列表
 - `GET /api/v1/workspaces/:id/members` - 成員列表
+
+**注意**：`/api/v1/users/workspaces` 端點已棄用，改用品牌相關 API
 
 ### Agent 登入流程
 Agent 登入需要以下必要回應欄位：
@@ -154,6 +160,27 @@ Agent 登入需要以下必要回應欄位：
 ```
 
 ### 請假管理 API
+**查詢請假申請**：
+```json
+GET /api/v1/leave-requests
+參數:
+- member_id (可選): 指定用戶 ID，只返回該用戶的請假申請
+- status (可選): 過濾特定狀態的申請
+
+使用範例:
+# Agent 查詢自己的請假申請
+GET /api/v1/leave-requests?member_id=7a2d0624-96d2-4501-958c-55b52111b8e9
+
+# HRM 管理者查詢所有請假申請
+GET /api/v1/leave-requests
+
+# 查詢所有待審核的申請
+GET /api/v1/leave-requests?status=pending
+
+# 查詢特定用戶的待審核申請
+GET /api/v1/leave-requests?member_id=7a2d0624-96d2-4501-958c-55b52111b8e9&status=pending
+```
+
 **創建請假申請**：
 ```json
 POST /api/v1/leave-requests
@@ -169,12 +196,20 @@ POST /api/v1/leave-requests
 
 **查詢請假餘額**：
 ```json
-GET /api/v1/leave-balance/{member_id}
+# Agent 查詢個人餘額
+GET /api/v1/leave-balance/{member_id}?year=2025
+
+# HRM 管理者查詢所有員工餘額
+GET /api/v1/leave-balances?year=2025
+
+回應格式:
 {
   "success": true,
   "data": [
     {
       "id": "balance_id",
+      "member_id": "member_id",
+      "member_name": "Employee Name",
       "leave_type_id": "leave_type_id",
       "leave_type_name": "Annual Leave",
       "year": 2024,
@@ -207,12 +242,33 @@ POST /api/v1/salary/calculations
   "overtime_holiday": "number",
   "absence_days": "number"
 }
+
+GET /api/v1/salary/calculations/{id} - 查詢特定薪資計算詳情
 ```
 
 **薪資報表**：
 ```json
 GET /api/v1/salary/reports
 GET /api/v1/salary/statistics
+```
+
+### 智能打卡系統 API
+**監控與測試**：
+```json
+GET /api/v1/attendance/monitoring/{workspace_id} - 檢查監控狀態
+POST /api/v1/attendance/test-connection/{workspace_id} - 測試連線
+POST /api/v1/attendance/sync/{workspace_id} - 手動同步資料
+```
+
+**API 記錄查詢**：
+```json
+GET /api/v1/attendance/api-logs?workspace_id={id}&brand_id={id}
+參數:
+- workspace_id: 工作區 ID
+- brand_id: 品牌 ID
+- start_date: 開始日期
+- end_date: 結束日期
+- status: API 狀態 (success/error/timeout)
 ```
 
 ### 監控與維護
@@ -235,6 +291,37 @@ vim /path/to/app-config.json
 - [API 整合](./docs/API_INTEGRATION.md) - 後端 API 整合說明
 - [專案概覽](./docs/PROJECT_OVERVIEW.md) - 架構與功能概覽
 
+## 🐛 已知問題與解決方案
+
+### API 相關
+- **問題**：`/api/v1/users/workspaces` 返回 404
+- **解決方案**：改用 `/api/v1/brands` + `/api/v1/workspaces-by-brand/{brand_id}`
+
+### 日期顯示問題
+- **問題**：排班管理中顯示 "Invalid Date"
+- **解決方案**：已修復日期驗證和格式化邏輯
+
+### 薪資計算
+- **問題**：薪資詳情顯示過多零值欄位
+- **解決方案**：優化顯示邏輯，只顯示非零值
+
+## 🔧 開發注意事項
+
+### API 整合
+1. 使用 brands API 獲取 workspace 資料
+2. 所有 API 調用都需要錯誤處理
+3. 避免調用不存在的端點
+
+### 日期處理
+1. 所有日期都需要驗證有效性
+2. 使用 `isNaN(new Date())` 檢查日期
+3. 提供備用顯示選項
+
+### 用戶體驗
+1. 載入狀態指示器
+2. 錯誤訊息友善化
+3. 空狀態處理
+
 ## 🔧 開發工具
 
 ```bash
@@ -254,11 +341,39 @@ npm run preview
 
 ---
 
-**版本**: v0.2.0  
+**版本**: v0.4.0  
 **最後更新**: 2025-01-17  
 **技術支援**: 開發團隊
 
 ## 🔄 更新日誌
+
+### v0.4.0 (2025-01-17) - 最新版本
+- ✅ **智能打卡系統完整優化**
+  - API Records 支援 Brand/Workspace 兩級選擇
+  - 修復 workspace API 404 錯誤，改用 brands API
+  - 新增 Test Connection 功能標籤
+  - 實作監控狀態檢查、連線測試、手動同步功能
+- ✅ **排班管理系統修復**
+  - 修復 Recent Assignments 日期顯示問題
+  - 改善日期時間處理和驗證機制
+  - 優化事件創建的錯誤處理
+- ✅ **薪資管理系統增強**
+  - 薪資計算詳情對話框優化
+  - 支援 getSalaryCalculationById API 整合
+  - 清理顯示格式，只顯示非零值
+- ✅ **API 整合優化**
+  - 移除無效的 getAllLeaveBalances API 調用
+  - 優化 API 參數處理，避免 422 錯誤
+  - 改善錯誤處理和用戶體驗
+
+### v0.3.0 (2025-01-17)
+- ✅ 智能打卡系統完整實作
+- ✅ 打卡記錄管理 (篩選、查詢、統計)
+- ✅ 系統設定 (檢查參數、工作區配置)
+- ✅ API 記錄查詢 (日誌、證明文件匯出)
+- ✅ 監控中心 (系統健康、即時檢查)
+- ✅ 響應式設計 (桌面/平板/手機)
+- ✅ 多語系支援 (中英日)
 
 ### v0.2.0 (2025-01-17)
 - ✅ Agent 登入流程完整整合

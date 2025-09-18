@@ -133,9 +133,28 @@ const SchedulePage = () => {
           return null;
         }
         
-        // 組合日期和時間
-        const startDateTime = `${assignment.date}T${template.start_time}:00`;
-        const endDateTime = `${assignment.date}T${template.end_time}:00`;
+        // 組合日期和時間，確保格式正確
+        const assignmentDate = assignment.date;
+        const startTime = template.start_time;
+        const endTime = template.end_time;
+        
+        // 驗證日期和時間格式
+        if (!assignmentDate || !startTime || !endTime) {
+          console.warn('Missing date or time data for assignment:', assignment);
+          return null;
+        }
+        
+        const startDateTime = `${assignmentDate}T${startTime}:00`;
+        const endDateTime = `${assignmentDate}T${endTime}:00`;
+        
+        // 驗證生成的日期時間是否有效
+        const startDate = new Date(startDateTime);
+        const endDate = new Date(endDateTime);
+        
+        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+          console.warn('Invalid date/time generated:', { startDateTime, endDateTime, assignment });
+          return null;
+        }
         
         const event = {
           id: assignment.id,
@@ -261,14 +280,16 @@ End: ${new Date(event.end).toLocaleString()}`);
   const handleEditShift = (template) => {
     setEditingShift(template);
     setShiftFormData({
-      name: template.name,
+      name: template.name || '',
       category: template.category || '',
-      start_time: template.start_time,
-      end_time: template.end_time,
-      is_cross_day: template.is_cross_day,
+      start_time: template.start_time || '',
+      end_time: template.end_time || '',
+      is_cross_day: template.is_cross_day || false,
       timezone: template.timezone || 'Asia/Taipei',
       total_break_minutes: template.total_break_minutes || 60,
-      break_periods: template.break_periods || [{ start_time: '12:00', end_time: '13:00' }]
+      break_periods: template.break_periods || [{ start_time: '12:00', end_time: '13:00' }],
+      min_staff: template.min_staff || 1,
+      max_staff: template.max_staff || 5
     });
     setShowShiftModal(true);
   };
@@ -798,7 +819,11 @@ End: ${new Date(event.end).toLocaleString()}`);
                               <div className="flex-1">
                                 <div className="font-medium text-sm">{event.title}</div>
                                 <div className="text-xs text-gray-500">
-                                  {new Date(event.start).toLocaleDateString()} - {new Date(event.start).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                  {event.start && !isNaN(new Date(event.start)) ? (
+                                    `${new Date(event.start).toLocaleDateString()} - ${new Date(event.start).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`
+                                  ) : (
+                                    event.extendedProps?.assignmentDate || 'No Date'
+                                  )}
                                 </div>
                               </div>
                               <div className="flex items-center gap-1">

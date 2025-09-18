@@ -358,7 +358,7 @@ const BatchImportModal = ({ isOpen, onClose, onImport, salaryGrades }) => {
                   })}
                 >
                   <option value="">{t('salary.selectGrade')}</option>
-                  {salaryGrades.map(grade => (
+                  {salaryGrades.filter(grade => grade.is_active).map(grade => (
                     <option key={grade.id} value={grade.id}>
                       {grade.grade_name} - ${grade.base_salary?.toLocaleString()}
                     </option>

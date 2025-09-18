@@ -82,8 +82,8 @@ const EmployeeSalary = () => {
   };
 
   const filteredEmployees = employees.filter(emp => 
-    emp.member_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    emp.member_email.toLowerCase().includes(searchTerm.toLowerCase())
+    (emp.member_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (emp.member_email || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleCreate = () => {
@@ -102,7 +102,7 @@ const EmployeeSalary = () => {
     setFormData({
       member_name: employee.member_name,
       member_email: employee.member_email,
-      salary_grade_id: employee.salary_grade.id || '',
+      salary_grade_id: employee.salary_grade_id || employee.salary_grade?.id || '',
       effective_date: employee.effective_date
     });
     setIsDialogOpen(true);
@@ -207,12 +207,17 @@ const EmployeeSalary = () => {
 
   const handleViewHistory = async (employee) => {
     try {
-      const response = await apiClient.getEmployeeSalaryHistory(employee.id);
+      const memberId = employee.member_id || employee.id;
+      const response = await apiClient.getEmployeeSalaryHistory(memberId);
+      
+      // 使用 API 回應中的員工資訊，如果沒有則使用原始員工資料
+      const employeeData = response.data?.employee || employee;
+      
       setSalaryHistory(prev => ({
         ...prev,
-        [employee.id]: response.data || []
+        [employee.id]: response.data?.history || []
       }));
-      setSelectedEmployeeHistory(employee);
+      setSelectedEmployeeHistory(employeeData);
       setShowHistoryDialog(true);
     } catch (error) {
       console.error('Failed to load salary history:', error);
@@ -361,10 +366,35 @@ const EmployeeSalary = () => {
                       </div>
                     </td>
                     <td className="p-4">
-                      <Badge variant="outline">{employee.salary_grade?.grade_name || 'N/A'}</Badge>
+                      <Badge 
+                        variant="outline"
+                        className={(() => {
+                          const grade = salaryGrades.find(g => g.id === employee.salary_grade_id);
+                          const gradeLevel = grade?.grade_level || employee.salary_grade?.grade_level || 0;
+                          const colors = [
+                            'bg-blue-100 text-blue-800 border-blue-300',
+                            'bg-green-100 text-green-800 border-green-300', 
+                            'bg-purple-100 text-purple-800 border-purple-300',
+                            'bg-orange-100 text-orange-800 border-orange-300',
+                            'bg-pink-100 text-pink-800 border-pink-300',
+                            'bg-indigo-100 text-indigo-800 border-indigo-300'
+                          ];
+                          return colors[(gradeLevel - 1) % colors.length] || 'bg-gray-100 text-gray-800 border-gray-300';
+                        })()}
+                      >
+                        {(() => {
+                          const grade = salaryGrades.find(g => g.id === employee.salary_grade_id);
+                          return grade?.grade_name || employee.salary_grade?.grade_name || 'N/A';
+                        })()}
+                      </Badge>
                     </td>
                     <td className="p-4">
-                      <span className="font-medium">${employee.salary_grade?.base_salary?.toLocaleString() || '0'}</span>
+                      <span className="font-medium">
+                        ${(() => {
+                          const grade = salaryGrades.find(g => g.id === employee.salary_grade_id);
+                          return (grade?.base_salary || employee.salary_grade?.base_salary || 0).toLocaleString();
+                        })()}
+                      </span>
                     </td>
                     <td className="p-4">
                       <span className="text-sm">{employee.effective_date}</span>
@@ -523,9 +553,13 @@ const EmployeeSalary = () => {
           <div className="space-y-4">
             {selectedEmployeeHistory && (
               <div className="bg-gray-50 p-3 rounded-md">
-                <div className="text-sm text-gray-600">員工信箱：{selectedEmployeeHistory.member_email}</div>
-                <div className="text-sm text-gray-600">目前薪資等級：{selectedEmployeeHistory.salary_grade?.grade_name}</div>
-                <div className="text-sm text-gray-600">目前基本薪資：${selectedEmployeeHistory.salary_grade?.base_salary?.toLocaleString()}</div>
+                <div className="text-sm text-gray-600">員工信箱：{selectedEmployeeHistory.member_email || 'N/A'}</div>
+                <div className="text-sm text-gray-600">
+                  目前薪資等級：{selectedEmployeeHistory.current_salary_grade?.grade_name || 'N/A'}
+                </div>
+                <div className="text-sm text-gray-600">
+                  目前基本薪資：${(selectedEmployeeHistory.current_salary_grade?.base_salary || 0).toLocaleString()}
+                </div>
               </div>
             )}
             <div className="max-h-96 overflow-y-auto">
