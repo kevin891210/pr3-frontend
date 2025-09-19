@@ -150,8 +150,23 @@ const EmployeeSalary = () => {
     }
   };
 
-  const toggleStatus = (id) => {
-    setEmployees(employees.map(e => e.id === id ? { ...e, is_active: !e.is_active } : e));
+  const toggleStatus = async (id) => {
+    try {
+      const employee = employees.find(e => e.id === id);
+      const newStatus = !employee.is_active;
+      
+      // Update in database
+      await apiClient.updateEmployeeSalary(id, {
+        ...employee,
+        is_active: newStatus
+      });
+      
+      // Update local state
+      setEmployees(employees.map(e => e.id === id ? { ...e, is_active: newStatus } : e));
+    } catch (error) {
+      console.error('Failed to update employee status:', error);
+      alert('更新狀態失敗: ' + error.message);
+    }
   };
 
   const handleSelectEmployee = (employeeId) => {
