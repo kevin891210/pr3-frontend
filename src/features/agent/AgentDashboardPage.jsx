@@ -15,6 +15,7 @@ const AgentDashboardPage = () => {
   const [schedule, setSchedule] = useState([]);
   const [notices, setNotices] = useState([]);
   const [leaveBalance, setLeaveBalance] = useState({});
+  const [leaveRequests, setLeaveRequests] = useState([]);
   const [showLeaveModal, setShowLeaveModal] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -25,32 +26,67 @@ const AgentDashboardPage = () => {
   const loadAgentData = async () => {
     try {
       const today = new Date().toISOString().split('T')[0];
-      const [profileRes, scheduleRes, noticesRes, balanceRes] = await Promise.all([
+      const memberId = localStorage.getItem('member_id') || user?.member_id || user?.id;
+      
+      const [profileRes, noticesRes] = await Promise.all([
         apiClient.getAgentProfile(user?.id, user?.workspace_id),
-        apiClient.getAgentSchedule(user?.id, today),
-        apiClient.getAgentNotices(user?.workspace_id),
-apiClient.getAgentLeaveBalance(localStorage.getItem('member_id') || user?.member_id)
+        apiClient.getAgentNotices(user?.workspace_id)
       ]);
 
       setProfile(profileRes.data || profileRes);
-      setSchedule(Array.isArray(scheduleRes.data) ? scheduleRes.data : (scheduleRes.data ? [scheduleRes.data] : []));
       setNotices(Array.isArray(noticesRes.data) ? noticesRes.data : (noticesRes.data ? [noticesRes.data] : []));
-      const balanceData = balanceRes.data || balanceRes || [];
-      // Handle both array and object formats
-      if (Array.isArray(balanceData)) {
-        setLeaveBalance(balanceData);
-      } else if (balanceData && typeof balanceData === 'object') {
-        // Convert object format to array format for display
-        const balanceArray = Object.entries(balanceData).map(([key, value]) => ({
-          id: key,
-          leave_type_name: key.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase()),
-          remaining_days: value.remaining || 0,
-          total_days: value.total || 0,
-          used_days: value.used || 0
-        }));
-        setLeaveBalance(balanceArray);
-      } else {
+      
+      // Load schedule separately with error handling
+      try {
+        const scheduleRes = await apiClient.getScheduleAssignments({ 
+          member_id: memberId,
+          start_date: today,
+          end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+        });
+        const scheduleData = scheduleRes?.data || [];
+        
+        if (Array.isArray(scheduleData) && scheduleData.length > 0) {
+          // Transform schedule data for calendar display
+          const calendarEvents = scheduleData.map(assignment => ({
+            id: assignment.id,
+            title: assignment.shift_name || 'Work Shift',
+            start: assignment.start_datetime || assignment.date,
+            end: assignment.end_datetime || assignment.date,
+            backgroundColor: '#3b82f6',
+            borderColor: '#1d4ed8'
+          }));
+          setSchedule(calendarEvents);
+        } else {
+          setSchedule([]);
+        }
+      } catch (scheduleError) {
+        console.warn('Failed to load schedule:', scheduleError.message);
+        setSchedule([]);
+      }
+      
+      // Load leave balance separately with error handling
+      try {
+        const balanceRes = await apiClient.getAgentLeaveBalance(memberId);
+        const balanceData = balanceRes?.data || [];
+        
+        if (Array.isArray(balanceData) && balanceData.length > 0) {
+          setLeaveBalance(balanceData);
+        } else {
+          setLeaveBalance([]);
+        }
+      } catch (balanceError) {
+        console.warn('Failed to load leave balance:', balanceError.message);
         setLeaveBalance([]);
+      }
+      
+      // Load leave requests
+      try {
+        const requestsRes = await apiClient.getLeaveRequests({ member_id: memberId });
+        const requestsData = requestsRes?.data || [];
+        setLeaveRequests(Array.isArray(requestsData) ? requestsData : []);
+      } catch (requestsError) {
+        console.warn('Failed to load leave requests:', requestsError.message);
+        setLeaveRequests([]);
       }
     } catch (error) {
       console.error('Failed to load agent data:', error);
@@ -145,6 +181,42 @@ apiClient.getAgentLeaveBalance(localStorage.getItem('member_id') || user?.member
                 >
                   Request Leave
                 </Button>
+              </CardContent>
+            </Card>
+
+            {/* Leave Requests */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="w-5 h-5" />
+                  My Leave Requests
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {Array.isArray(leaveRequests) && leaveRequests.length > 0 ? (
+                  <div className="space-y-3">
+                    {leaveRequests.slice(0, 3).map((request) => (
+                      <div key={request.id} className="p-3 border rounded-lg">
+                        <div className="flex justify-between items-start mb-2">
+                          <h4 className="font-medium">{request.leave_type_name}</h4>
+                          <span className={`px-2 py-1 text-xs rounded-full ${
+                            request.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                            request.status === 'approved' ? 'bg-green-100 text-green-800' :
+                            'bg-red-100 text-red-800'
+                          }`}>
+                            {request.status}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-600">
+                          {new Date(request.start_date).toLocaleDateString()} - {new Date(request.end_date).toLocaleDateString()}
+                        </p>
+                        <p className="text-sm text-gray-600">{request.days} days</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500">No leave requests</p>
+                )}
               </CardContent>
             </Card>
 
