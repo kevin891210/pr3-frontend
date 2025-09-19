@@ -81,13 +81,14 @@ const LeavePage = () => {
             const balanceResponse = await apiClient.getLeaveBalance(memberId, new Date().getFullYear());
             const balanceData = balanceResponse.data || balanceResponse;
             setUserBalance(balanceData || {});
-        } catch (error) {
-          console.warn('Leave balance API not available, using fallback data:', error.message);
-          setUserBalance({
-            'ANNUAL': { total: 14, used: 0, remaining: 14 },
-            'SICK': { total: 7, used: 0, remaining: 7 },
-            'PERSONAL': { total: 3, used: 0, remaining: 3 }
-          });
+          } catch (error) {
+            console.warn('Leave balance API not available, using fallback data:', error.message);
+            setUserBalance({
+              'ANNUAL': { total: 14, used: 0, remaining: 14 },
+              'SICK': { total: 7, used: 0, remaining: 7 },
+              'PERSONAL': { total: 3, used: 0, remaining: 3 }
+            });
+          }
         }
       } else {
         // HRM 管理者使用預設餘額資料
