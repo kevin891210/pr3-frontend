@@ -54,7 +54,6 @@ const UserPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Form data before submit:', formData);
     
     // 檢查新增使用者時是否有密碼
     if (!editingUser && !formData.password) {
@@ -79,7 +78,6 @@ const UserPage = () => {
           message: '使用者資料已Update'
         });
       } else {
-        console.log('Creating user with data:', formData);
         const response = await apiClient.createUser(formData);
         const newUser = response.data || response;
         setUsers([...users, newUser]);

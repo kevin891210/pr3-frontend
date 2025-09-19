@@ -101,7 +101,6 @@ const SalaryCalculation = () => {
   const loadCalculations = async (page = 1, pageSize = pagination.pageSize) => {
     try {
       const response = await apiClient.getSalaryCalculations({ page, limit: pageSize });
-      console.log('Loaded calculations:', response);
       // 保持原始狀態值（小寫）以匹配資料庫
       const calculations = response.data || [];
       setCalculations(calculations);

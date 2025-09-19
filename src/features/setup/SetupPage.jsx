@@ -165,8 +165,6 @@ const SetupPage = () => {
       // 觸發配置Update事件
       window.dispatchEvent(new Event('configUpdated'));
       
-      console.log('配置已Save，準備跳轉');
-      
       // 等待StatusUpdate後跳轉
       setTimeout(() => {
         navigate('/login');
@@ -180,7 +178,6 @@ const SetupPage = () => {
               email: config.adminEmail,
               password: config.adminPassword
             });
-            console.log('管理者帳號初始化成功');
           } catch (e) {
             console.warn('管理者初始化失敗:', e.message);
           }

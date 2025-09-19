@@ -55,7 +55,6 @@ function App() {
       // 系統設定Update時重新檢查配置
       checkConfig();
       // 可以在這裡處理其他全局Update邏輯
-      console.log('系統設定已Update:', event.detail);
     };
     
     window.addEventListener('configUpdated', checkConfig);

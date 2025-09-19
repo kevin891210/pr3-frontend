@@ -10,7 +10,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import EmptyState from '../../components/ui/empty-state';
 
 const BrandPage = () => {
-  console.log('=== BrandPage component loaded ===');
   const { t } = useTranslation();
   const [brands, setBrands] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -39,22 +38,14 @@ const BrandPage = () => {
   const [alertDialog, setAlertDialog] = useState({ open: false, type: 'info', title: '', message: '' });
 
   useEffect(() => {
-    console.log('=== BrandPage useEffect triggered ===');
     loadBrands();
   }, []);
 
   const loadBrands = async () => {
     try {
-      console.log('=== loadBrands function called ===');
-      console.log('apiClient:', apiClient);
-      console.log('Loading brands...');
       const response = await apiClient.request('/api/v1/brands');
-      console.log('Brand API response:', response);
       const data = response.data || response;
-      console.log('Brand data:', data);
-      console.log('Is array:', Array.isArray(data));
       setBrands(Array.isArray(data) ? data : []);
-      console.log('Brands set to:', Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Load brand list failed:', error);
       setAlertDialog({
@@ -113,7 +104,6 @@ const BrandPage = () => {
           auth_password: formData.password,
           is_active: formData.status === 'active'
         };
-        console.log('Updating brand with data:', brandData);
         const response = await apiClient.request(`/api/v1/brands/${editingBrand.id}`, {
           method: 'PUT',
           body: brandData
@@ -147,7 +137,6 @@ const BrandPage = () => {
           auth_password: formData.password,
           is_active: formData.status === 'active'
         };
-        console.log('Creating brand with data:', brandData);
         const response = await apiClient.request('/api/v1/brands', {
           method: 'POST',
           body: brandData

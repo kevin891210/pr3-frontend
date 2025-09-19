@@ -108,6 +108,34 @@ const AttendanceDashboard = () => {
     }
   };
 
+  const handleViewAnomalies = () => {
+    // Navigate to attendance records with anomaly filter
+    window.location.href = '/attendance?tab=records&filter=anomalies';
+  };
+
+  const handleExportReport = async () => {
+    try {
+      const workspaceId = user?.workspace_id || localStorage.getItem('workspace_id') || '1';
+      const today = new Date().toISOString().split('T')[0];
+      
+      await apiClient.exportAttendanceProof(workspaceId, {
+        start_date: today,
+        end_date: today,
+        format: 'pdf'
+      });
+      
+      alert(t('attendance.exportSuccess'));
+    } catch (error) {
+      console.error('Failed to export report:', error);
+      alert(t('attendance.exportFailed') + ': ' + error.message);
+    }
+  };
+
+  const handleSystemSettings = () => {
+    // Navigate to attendance settings
+    window.location.href = '/attendance?tab=settings';
+  };
+
   if (loading) {
     return (
       <div className="p-6">
@@ -251,7 +279,10 @@ const AttendanceDashboard = () => {
         <div className="bg-white p-6 rounded-lg border">
           <h3 className="text-lg font-semibold mb-4">{t('attendance.quickActions')}</h3>
           <div className="space-y-3">
-            <button className="w-full p-4 text-left border rounded-lg hover:bg-gray-50">
+            <button 
+              onClick={handleViewAnomalies}
+              className="w-full p-4 text-left border rounded-lg hover:bg-gray-50 transition-colors"
+            >
               <div className="flex items-center gap-3">
                 <CheckCircle className="w-5 h-5 text-green-600" />
                 <div>
@@ -261,7 +292,10 @@ const AttendanceDashboard = () => {
               </div>
             </button>
 
-            <button className="w-full p-4 text-left border rounded-lg hover:bg-gray-50">
+            <button 
+              onClick={handleExportReport}
+              className="w-full p-4 text-left border rounded-lg hover:bg-gray-50 transition-colors"
+            >
               <div className="flex items-center gap-3">
                 <FileText className="w-5 h-5 text-blue-600" />
                 <div>
@@ -271,7 +305,10 @@ const AttendanceDashboard = () => {
               </div>
             </button>
 
-            <button className="w-full p-4 text-left border rounded-lg hover:bg-gray-50">
+            <button 
+              onClick={handleSystemSettings}
+              className="w-full p-4 text-left border rounded-lg hover:bg-gray-50 transition-colors"
+            >
               <div className="flex items-center gap-3">
                 <Settings className="w-5 h-5 text-purple-600" />
                 <div>

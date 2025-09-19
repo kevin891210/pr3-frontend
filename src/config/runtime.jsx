@@ -15,20 +15,12 @@ export const getApiConfig = () => {
 export const buildApiUrl = (path) => {
   const config = getConfig();
   const { baseUrl } = getApiConfig();
-  console.log('=== API URL Building ===');
-  console.log('Current config:', config);
-  console.log('API baseUrl:', baseUrl);
-  console.log('Requested path:', path);
   
   if (!baseUrl || baseUrl === '') {
-    console.log('Using relative path for Vite proxy:', path);
-    console.log('========================');
     return path; // 返回相對路徑，讓 Vite 代理處理
   }
   
   const fullUrl = `${baseUrl.replace(/\/$/, '')}${path}`;
-  console.log('Built API URL:', fullUrl);
-  console.log('========================');
   return fullUrl;
 };
 
@@ -46,7 +38,6 @@ export const reloadConfig = async () => {
     
     const config = await response.json();
     window.__APP_CONFIG__ = config;
-    console.log('Config reloaded:', config);
     return config;
   } catch (error) {
     console.error('Failed to reload config:', error);

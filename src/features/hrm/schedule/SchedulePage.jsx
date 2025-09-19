@@ -63,7 +63,6 @@ const SchedulePage = () => {
   const loadScheduleData = async () => {
     try {
       const response = await apiClient.getShiftTemplates();
-      console.log('Shift Templates API response:', response);
       
       // 直接使用 API 回應的資料
       let templatesData;
@@ -74,8 +73,6 @@ const SchedulePage = () => {
       } else {
         templatesData = response.data || response || [];
       }
-      
-      console.log('Templates data:', templatesData);
       
       if (!Array.isArray(templatesData)) {
         console.error('Templates data is not an array:', templatesData);
@@ -98,11 +95,8 @@ const SchedulePage = () => {
           min_staff: template.min_staff || 1,
           max_staff: template.max_staff || 5
         };
-        console.log('Formatted template:', formatted);
         return formatted;
       });
-      
-      console.log('All formatted shift templates:', formattedTemplates);
       
       // 確保至少有資料可以顯示
       if (formattedTemplates.length === 0) {
@@ -110,18 +104,10 @@ const SchedulePage = () => {
       }
       
       setShiftTemplates(formattedTemplates);
-      
-      // 強制觸發重新渲染
-      setTimeout(() => {
-        console.log('Current shiftTemplates state:', formattedTemplates);
-      }, 100);
 
       const scheduleResponse = await apiClient.getScheduleAssignments();
       const scheduleData = scheduleResponse.data || scheduleResponse;
       const rawAssignments = Array.isArray(scheduleData) ? scheduleData : [];
-      
-      console.log('Schedule Assignments API response:', scheduleData);
-      console.log('Raw assignments array:', rawAssignments);
       
       // 轉換 API 資料為 FullCalendar 格式
       const formattedEvents = await Promise.all(rawAssignments.map(async (assignment) => {
@@ -178,7 +164,6 @@ const SchedulePage = () => {
       // 過濾空值
       const validEvents = formattedEvents.filter(event => event !== null);
       
-      console.log('Formatted events for calendar:', validEvents);
       setEvents(validEvents);
 
       checkConflicts(validEvents);
@@ -458,17 +443,8 @@ End: ${new Date(event.end).toLocaleString()}`);
 
   // Handle shift assignment submission
   const handleAssignmentSubmit = async () => {
-    console.log('Form data before validation:', assignmentFormData);
-    
     // Validate required fields
     if (!assignmentFormData.brand_id || !assignmentFormData.workspace_id || !assignmentFormData.member_id || !assignmentFormData.template_id || !assignmentFormData.date) {
-      console.log('Validation failed:', {
-        brand_id: assignmentFormData.brand_id,
-        workspace_id: assignmentFormData.workspace_id,
-        member_id: assignmentFormData.member_id,
-        template_id: assignmentFormData.template_id,
-        date: assignmentFormData.date
-      });
       setAlertDialog({
         open: true,
         type: 'warning',
@@ -485,13 +461,6 @@ End: ${new Date(event.end).toLocaleString()}`);
         shift_template_id: assignmentFormData.template_id,
         date: assignmentFormData.date
       };
-      
-      console.log('Final request data:', requestData);
-      console.log('Request data types:', {
-        member_id: typeof requestData.member_id,
-        shift_template_id: typeof requestData.shift_template_id,
-        date: typeof requestData.date
-      });
       
       if (editingAssignment) {
         const response = await apiClient.updateScheduleAssignment(editingAssignment.id, requestData);
@@ -618,8 +587,6 @@ End: ${new Date(event.end).toLocaleString()}`);
   };
 
   const ShiftTemplateCard = ({ template }) => {
-    console.log('Rendering template card:', template);
-    
     if (!template) {
       console.error('Template is null or undefined');
       return null;
