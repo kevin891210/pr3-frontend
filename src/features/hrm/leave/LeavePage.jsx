@@ -901,10 +901,58 @@ const LeavePage = () => {
                     value={leaveFormData.timezone}
                     onChange={(e) => setLeaveFormData(prev => ({ ...prev, timezone: e.target.value }))}
                   >
-                    <option value="Asia/Taipei">Asia/Taipei (UTC+8)</option>
-                    <option value="Asia/Tokyo">Asia/Tokyo (UTC+9)</option>
-                    <option value="Asia/Shanghai">Asia/Shanghai (UTC+8)</option>
-                    <option value="UTC">UTC (UTC+0)</option>
+                    <optgroup label="Asia">
+                      <option value="Asia/Taipei">Asia/Taipei (UTC+8)</option>
+                      <option value="Asia/Tokyo">Asia/Tokyo (UTC+9)</option>
+                      <option value="Asia/Shanghai">Asia/Shanghai (UTC+8)</option>
+                      <option value="Asia/Hong_Kong">Asia/Hong_Kong (UTC+8)</option>
+                      <option value="Asia/Singapore">Asia/Singapore (UTC+8)</option>
+                      <option value="Asia/Seoul">Asia/Seoul (UTC+9)</option>
+                      <option value="Asia/Bangkok">Asia/Bangkok (UTC+7)</option>
+                      <option value="Asia/Jakarta">Asia/Jakarta (UTC+7)</option>
+                      <option value="Asia/Manila">Asia/Manila (UTC+8)</option>
+                      <option value="Asia/Kuala_Lumpur">Asia/Kuala_Lumpur (UTC+8)</option>
+                      <option value="Asia/Ho_Chi_Minh">Asia/Ho_Chi_Minh (UTC+7)</option>
+                      <option value="Asia/Kolkata">Asia/Kolkata (UTC+5:30)</option>
+                      <option value="Asia/Dubai">Asia/Dubai (UTC+4)</option>
+                    </optgroup>
+                    <optgroup label="Europe">
+                      <option value="Europe/London">Europe/London (UTC+0/+1)</option>
+                      <option value="Europe/Paris">Europe/Paris (UTC+1/+2)</option>
+                      <option value="Europe/Berlin">Europe/Berlin (UTC+1/+2)</option>
+                      <option value="Europe/Rome">Europe/Rome (UTC+1/+2)</option>
+                      <option value="Europe/Madrid">Europe/Madrid (UTC+1/+2)</option>
+                      <option value="Europe/Amsterdam">Europe/Amsterdam (UTC+1/+2)</option>
+                      <option value="Europe/Zurich">Europe/Zurich (UTC+1/+2)</option>
+                      <option value="Europe/Stockholm">Europe/Stockholm (UTC+1/+2)</option>
+                      <option value="Europe/Moscow">Europe/Moscow (UTC+3)</option>
+                    </optgroup>
+                    <optgroup label="Americas">
+                      <option value="America/New_York">America/New_York (UTC-5/-4)</option>
+                      <option value="America/Chicago">America/Chicago (UTC-6/-5)</option>
+                      <option value="America/Denver">America/Denver (UTC-7/-6)</option>
+                      <option value="America/Los_Angeles">America/Los_Angeles (UTC-8/-7)</option>
+                      <option value="America/Toronto">America/Toronto (UTC-5/-4)</option>
+                      <option value="America/Vancouver">America/Vancouver (UTC-8/-7)</option>
+                      <option value="America/Mexico_City">America/Mexico_City (UTC-6/-5)</option>
+                      <option value="America/Sao_Paulo">America/Sao_Paulo (UTC-3/-2)</option>
+                      <option value="America/Buenos_Aires">America/Buenos_Aires (UTC-3)</option>
+                    </optgroup>
+                    <optgroup label="Pacific">
+                      <option value="Australia/Sydney">Australia/Sydney (UTC+10/+11)</option>
+                      <option value="Australia/Melbourne">Australia/Melbourne (UTC+10/+11)</option>
+                      <option value="Australia/Perth">Australia/Perth (UTC+8)</option>
+                      <option value="Pacific/Auckland">Pacific/Auckland (UTC+12/+13)</option>
+                      <option value="Pacific/Honolulu">Pacific/Honolulu (UTC-10)</option>
+                    </optgroup>
+                    <optgroup label="Africa">
+                      <option value="Africa/Cairo">Africa/Cairo (UTC+2)</option>
+                      <option value="Africa/Johannesburg">Africa/Johannesburg (UTC+2)</option>
+                      <option value="Africa/Lagos">Africa/Lagos (UTC+1)</option>
+                    </optgroup>
+                    <optgroup label="UTC">
+                      <option value="UTC">UTC (UTC+0)</option>
+                    </optgroup>
                   </select>
                 </div>
 
