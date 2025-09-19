@@ -36,7 +36,22 @@ apiClient.getAgentLeaveBalance(localStorage.getItem('member_id') || user?.member
       setSchedule(Array.isArray(scheduleRes.data) ? scheduleRes.data : (scheduleRes.data ? [scheduleRes.data] : []));
       setNotices(Array.isArray(noticesRes.data) ? noticesRes.data : (noticesRes.data ? [noticesRes.data] : []));
       const balanceData = balanceRes.data || balanceRes || [];
-      setLeaveBalance(Array.isArray(balanceData) ? balanceData : []);
+      // Handle both array and object formats
+      if (Array.isArray(balanceData)) {
+        setLeaveBalance(balanceData);
+      } else if (balanceData && typeof balanceData === 'object') {
+        // Convert object format to array format for display
+        const balanceArray = Object.entries(balanceData).map(([key, value]) => ({
+          id: key,
+          leave_type_name: key.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase()),
+          remaining_days: value.remaining || 0,
+          total_days: value.total || 0,
+          used_days: value.used || 0
+        }));
+        setLeaveBalance(balanceArray);
+      } else {
+        setLeaveBalance([]);
+      }
     } catch (error) {
       console.error('Failed to load agent data:', error);
       setProfile(null);
