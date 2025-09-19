@@ -175,7 +175,7 @@ class ApiClient {
   // Leave APIs - 已移至 Leave Type APIs 區段
 
   async getLeaveBalance(userId, year) {
-    return this.request(`/api/v1/users/${userId}/leave-balance${year ? `?year=${year}` : ''}`);
+    return this.request(`/api/v1/leave-balance/${userId}${year ? `?year=${year}` : ''}`);
   }
 
 

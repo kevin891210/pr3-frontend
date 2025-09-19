@@ -73,12 +73,14 @@ const LeavePage = () => {
       // HRM 管理者查看所有員工餘額，Agent 只查看自己的餘額
       const isAgent = user?.role === 'agent' || localStorage.getItem('user_type') === 'agent';
       
-      if (isAgent && user?.id) {
+      if (isAgent) {
         // Agent 查詢自己的請假餘額
-        try {
-          const balanceResponse = await apiClient.getLeaveBalance(user.id, new Date().getFullYear());
-          const balanceData = balanceResponse.data || balanceResponse;
-          setUserBalance(balanceData || {});
+        const memberId = localStorage.getItem('member_id') || user?.member_id || user?.id;
+        if (memberId) {
+          try {
+            const balanceResponse = await apiClient.getLeaveBalance(memberId, new Date().getFullYear());
+            const balanceData = balanceResponse.data || balanceResponse;
+            setUserBalance(balanceData || {});
         } catch (error) {
           console.warn('Leave balance API not available, using fallback data:', error.message);
           setUserBalance({

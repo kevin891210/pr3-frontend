@@ -29,7 +29,7 @@ const AgentDashboardPage = () => {
         apiClient.getAgentProfile(user?.id, user?.workspace_id),
         apiClient.getAgentSchedule(user?.id, today),
         apiClient.getAgentNotices(user?.workspace_id),
-apiClient.getAgentLeaveBalance(localStorage.getItem('member_id'))
+apiClient.getAgentLeaveBalance(localStorage.getItem('member_id') || user?.member_id)
       ]);
 
       setProfile(profileRes.data || profileRes);
