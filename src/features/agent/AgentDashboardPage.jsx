@@ -28,15 +28,25 @@ const AgentDashboardPage = () => {
       const today = new Date().toISOString().split('T')[0];
       const memberId = localStorage.getItem('member_id') || user?.member_id || user?.id;
       
-      const [profileRes, noticesRes] = await Promise.all([
-        apiClient.getAgentProfile(user?.id, user?.workspace_id),
-        apiClient.getAgentNotices(user?.workspace_id)
-      ]);
-
-      setProfile(profileRes.data || profileRes);
-      setNotices(Array.isArray(noticesRes.data) ? noticesRes.data : (noticesRes.data ? [noticesRes.data] : []));
+      // Load profile
+      try {
+        const profileRes = await apiClient.getAgentProfile(user?.id, user?.workspace_id);
+        setProfile(profileRes.data || profileRes);
+      } catch (profileError) {
+        console.warn('Failed to load profile:', profileError.message);
+        setProfile(null);
+      }
       
-      // Load schedule separately with error handling
+      // Load notices
+      try {
+        const noticesRes = await apiClient.getAgentNotices(user?.workspace_id);
+        setNotices(Array.isArray(noticesRes.data) ? noticesRes.data : []);
+      } catch (noticesError) {
+        console.warn('Failed to load notices:', noticesError.message);
+        setNotices([]);
+      }
+      
+      // Load schedule
       try {
         const scheduleRes = await apiClient.getScheduleAssignments({ 
           member_id: memberId,
@@ -46,7 +56,6 @@ const AgentDashboardPage = () => {
         const scheduleData = scheduleRes?.data || [];
         
         if (Array.isArray(scheduleData) && scheduleData.length > 0) {
-          // Transform schedule data for calendar display
           const calendarEvents = scheduleData.map(assignment => ({
             id: assignment.id,
             title: assignment.shift_name || 'Work Shift',
@@ -64,16 +73,11 @@ const AgentDashboardPage = () => {
         setSchedule([]);
       }
       
-      // Load leave balance separately with error handling
+      // Load leave balance
       try {
         const balanceRes = await apiClient.getAgentLeaveBalance(memberId);
         const balanceData = balanceRes?.data || [];
-        
-        if (Array.isArray(balanceData) && balanceData.length > 0) {
-          setLeaveBalance(balanceData);
-        } else {
-          setLeaveBalance([]);
-        }
+        setLeaveBalance(Array.isArray(balanceData) ? balanceData : []);
       } catch (balanceError) {
         console.warn('Failed to load leave balance:', balanceError.message);
         setLeaveBalance([]);
@@ -93,7 +97,8 @@ const AgentDashboardPage = () => {
       setProfile(null);
       setSchedule([]);
       setNotices([]);
-      setLeaveBalance({});
+      setLeaveBalance([]);
+      setLeaveRequests([]);
     } finally {
       setLoading(false);
     }
