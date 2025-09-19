@@ -80,23 +80,46 @@ const LeavePage = () => {
           try {
             const balanceResponse = await apiClient.getLeaveBalance(memberId, new Date().getFullYear());
             const balanceData = balanceResponse.data || balanceResponse;
-            setUserBalance(balanceData || {});
+            
+            // Convert array format to object format keyed by leave_type_name
+            const balanceObj = {};
+            if (Array.isArray(balanceData)) {
+              balanceData.forEach(balance => {
+                const key = balance.leave_type_name?.replace(/\s+/g, '_').toUpperCase() || 'UNKNOWN';
+                balanceObj[key] = {
+                  total: balance.total_days,
+                  used: balance.used_days,
+                  remaining: balance.remaining_days
+                };
+              });
+            }
+            setUserBalance(balanceObj);
           } catch (error) {
             console.warn('Leave balance API not available, using fallback data:', error.message);
-            setUserBalance({
-              'ANNUAL': { total: 14, used: 0, remaining: 14 },
-              'SICK': { total: 7, used: 0, remaining: 7 },
-              'PERSONAL': { total: 3, used: 0, remaining: 3 }
+            const fallbackBalance = {};
+            leaveTypes.forEach(type => {
+              const totalDays = type.quota || type.days_per_year || 14;
+              fallbackBalance[type.code] = {
+                total: totalDays,
+                used: 0,
+                remaining: totalDays
+              };
             });
+            setUserBalance(fallbackBalance);
           }
         }
       } else {
         // HRM 管理者使用預設餘額資料
-        setUserBalance({
-          'ANNUAL': { total: 14, used: 0, remaining: 14 },
-          'SICK': { total: 7, used: 0, remaining: 7 },
-          'PERSONAL': { total: 3, used: 0, remaining: 3 }
+        const fallbackBalance = {};
+        leaveTypes.forEach(type => {
+          const totalDays = type.quota || type.days_per_year || 14;
+          fallbackBalance[type.code] = {
+            total: totalDays,
+            used: 0,
+            remaining: totalDays
+          };
         });
+        setUserBalance(fallbackBalance);
       }
 
       // HRM 管理者可以看到所有請假申請，Agent 只能看到自己的
@@ -376,30 +399,36 @@ const LeavePage = () => {
     setDeleteLeaveTypeDialog({ open: false, typeId: null, typeName: '' });
   };
 
-  const LeaveBalanceCard = ({ type, balance }) => (
-    <Card>
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="font-medium">{type.name}</h3>
-          <span className="text-sm text-gray-600">
-            Total: {balance.total || type.quota} days
-          </span>
-        </div>
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm">
-            <span>Used: {balance.used} days</span>
-            <span className="text-green-600">Remaining: {balance.remaining} days</span>
+  const LeaveBalanceCard = ({ type, balance }) => {
+    const totalDays = balance?.total || type?.quota || type?.days_per_year || 0;
+    const usedDays = balance?.used || 0;
+    const remainingDays = balance?.remaining || (totalDays - usedDays);
+    
+    return (
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="font-medium">{type.name}</h3>
+            <span className="text-sm text-gray-600">
+              Total: {totalDays} days
+            </span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div 
-              className="bg-blue-600 h-2 rounded-full" 
-              style={{ width: `${(balance.used / (balance.total || type.quota)) * 100}%` }}
-            />
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span>Used: {usedDays} days</span>
+              <span className="text-green-600">Remaining: {remainingDays} days</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div 
+                className="bg-blue-600 h-2 rounded-full" 
+                style={{ width: `${totalDays > 0 ? (usedDays / totalDays) * 100 : 0}%` }}
+              />
+            </div>
           </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
+        </CardContent>
+      </Card>
+    );
+  };
 
   const LeaveRequestCard = ({ request }) => (
     <Card>
