@@ -112,10 +112,11 @@ const SystemPage = () => {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="general" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="general">General Settings</TabsTrigger>
               <TabsTrigger value="security">Security Settings</TabsTrigger>
               <TabsTrigger value="notifications">Notification Settings</TabsTrigger>
+              <TabsTrigger value="telegram">Telegram BOT</TabsTrigger>
               <TabsTrigger value="maintenance">Maintenance Mode</TabsTrigger>
             </TabsList>
 
@@ -196,6 +197,39 @@ const SystemPage = () => {
                   onChange={(e) => handleSettingChange('emailNotifications', e.target.checked)}
                 />
                 <label htmlFor="emailNotifications" className="text-sm font-medium">Enable Email Notifications</label>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="telegram" className="space-y-4">
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <label className="text-sm font-medium">Telegram BOT Auth Token</label>
+                  <Input
+                    type="password"
+                    placeholder="Enter Telegram BOT Auth Token"
+                    value={settings.telegramBotToken || ''}
+                    onChange={(e) => handleSettingChange('telegramBotToken', e.target.value)}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Get your bot token from @BotFather on Telegram</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Telegram BOT Name</label>
+                  <Input
+                    placeholder="Enter Telegram BOT Name"
+                    value={settings.telegramBotName || ''}
+                    onChange={(e) => handleSettingChange('telegramBotName', e.target.value)}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Display name for your Telegram bot</p>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="telegramBotEnabled"
+                    checked={settings.telegramBotEnabled || false}
+                    onChange={(e) => handleSettingChange('telegramBotEnabled', e.target.checked)}
+                  />
+                  <label htmlFor="telegramBotEnabled" className="text-sm font-medium">Enable Telegram BOT</label>
+                </div>
               </div>
             </TabsContent>
 

@@ -20,23 +20,35 @@ const LoginPage = () => {
     setLoading(true);
     
     try {
+      // 登入 API 調用
       const response = await apiClient.login({
         email: credentials.username,
         password: credentials.password
       });
       
-      // 處理新的 API 響應結構（只返回用戶信息，不包含 token）
-      const userData = response.data?.user || response.user || {};
-      
-      if (!userData.id) {
-        throw new Error('Invalid user data received');
+      if (response.success) {
+        // 新格式：data 直接是 JWT token
+        const token = response.data;
+        
+        // 設定 token 到 API 客戶端
+        apiClient.setToken(token);
+        
+        // 創建預設用戶資訊（因為 /users/me 端點不存在）
+        const userData = {
+          id: 'admin',
+          email: credentials.username,
+          name: 'Administrator',
+          role: 'Owner'
+        };
+        
+        // 儲存用戶資訊和 token
+        login(userData, token);
+        
+        // 登入成功後導向 dashboard
+        window.location.href = '/dashboard';
+      } else {
+        throw new Error(response.message || '登入失敗');
       }
-      
-      // 儲存用戶資訊（不需要 token）
-      login(userData, null);
-      
-      // 登入成功後導向 dashboard
-      window.location.href = '/dashboard';
     } catch (error) {
       if (error.message.includes('404')) {
         alert('Backend API endpoint not implemented, please check backend service status');
@@ -59,7 +71,7 @@ const LoginPage = () => {
           <form onSubmit={handleLogin} className="space-y-4">
             <Input
               type="email"
-              placeholder={t('email')}
+              placeholder="kevinchc@me.com"
               value={credentials.username}
               onChange={(e) => setCredentials({...credentials, username: e.target.value})}
               required

@@ -78,6 +78,11 @@ class ApiClient {
     });
   }
 
+  // 獲取用戶信息
+  async getUserInfo() {
+    return this.request('/api/v1/users/me');
+  }
+
   async agentLogin(credentials) {
     return this.request('/api/v1/auth/agent-sign-in', {
       method: 'POST',
@@ -263,6 +268,45 @@ class ApiClient {
     });
   }
 
+  // Permission APIs
+  async getUserPermissions() {
+    return this.request('/api/v1/permissions/me');
+  }
+
+  async getMenuPermissions() {
+    return this.request('/api/v1/permissions/menu');
+  }
+
+  // Telegram APIs
+  async getTelegramBotConfigs() {
+    return this.request('/api/v1/telegram/bot-configs');
+  }
+
+  async createTelegramBot(botData) {
+    return this.request('/api/v1/telegram/bot-configs', {
+      method: 'POST',
+      body: botData,
+    });
+  }
+
+  async getTelegramUsers() {
+    return this.request('/api/v1/telegram/users-with-telegram');
+  }
+
+  async testTelegramNotification(type, params = {}) {
+    return this.request('/api/v1/telegram/test-notification', {
+      method: 'POST',
+      body: { type, ...params },
+    });
+  }
+
+  async setTelegramWebhook(webhookData) {
+    return this.request('/api/v1/telegram/set-webhook', {
+      method: 'POST',
+      body: webhookData,
+    });
+  }
+
   async getSystemStats() {
     return this.request('/api/v1/system/stats');
   }
@@ -445,6 +489,70 @@ class ApiClient {
   async syncBrandResources(brandId) {
     return this.request(`/api/v1/brands/${brandId}/sync`, {
       method: 'POST',
+    });
+  }
+
+  // Brand User Management APIs
+  async getBrandUsers(brandId) {
+    return this.request(`/api/v1/brands/${brandId}/users`);
+  }
+
+  async addBrandUser(brandId, userId) {
+    return this.request(`/api/v1/brands/${brandId}/users`, {
+      method: 'POST',
+      body: { user_id: userId },
+    });
+  }
+
+  async removeBrandUser(brandId, userId) {
+    return this.request(`/api/v1/brands/${brandId}/users/${userId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Get user authorized brands
+  async getUserBrands() {
+    return this.request('/api/v1/users/brands');
+  }
+
+  // Custom Role Management APIs
+  async getRoles() {
+    return this.request('/api/v1/roles');
+  }
+
+  async createRole(roleData) {
+    return this.request('/api/v1/roles', {
+      method: 'POST',
+      body: roleData,
+    });
+  }
+
+  async updateRole(roleId, roleData) {
+    return this.request(`/api/v1/roles/${roleId}`, {
+      method: 'PUT',
+      body: roleData,
+    });
+  }
+
+  async deleteRole(roleId) {
+    return this.request(`/api/v1/roles/${roleId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Permission Management APIs
+  async getPermissions() {
+    return this.request('/api/v1/permissions');
+  }
+
+  async getRolePermissions(roleId) {
+    return this.request(`/api/v1/roles/${roleId}/permissions`);
+  }
+
+  async updateRolePermissions(roleId, permissions) {
+    return this.request(`/api/v1/roles/${roleId}/permissions`, {
+      method: 'PUT',
+      body: { permissions },
     });
   }
 

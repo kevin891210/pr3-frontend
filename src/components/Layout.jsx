@@ -6,13 +6,13 @@ import { useSystemStore } from '../store/systemStore';
 import LanguageSwitcher from './LanguageSwitcher';
 import { 
   Menu, X, Home, Settings, Building2, Calendar, 
-  FileText, Bell, Users, LogOut, User, Monitor, DollarSign, Clock 
+  FileText, Bell, Users, LogOut, User, Monitor, DollarSign, Clock, Shield 
 } from 'lucide-react';
 
 const Layout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const { t } = useTranslation();
-  const { user, logout, hasPermission } = useAuthStore();
+  const { user, logout, hasPermission, hasRole } = useAuthStore();
   const { settings, loadSettings } = useSystemStore();
   const navigate = useNavigate();
   const location = useLocation();
@@ -35,7 +35,8 @@ const Layout = ({ children }) => {
       items: [
         { path: '/system', icon: Settings, label: t('system'), permission: 'system.read' },
         { path: '/brands', icon: Building2, label: t('brands'), permission: 'brand.read' },
-        { path: '/users', icon: Users, label: t('users'), permission: 'user.read' }
+        { path: '/users', icon: Users, label: t('users'), permission: 'user.read' },
+        { path: '/permissions', icon: Shield, label: t('navigation.permissions'), permission: 'owner.only' }
       ]
     },
     {
@@ -102,6 +103,11 @@ const Layout = ({ children }) => {
                 )}
                 <div className="space-y-1">
                   {section.items.map((item) => {
+                    // 權限檢查：只有 Owner 能看到權限管理
+                    if (item.permission === 'owner.only' && !hasRole('Owner')) {
+                      return null;
+                    }
+                    
                     const isActive = location.pathname === item.path;
                     const Icon = item.icon;
                     

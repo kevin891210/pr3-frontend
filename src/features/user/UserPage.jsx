@@ -20,14 +20,28 @@ const UserPage = () => {
     email: '',
     password: '',
     role: 'Agent',
+    role_id: '',
     status: 'active'
   });
+  const [roles, setRoles] = useState([]);
   const [deleteDialog, setDeleteDialog] = useState({ open: false, userId: null, userName: '' });
   const [alertDialog, setAlertDialog] = useState({ open: false, type: 'info', title: '', message: '' });
 
   useEffect(() => {
     loadUsers();
+    loadRoles();
   }, []);
+
+  const loadRoles = async () => {
+    try {
+      const response = await apiClient.getRoles();
+      const rolesData = response.data || response || [];
+      setRoles(rolesData);
+    } catch (error) {
+      console.error('載入角色列表失敗:', error);
+      setRoles([]);
+    }
+  };
 
   const loadUsers = async () => {
     try {
@@ -68,9 +82,8 @@ const UserPage = () => {
     
     try {
       if (editingUser) {
-        const response = await apiClient.updateUser(editingUser.id, formData);
-        const updatedUser = response.data || response;
-        setUsers(users.map(user => user.id === editingUser.id ? updatedUser : user));
+        await apiClient.updateUser(editingUser.id, formData);
+        await loadUsers(); // 重新載入使用者列表
         setAlertDialog({
           open: true,
           type: 'success',
@@ -78,9 +91,8 @@ const UserPage = () => {
           message: '使用者資料已Update'
         });
       } else {
-        const response = await apiClient.createUser(formData);
-        const newUser = response.data || response;
-        setUsers([...users, newUser]);
+        await apiClient.createUser(formData);
+        await loadUsers(); // 重新載入使用者列表
         setAlertDialog({
           open: true,
           type: 'success',
@@ -90,7 +102,7 @@ const UserPage = () => {
       }
       setShowModal(false);
       setEditingUser(null);
-      setFormData({ name: '', email: '', password: '', role: 'Agent', status: 'active' });
+      setFormData({ name: '', email: '', password: '', role: 'Agent', role_id: '', status: 'active' });
     } catch (error) {
       console.error('Save使用者失敗:', error);
       setAlertDialog({
@@ -109,6 +121,7 @@ const UserPage = () => {
       email: user.email,
       password: '', // 編輯時不顯示原密碼
       role: user.role,
+      role_id: user.role_id || '',
       status: user.status
     });
     setShowModal(true);
@@ -126,7 +139,7 @@ const UserPage = () => {
     const { userId } = deleteDialog;
     try {
       await apiClient.deleteUser(userId);
-      setUsers(users.filter(user => user.id !== userId));
+      await loadUsers(); // 重新載入使用者列表
       setAlertDialog({
         open: true,
         type: 'success',
@@ -224,7 +237,7 @@ const UserPage = () => {
                       <td className="py-3 px-4 text-gray-600">{user.email}</td>
                       <td className="py-3 px-4">
                         <span className={`px-2 py-1 rounded-full text-xs ${getRoleColor(user.role)}`}>
-                          {user.role}
+                          {user.role_display_name || user.role}
                         </span>
                       </td>
                       <td className="py-3 px-4">
@@ -310,14 +323,33 @@ const UserPage = () => {
                 <label className="block text-sm font-medium mb-1">Role</label>
                 <select
                   className="w-full p-2 border rounded-md"
-                  value={formData.role}
-                  onChange={(e) => setFormData({...formData, role: e.target.value})}
+                  value={formData.role_id || formData.role}
+                  onChange={(e) => {
+                    const selectedRole = roles.find(r => r.id === e.target.value);
+                    if (selectedRole) {
+                      setFormData({...formData, role_id: e.target.value, role: selectedRole.name});
+                    } else {
+                      // 固定角色
+                      setFormData({...formData, role: e.target.value, role_id: ''});
+                    }
+                  }}
                 >
-                  <option value="Agent">Agent</option>
-                  <option value="TeamLeader">TeamLeader</option>
-                  <option value="Admin">Admin</option>
-                  <option value="Owner">Owner</option>
-                  <option value="Auditor">Auditor</option>
+                  <optgroup label="系統角色">
+                    <option value="Agent">Agent</option>
+                    <option value="TeamLeader">TeamLeader</option>
+                    <option value="Admin">Admin</option>
+                    <option value="Owner">Owner</option>
+                    <option value="Auditor">Auditor</option>
+                  </optgroup>
+                  {roles.length > 0 && (
+                    <optgroup label="自訂角色">
+                      {roles.map(role => (
+                        <option key={role.id} value={role.id}>
+                          {role.display_name || role.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
                 </select>
               </div>
               <div>
@@ -338,7 +370,7 @@ const UserPage = () => {
                   onClick={() => {
                     setShowModal(false);
                     setEditingUser(null);
-                    setFormData({ name: '', email: '', password: '', role: 'Agent', status: 'active' });
+                    setFormData({ name: '', email: '', password: '', role: 'Agent', role_id: '', status: 'active' });
                   }}
                 >
                   Cancel

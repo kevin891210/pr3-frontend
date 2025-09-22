@@ -20,12 +20,29 @@ export const useAuthStore = create(
        * @param {Object} userData - 使用者資料
        * @param {string} token - JWT Token
        */
-      login: (userData, token = null) => {
+      login: async (userData, token = null) => {
         if (token) {
           apiClient.setToken(token);
         }
+        
+        // 登入後獲取用戶權限
+        let enhancedUserData = userData;
+        if (token) {
+          try {
+            const permResponse = await apiClient.getUserPermissions();
+            if (permResponse.success) {
+              enhancedUserData = {
+                ...userData,
+                ...permResponse.data
+              };
+            }
+          } catch (error) {
+            console.warn('Failed to fetch user permissions:', error);
+          }
+        }
+        
         set({
-          user: userData,
+          user: enhancedUserData,
           token,
           isAuthenticated: true
         });
@@ -89,7 +106,7 @@ export const useAuthStore = create(
       
       /**
        * 權限檢查方法
-       * 根據使用者角色檢查是否具有特定權限
+       * 優先使用自訂角色權限，回退到固定角色權限
        * @param {string} permission - 權限名稱 (例: 'brand.create', 'schedule.read')
        * @returns {boolean} 是否具有權限
        */
@@ -97,13 +114,18 @@ export const useAuthStore = create(
         const { user } = get();
         if (!user) return false;
         
-        // 角色權限對應表
+        // 優先使用自訂角色權限
+        if (user.permissions && Array.isArray(user.permissions)) {
+          return user.permissions.includes(permission);
+        }
+        
+        // 回退到固定角色權限
         const rolePermissions = {
-          Owner: ['*'], // 擁有者：所有權限
-          Admin: ['system.*', 'brand.*', 'schedule.*', 'leave.*', 'notice.*', 'user.*'], // 管理員：大部分權限
-          TeamLeader: ['schedule.read', 'schedule.write', 'leave.approve', 'notice.read', 'agent.read'], // 組長：排班和請假審核
-          Agent: ['schedule.read', 'leave.create', 'leave.read', 'notice.read', 'agent.read'], // 專員：基本操作
-          Auditor: ['*.read'] // 稽核員：僅讀取權限
+          Owner: ['*'],
+          Admin: ['system.*', 'brand.*', 'schedule.*', 'leave.*', 'notice.*', 'user.*'],
+          TeamLeader: ['schedule.read', 'schedule.write', 'leave.approve', 'notice.read', 'agent.read'],
+          Agent: ['schedule.read', 'leave.create', 'leave.read', 'notice.read', 'agent.read'],
+          Auditor: ['*.read']
         };
         
         const permissions = rolePermissions[user.role] || [];
@@ -114,13 +136,63 @@ export const useAuthStore = create(
       
       /**
        * 角色檢查方法
-       * 檢查使用者是否具有特定角色
-       * @param {string} role - 角色名稱 (Owner/Admin/TeamLeader/Agent/Auditor)
+       * 支援自訂角色和固定角色檢查
+       * @param {string} role - 角色名稱
        * @returns {boolean} 是否具有該角色
        */
       hasRole: (role) => {
         const { user } = get();
+        // 優先檢查自訂角色
+        if (user?.custom_role) {
+          return user.custom_role === role;
+        }
+        // 回退到固定角色
         return user?.role === role;
+      },
+      
+      /**
+       * 檢查是否有 CRUD 權限
+       * @param {string} module - 模組名稱 (brand, user, leave, etc.)
+       * @param {string} action - 動作 (view, create, edit, delete)
+       * @returns {boolean} 是否具有權限
+       */
+      hasCrudPermission: (module, action) => {
+        const { user } = get();
+        if (!user) return false;
+        
+        // 使用自訂角色的 CRUD 權限
+        if (user.crud_permissions) {
+          return user.crud_permissions[module]?.[action] || false;
+        }
+        
+        // 回退到基於權限字符串的檢查
+        return get().hasPermission(`${module}.${action}`);
+      },
+      
+      /**
+       * 檢查是否可以審核請假
+       * @returns {boolean} 是否可以審核請假
+       */
+      canApproveLeave: () => {
+        const { user } = get();
+        if (!user) return false;
+        
+        // 使用自訂角色的審核權限
+        if (user.can_approve_leave !== undefined) {
+          return user.can_approve_leave;
+        }
+        
+        // 回退到角色檢查
+        return get().hasPermission('leave.approve');
+      },
+      
+      /**
+       * 獲取角色顯示名稱
+       * @returns {string} 角色名稱
+       */
+      getRoleName: () => {
+        const { user } = get();
+        return user?.role_display_name || user?.custom_role || user?.role || 'Unknown';
       }
     }),
     {

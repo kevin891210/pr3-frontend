@@ -16,6 +16,7 @@
       "logout": "Logout",
       "overview": "Overview",
       "systemManagement": "System Management",
+      "permissions": "Permissions",
       "hrmModules": "HRM Modules",
       "communication": "Communication"
     },
@@ -498,6 +499,86 @@
       "selectWorkspaceToViewTeams": "Select Workspace to view Teams",
       "brandOverview": "Brand Overview",
       "members": "members"
+    },
+    "permissions": {
+      "management": "權限管理",
+      "description": "管理系統角色與權限設定",
+      "rolePermissions": "角色權限",
+      "permissionDescription": "權限說明",
+      "allowed": "允許",
+      "edit": "編輯",
+      "save": "保存",
+      "cancel": "取消",
+      "roles": {
+        "Owner": "擁有者",
+        "Admin": "管理員",
+        "TeamLeader": "團隊領導",
+        "Agent": "專員",
+        "Auditor": "稽核員"
+      },
+      "permissions": {
+        "systemManagement": "系統管理",
+        "userManagement": "使用者管理",
+        "brandManagement": "品牌管理",
+        "hrmManagement": "HRM管理",
+        "monitorManagement": "監控管理",
+        "scheduleManagement": "排班管理",
+        "leaveManagement": "請假管理",
+        "noticeManagement": "公告管理",
+        "salaryManagement": "薪資管理",
+        "attendanceManagement": "出勤管理",
+        "personalProfile": "個人資料",
+        "leaveRequest": "請假申請",
+        "viewNotices": "查看公告",
+        "viewOnly": "查看權限"
+      },
+      "descriptions": {
+        "Owner": "系統擁有者，擁有所有權限",
+        "Admin": "系統管理員，可管理使用者、品牌、系統設定",
+        "TeamLeader": "團隊領導，可管理 HRM 相關功能",
+        "Agent": "一般使用者，只能查看個人資料和申請請假",
+        "Auditor": "稽核員，只有查看權限"
+      }
+    },
+    "permissions": {
+      "management": "Permission Management",
+      "description": "Manage system roles and permission settings",
+      "rolePermissions": "Role Permissions",
+      "permissionDescription": "Permission Description",
+      "allowed": "Allowed",
+      "edit": "Edit",
+      "save": "Save",
+      "cancel": "Cancel",
+      "roles": {
+        "Owner": "Owner",
+        "Admin": "Admin",
+        "TeamLeader": "Team Leader",
+        "Agent": "Agent",
+        "Auditor": "Auditor"
+      },
+      "permissions": {
+        "systemManagement": "System Management",
+        "userManagement": "User Management",
+        "brandManagement": "Brand Management",
+        "hrmManagement": "HRM Management",
+        "monitorManagement": "Monitor Management",
+        "scheduleManagement": "Schedule Management",
+        "leaveManagement": "Leave Management",
+        "noticeManagement": "Notice Management",
+        "salaryManagement": "Salary Management",
+        "attendanceManagement": "Attendance Management",
+        "personalProfile": "Personal Profile",
+        "leaveRequest": "Leave Request",
+        "viewNotices": "View Notices",
+        "viewOnly": "View Only"
+      },
+      "descriptions": {
+        "Owner": "System owner with all permissions",
+        "Admin": "System administrator who can manage users, brands, and system settings",
+        "TeamLeader": "Team leader who can manage HRM related functions",
+        "Agent": "Regular user who can only view personal profile and request leave",
+        "Auditor": "Auditor with view-only permissions"
+      }
     }
   },
   "zh": {
@@ -517,6 +598,7 @@
       "logout": "登出",
       "overview": "概覽",
       "systemManagement": "系統管理",
+      "permissions": "權限",
       "hrmModules": "HRM 模組",
       "communication": "溝通管理"
     },
@@ -1001,6 +1083,7 @@
       "logout": "ログアウト",
       "overview": "概要",
       "systemManagement": "システム管理",
+      "permissions": "権限",
       "hrmModules": "HRM モジュール",
       "communication": "コミュニケーション"
     },
@@ -1481,6 +1564,46 @@
       "selectWorkspaceToViewTeams": "チームを表示するにはワークスペースを選択してください",
       "brandOverview": "ブランド概要",
       "members": "メンバー"
+    },
+    "permissions": {
+      "management": "権限管理",
+      "description": "システムロールと権限設定を管理",
+      "rolePermissions": "ロール権限",
+      "permissionDescription": "権限説明",
+      "allowed": "許可",
+      "edit": "編集",
+      "save": "保存",
+      "cancel": "キャンセル",
+      "roles": {
+        "Owner": "オーナー",
+        "Admin": "管理者",
+        "TeamLeader": "チームリーダー",
+        "Agent": "エージェント",
+        "Auditor": "監査員"
+      },
+      "permissions": {
+        "systemManagement": "システム管理",
+        "userManagement": "ユーザー管理",
+        "brandManagement": "ブランド管理",
+        "hrmManagement": "HRM管理",
+        "monitorManagement": "監視管理",
+        "scheduleManagement": "スケジュール管理",
+        "leaveManagement": "休暇管理",
+        "noticeManagement": "お知らせ管理",
+        "salaryManagement": "給与管理",
+        "attendanceManagement": "勤怠管理",
+        "personalProfile": "個人プロフィール",
+        "leaveRequest": "休暇申請",
+        "viewNotices": "お知らせ表示",
+        "viewOnly": "表示のみ"
+      },
+      "descriptions": {
+        "Owner": "システムオーナー、全ての権限を持つ",
+        "Admin": "システム管理者、ユーザー、ブランド、システム設定を管理可能",
+        "TeamLeader": "チームリーダー、HRM関連機能を管理可能",
+        "Agent": "一般ユーザー、個人プロフィール表示と休暇申請のみ可能",
+        "Auditor": "監査員、表示権限のみ"
+      }
     }
   }
 }

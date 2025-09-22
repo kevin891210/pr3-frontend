@@ -22,6 +22,7 @@ import AgentMonitorV2Page from './features/monitor/AgentMonitorV2Page';
 import TestPage from './features/test/TestPage.jsx';
 import SalaryPage from './features/hrm/salary/SalaryPage.jsx';
 import AttendancePage from './features/hrm/attendance/AttendancePage.jsx';
+import PermissionPage from './features/permission/PermissionPage.jsx';
 import { useSystemStore } from './store/systemStore';
 
 function App() {
@@ -179,6 +180,10 @@ function App() {
         <Route 
           path="/attendance" 
           element={<ProtectedRoute><AttendancePage /></ProtectedRoute>} 
+        />
+        <Route 
+          path="/permissions" 
+          element={<ProtectedRoute><PermissionPage /></ProtectedRoute>} 
         />
         <Route 
           path="/" 

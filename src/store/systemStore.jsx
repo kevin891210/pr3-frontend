@@ -13,7 +13,10 @@ export const useSystemStore = create(
         maxLoginAttempts: 5,
         sessionTimeout: 24,
         emailNotifications: true,
-        maintenanceMode: false
+        maintenanceMode: false,
+        telegramBotToken: '',
+        telegramBotName: '',
+        telegramBotEnabled: false
       },
       
       stats: {

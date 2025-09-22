@@ -26,7 +26,7 @@ const SchedulePage = () => {
     is_cross_day: false,
     timezone: 'Asia/Taipei',
     total_break_minutes: 60,
-    break_periods: [{ start_time: '12:00', end_time: '13:00' }]
+    break_periods: [{ start_time: '', end_time: '' }]
   });
   const [assignmentFormData, setAssignmentFormData] = useState({
     brand_id: '',
@@ -91,7 +91,9 @@ const SchedulePage = () => {
           is_cross_day: template.is_cross_day || false,
           timezone: template.timezone || 'Asia/Taipei',
           total_break_minutes: template.total_break_minutes || 60,
-          break_periods: template.break_periods || [{ start_time: '12:00', end_time: '13:00' }],
+          break_periods: Array.isArray(template.break_periods) && template.break_periods.length > 0 
+            ? template.break_periods 
+            : [{ start_time: '', end_time: '' }],
           min_staff: template.min_staff || 1,
           max_staff: template.max_staff || 5
         };
@@ -130,8 +132,8 @@ const SchedulePage = () => {
           return null;
         }
         
-        const startDateTime = `${assignmentDate}T${startTime}:00`;
-        const endDateTime = `${assignmentDate}T${endTime}:00`;
+        const startDateTime = `${assignmentDate}T${startTime}`;
+        const endDateTime = `${assignmentDate}T${endTime}`;
         
         // 驗證生成的日期時間是否有效
         const startDate = new Date(startDateTime);
@@ -272,7 +274,9 @@ End: ${new Date(event.end).toLocaleString()}`);
       is_cross_day: template.is_cross_day || false,
       timezone: template.timezone || 'Asia/Taipei',
       total_break_minutes: template.total_break_minutes || 60,
-      break_periods: template.break_periods || [{ start_time: '12:00', end_time: '13:00' }],
+      break_periods: Array.isArray(template.break_periods) && template.break_periods.length > 0 
+        ? template.break_periods 
+        : [{ start_time: '', end_time: '' }],
       min_staff: template.min_staff || 1,
       max_staff: template.max_staff || 5
     });
@@ -327,7 +331,7 @@ End: ${new Date(event.end).toLocaleString()}`);
       }
       setShowShiftModal(false);
       setEditingShift(null);
-      setShiftFormData({ name: '', category: '', start_time: '', end_time: '', is_cross_day: false, timezone: 'Asia/Taipei', total_break_minutes: 60, break_periods: [{ start_time: '12:00', end_time: '13:00' }] });
+      setShiftFormData({ name: '', category: '', start_time: '', end_time: '', is_cross_day: false, timezone: 'Asia/Taipei', total_break_minutes: 60, break_periods: [{ start_time: '', end_time: '' }] });
     } catch (error) {
       setAlertDialog({
         open: true,
@@ -623,9 +627,9 @@ End: ${new Date(event.end).toLocaleString()}`);
               <div>TZ: {template.timezone || 'Asia/Taipei'}</div>
             </div>
             <div>Break: {template.total_break_minutes || 0} min</div>
-            {template.break_periods && template.break_periods.length > 0 && (
+            {template.break_periods && template.break_periods.length > 0 && template.break_periods.some(b => b.start_time && b.end_time) && (
               <div>
-                Periods: {template.break_periods.map(b => `${b.start_time || 'N/A'}-${b.end_time || 'N/A'}`).join(', ')}
+                Periods: {template.break_periods.filter(b => b.start_time && b.end_time).map(b => `${b.start_time}-${b.end_time}`).join(', ')}
               </div>
             )}
           </div>
@@ -726,7 +730,7 @@ End: ${new Date(event.end).toLocaleString()}`);
                       className="w-full flex items-center gap-2 mb-4"
                       onClick={() => {
                         setEditingShift(null);
-                        setShiftFormData({ name: '', category: '', start_time: '', end_time: '', is_cross_day: false, timezone: 'Asia/Taipei', total_break_minutes: 60, break_periods: [{ start_time: '12:00', end_time: '13:00' }] });
+                        setShiftFormData({ name: '', category: '', start_time: '', end_time: '', is_cross_day: false, timezone: 'Asia/Taipei', total_break_minutes: 60, break_periods: [{ start_time: '', end_time: '' }] });
                         setShowShiftModal(true);
                       }}
                     >
