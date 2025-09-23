@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Shield, Edit, Check, X, Plus, Trash2, Users, Key } from 'lucide-react';
+import { Shield, Edit, Check, X, Plus, Trash2, Users, Key, Search, CheckSquare, Square, Minus } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../components/ui/dialog.jsx';
 import apiClient from '../../services/api';
 
@@ -15,6 +15,8 @@ const PermissionPage = () => {
   const [permissions, setPermissions] = useState([]);
   const [rolePermissions, setRolePermissions] = useState({});
   const [tempPermissions, setTempPermissions] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [expandedModules, setExpandedModules] = useState({});
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [roleFormData, setRoleFormData] = useState({
     name: '',
@@ -208,31 +210,134 @@ const PermissionPage = () => {
                   <p className="text-sm text-gray-600 mb-3">{role.description}</p>
                 )}
                 {editingRole?.id === role.id ? (
-                  <div className="space-y-2 max-h-60 overflow-y-auto">
-                    {permissions && Object.entries(permissions).map(([module, modulePermissions]) => (
-                      <div key={module} className="mb-3">
-                        <div className="text-xs font-semibold text-gray-700 uppercase mb-2 flex items-center gap-1">
-                          <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                          {module}
-                        </div>
-                        {modulePermissions.map(perm => (
-                          <div key={perm.id} className="flex items-center gap-2 ml-3 py-1">
-                            <input
-                              type="checkbox"
-                              checked={tempPermissions.includes(perm.id)}
-                              onChange={() => togglePermission(perm.id)}
-                              className="rounded"
-                            />
-                            <div className="flex-1">
-                              <span className="text-sm font-medium">{perm.name}</span>
-                              {perm.description && (
-                                <div className="text-xs text-gray-500 mt-0.5">{perm.description}</div>
+                  <div className="space-y-3">
+                    {/* Search and Bulk Actions */}
+                    <div className="space-y-2">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                        <Input
+                          placeholder="搜尋權限..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          className="pl-10"
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            const allPermissionIds = Object.values(permissions).flat().map(p => p.id);
+                            setTempPermissions(allPermissionIds);
+                          }}
+                        >
+                          <CheckSquare className="w-3 h-3 mr-1" />
+                          全選
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setTempPermissions([])}
+                        >
+                          <Square className="w-3 h-3 mr-1" />
+                          全不選
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Permission Groups */}
+                    <div className="max-h-96 overflow-y-auto space-y-3">
+                      {permissions && Object.entries(permissions)
+                        .filter(([module, modulePermissions]) => {
+                          if (!searchTerm) return true;
+                          return module.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                 modulePermissions.some(p => 
+                                   p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                   (p.description && p.description.toLowerCase().includes(searchTerm.toLowerCase()))
+                                 );
+                        })
+                        .map(([module, modulePermissions]) => {
+                          const filteredPermissions = searchTerm 
+                            ? modulePermissions.filter(p => 
+                                p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                (p.description && p.description.toLowerCase().includes(searchTerm.toLowerCase()))
+                              )
+                            : modulePermissions;
+                          
+                          if (filteredPermissions.length === 0) return null;
+                          
+                          const modulePermIds = filteredPermissions.map(p => p.id);
+                          const selectedCount = modulePermIds.filter(id => tempPermissions.includes(id)).length;
+                          const isExpanded = expandedModules[module] !== false; // default expanded
+                          
+                          return (
+                            <div key={module} className="border rounded-lg p-3">
+                              <div 
+                                className="flex items-center justify-between cursor-pointer mb-2"
+                                onClick={() => setExpandedModules(prev => ({ ...prev, [module]: !isExpanded }))}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                                  <span className="font-medium text-sm">{module}</span>
+                                  <span className="text-xs text-gray-500">({selectedCount}/{filteredPermissions.length})</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (selectedCount === filteredPermissions.length) {
+                                        // Deselect all in this module
+                                        setTempPermissions(prev => prev.filter(id => !modulePermIds.includes(id)));
+                                      } else {
+                                        // Select all in this module
+                                        setTempPermissions(prev => [...new Set([...prev, ...modulePermIds])]);
+                                      }
+                                    }}
+                                  >
+                                    {selectedCount === 0 ? (
+                                      <Square className="w-3 h-3" />
+                                    ) : selectedCount === filteredPermissions.length ? (
+                                      <CheckSquare className="w-3 h-3" />
+                                    ) : (
+                                      <Minus className="w-3 h-3" />
+                                    )}
+                                  </Button>
+                                  <span className="text-xs">{isExpanded ? '▼' : '▶'}</span>
+                                </div>
+                              </div>
+                              
+                              {isExpanded && (
+                                <div className="grid grid-cols-1 gap-2">
+                                  {filteredPermissions.map(perm => (
+                                    <div key={perm.id} className="flex items-start gap-2 p-2 hover:bg-gray-50 rounded">
+                                      <input
+                                        type="checkbox"
+                                        checked={tempPermissions.includes(perm.id)}
+                                        onChange={() => togglePermission(perm.id)}
+                                        className="rounded mt-0.5"
+                                      />
+                                      <div className="flex-1 min-w-0">
+                                        <div className="text-sm font-medium text-gray-900">{perm.name}</div>
+                                        {perm.description && (
+                                          <div className="text-xs text-gray-500 mt-0.5">{perm.description}</div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
                               )}
                             </div>
-                          </div>
-                        ))}
-                      </div>
-                    ))}
+                          );
+                        })
+                      }
+                    </div>
+                    
+                    {/* Selected Count */}
+                    <div className="text-sm text-gray-600 pt-2 border-t">
+                      已選擇 {tempPermissions.length} 個權限
+                    </div>
                   </div>
                 ) : (
                   <div className="space-y-3">
