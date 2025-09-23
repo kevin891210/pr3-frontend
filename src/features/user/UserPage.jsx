@@ -82,22 +82,38 @@ const UserPage = () => {
     
     try {
       if (editingUser) {
-        await apiClient.updateUser(editingUser.id, formData);
-        await loadUsers(); // 重新載入使用者列表
+        // 更新用戶基本資料
+        const updateData = {
+          name: formData.name,
+          email: formData.email,
+          role: formData.role,
+          role_id: formData.role_id,
+          status: formData.status
+        };
+        await apiClient.updateUser(editingUser.id, updateData);
+        
+        // 如果有輸入新密碼，則更新密碼
+        if (formData.password) {
+          await apiClient.updateUserPassword(editingUser.id, {
+            password: formData.password
+          });
+        }
+        
+        await loadUsers();
         setAlertDialog({
           open: true,
           type: 'success',
           title: 'Update Success',
-          message: '使用者資料已Update'
+          message: formData.password ? '使用者資料和密碼已更新' : '使用者資料已更新'
         });
       } else {
         await apiClient.createUser(formData);
-        await loadUsers(); // 重新載入使用者列表
+        await loadUsers();
         setAlertDialog({
           open: true,
           type: 'success',
           title: 'Add Success',
-          message: '使用者已成功Add'
+          message: '使用者已成功新增'
         });
       }
       setShowModal(false);
@@ -307,18 +323,18 @@ const UserPage = () => {
                   required
                 />
               </div>
-              {!editingUser && (
-                <div>
-                  <label className="block text-sm font-medium mb-1">Password *</label>
-                  <Input
-                    type="password"
-                    value={formData.password}
-                    onChange={(e) => setFormData({...formData, password: e.target.value})}
-                    placeholder="Enter password"
-                    required
-                  />
-                </div>
-              )}
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  {editingUser ? 'New Password (leave blank to keep current)' : 'Password *'}
+                </label>
+                <Input
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) => setFormData({...formData, password: e.target.value})}
+                  placeholder={editingUser ? "Enter new password" : "Enter password"}
+                  required={!editingUser}
+                />
+              </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Role</label>
                 <select

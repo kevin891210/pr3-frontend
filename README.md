@@ -166,19 +166,33 @@ GET /api/v1/leave-requests
 參數:
 - member_id (可選): 指定用戶 ID，只返回該用戶的請假申請
 - status (可選): 過濾特定狀態的申請
+- page (可選): 頁碼，預設為 1
+- limit (可選): 每頁筆數，預設為 10
 
 使用範例:
 # Agent 查詢自己的請假申請
 GET /api/v1/leave-requests?member_id=7a2d0624-96d2-4501-958c-55b52111b8e9
 
-# HRM 管理者查詢所有請假申請
-GET /api/v1/leave-requests
+# HRM 管理者查詢所有請假申請（分頁）
+GET /api/v1/leave-requests?page=1&limit=10
 
 # 查詢所有待審核的申請
 GET /api/v1/leave-requests?status=pending
 
 # 查詢特定用戶的待審核申請
 GET /api/v1/leave-requests?member_id=7a2d0624-96d2-4501-958c-55b52111b8e9&status=pending
+
+回應格式 (分頁):
+{
+  "success": true,
+  "data": [...],
+  "pagination": {
+    "total": 150,
+    "pages": 15,
+    "current_page": 1,
+    "per_page": 10
+  }
+}
 ```
 
 **創建請假申請**：
@@ -218,6 +232,105 @@ GET /api/v1/leave-balances?year=2025
       "remaining_days": 9.0
     }
   ]
+}
+
+注意：每個成員的餘額是獨立計算的
+例如：
+- 事假 1 年 12 天
+- Kevin 用過 1 天，餘額 11 天
+- YC 用過 3 天，餘額 9 天
+```
+
+### 排班管理 API
+**班別分類管理**：
+```json
+GET /api/v1/shift-categories
+POST /api/v1/shift-categories
+PUT /api/v1/shift-categories/{id}
+DELETE /api/v1/shift-categories/{id}
+
+回應格式:
+{
+  "success": true,
+  "data": [
+    {
+      "id": "full_day",
+      "name": "Full Day Shift",
+      "description": "標準9小時工作日",
+      "default_start_time": "09:00",
+      "default_end_time": "18:00",
+      "default_break_minutes": 60
+    },
+    {
+      "id": "rotating",
+      "name": "Rotating Shift", 
+      "description": "夜班或跨日班",
+      "default_start_time": "22:00",
+      "default_end_time": "06:00",
+      "default_break_minutes": 30
+    }
+  ]
+}
+
+創建/更新分類格式:
+{
+  "name": "Custom Shift",
+  "description": "自定義班別",
+  "default_start_time": "10:00",
+  "default_end_time": "19:00",
+  "default_break_minutes": 45
+}
+```
+
+**班別模板管理**：
+```json
+GET /api/v1/shift-templates
+POST /api/v1/shift-templates
+PUT /api/v1/shift-templates/{id}
+DELETE /api/v1/shift-templates/{id}
+
+班別模板格式:
+{
+  "id": "template_id",
+  "name": "Morning Shift",
+  "category": "full_day",  // 對應 shift-categories 的 id
+  "start_time": "09:00",
+  "end_time": "18:00",
+  "is_cross_day": false,
+  "timezone": "Asia/Taipei",
+  "total_break_minutes": 60,
+  "break_periods": [
+    {
+      "start_time": "12:00",
+      "end_time": "13:00"
+    }
+  ],
+  "min_staff": 1,
+  "max_staff": 5
+}
+```
+
+**排班指派管理**：
+```json
+GET /api/v1/schedule-assignments
+POST /api/v1/schedule-assignments
+PUT /api/v1/schedule-assignments/{id}
+DELETE /api/v1/schedule-assignments/{id}
+```
+
+### 用戶管理 API
+**用戶 CRUD 操作**：
+```json
+GET /api/v1/users
+POST /api/v1/users
+PUT /api/v1/users/{id}
+DELETE /api/v1/users/{id}
+GET /api/v1/users/{id}
+
+# 密碼更新
+PUT /api/v1/users/{id}/password
+{
+  "password": "new_password"
 }
 ```
 
@@ -271,6 +384,55 @@ GET /api/v1/attendance/api-logs?workspace_id={id}&brand_id={id}
 - status: API 狀態 (success/error/timeout)
 ```
 
+### WebSocket 實時通知
+**啟用 WebSocket**：
+```javascript
+// 在生產環境中啟用 WebSocket
+localStorage.setItem('enableWebSocket', 'true');
+
+// 禁用 WebSocket
+localStorage.removeItem('enableWebSocket');
+```
+
+**連接 WebSocket**：
+```javascript
+// 前端整合方式
+const ws = new WebSocket('ws://localhost:8000/ws?channel=leave_requests');
+
+ws.onmessage = function(event) {
+    const data = JSON.parse(event.data);
+    if (data.type === 'leave_request_update') {
+        // 刷新請假申請列表
+        refreshLeaveRequestsList();
+        
+        // 顯示通知
+        showNotification(`Leave request ${data.action} for ${data.data.member_name}`);
+    }
+};
+```
+
+**React Hook 使用**：
+```javascript
+import useWebSocket from '../hooks/useWebSocket';
+
+const { subscribe } = useWebSocket('leave_requests');
+
+useEffect(() => {
+  const unsubscribe = subscribe('leave_request_update', (data) => {
+    // 處理實時更新
+    loadLeaveData();
+    showNotification(data);
+  });
+  
+  return unsubscribe;
+}, [subscribe]);
+```
+
+**注意事項**：
+- WebSocket 在開發環境中預設啟用
+- 生產環境中需要手動啟用：`localStorage.setItem('enableWebSocket', 'true')`
+- 如果 WebSocket 服務器不可用，系統會自動降級為手動刷新模式
+
 ### 監控與維護
 ```bash
 # 健康檢查
@@ -321,6 +483,11 @@ vim /path/to/app-config.json
 1. 載入狀態指示器
 2. 錯誤訊息友善化
 3. 空狀態處理
+
+### WebSocket 配置
+1. 開發環境預設啟用 WebSocket
+2. 生產環境需手動啟用：`localStorage.setItem('enableWebSocket', 'true')`
+3. WebSocket 連接失敗不會影響正常功能
 
 ## 🔧 開發工具
 

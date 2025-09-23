@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Shield, Edit, Check, X, Plus, Trash2 } from 'lucide-react';
+import { Shield, Edit, Check, X, Plus, Trash2, Users, Key } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../components/ui/dialog.jsx';
 import apiClient from '../../services/api';
 
@@ -40,7 +40,9 @@ const PermissionPage = () => {
       for (const role of rolesData) {
         try {
           const permResponse = await apiClient.getRolePermissions(role.id);
-          rolePermissionsMap[role.id] = permResponse.data || permResponse || [];
+          const responseData = permResponse.data || permResponse;
+          // Handle new API response structure: data.permissions is array of permission objects
+          rolePermissionsMap[role.id] = responseData?.permissions || [];
         } catch (error) {
           console.error(`Failed to load permissions for role ${role.name}:`, error);
           rolePermissionsMap[role.id] = [];
@@ -79,6 +81,8 @@ const PermissionPage = () => {
       });
       setEditingRole(null);
       setTempPermissions([]);
+      // Refresh data to ensure consistency
+      await loadRoles();
     } catch (error) {
       console.error('Failed to update role permissions:', error);
     }
@@ -105,10 +109,12 @@ const PermissionPage = () => {
       } else {
         await apiClient.createRole(roleFormData);
       }
-      await loadRoles();
       setShowRoleModal(false);
       setEditingRole(null);
       setRoleFormData({ name: '', description: '', level: 1, is_system: false });
+      // Refresh all data after role changes
+      await loadRoles();
+      await loadPermissions();
     } catch (error) {
       console.error('Failed to save role:', error);
     }
@@ -125,8 +131,10 @@ const PermissionPage = () => {
   const confirmDeleteRole = async () => {
     try {
       await apiClient.deleteRole(deleteRoleDialog.roleId);
-      await loadRoles();
       setDeleteRoleDialog({ open: false, roleId: null, roleName: '' });
+      // Refresh all data after deletion
+      await loadRoles();
+      await loadPermissions();
     } catch (error) {
       console.error('Failed to delete role:', error);
     }
@@ -203,48 +211,72 @@ const PermissionPage = () => {
                   <div className="space-y-2 max-h-60 overflow-y-auto">
                     {permissions && Object.entries(permissions).map(([module, modulePermissions]) => (
                       <div key={module} className="mb-3">
-                        <div className="text-xs font-semibold text-gray-700 uppercase mb-2">{module}</div>
+                        <div className="text-xs font-semibold text-gray-700 uppercase mb-2 flex items-center gap-1">
+                          <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                          {module}
+                        </div>
                         {modulePermissions.map(perm => (
-                          <div key={perm.id} className="flex items-center gap-2 ml-2">
+                          <div key={perm.id} className="flex items-center gap-2 ml-3 py-1">
                             <input
                               type="checkbox"
                               checked={tempPermissions.includes(perm.id)}
                               onChange={() => togglePermission(perm.id)}
                               className="rounded"
                             />
-                            <span className="text-sm">{perm.name}</span>
+                            <div className="flex-1">
+                              <span className="text-sm font-medium">{perm.name}</span>
+                              {perm.description && (
+                                <div className="text-xs text-gray-500 mt-0.5">{perm.description}</div>
+                              )}
+                            </div>
                           </div>
                         ))}
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {rolePerms.length > 0 ? (
-                      rolePerms.slice(0, 5).map(permId => {
-                        let perm = null;
-                        if (permissions && typeof permissions === 'object') {
-                          // Search through all modules for the permission
-                          Object.values(permissions).forEach(modulePerms => {
-                            const found = modulePerms.find(p => p.id === permId);
-                            if (found) perm = found;
-                          });
-                        }
-                        return perm ? (
-                          <div key={permId} className="flex items-center justify-between">
-                            <span className="text-sm">{perm.name}</span>
-                            <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
-                              {t('permissions.allowed')}
-                            </span>
+                      <>
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-xs font-medium text-gray-700">
+                            權限總數: {rolePerms.length}
+                          </span>
+                          <Key className="h-3 w-3 text-gray-400" />
+                        </div>
+                        
+                        {/* Group permissions by module */}
+                        {Object.entries(
+                          rolePerms.reduce((groups, perm) => {
+                            const module = perm.module || '其他';
+                            if (!groups[module]) groups[module] = [];
+                            groups[module].push(perm);
+                            return groups;
+                          }, {})
+                        ).map(([module, modulePerms]) => (
+                          <div key={module} className="mb-3">
+                            <div className="text-xs font-semibold text-gray-600 mb-1 flex items-center gap-1">
+                              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                              {module}
+                            </div>
+                            <div className="flex flex-wrap gap-1 ml-3">
+                              {modulePerms.map(perm => (
+                                <span 
+                                  key={perm.id} 
+                                  className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-50 text-green-700 border border-green-200"
+                                  title={perm.description || perm.name}
+                                >
+                                  {perm.name}
+                                </span>
+                              ))}
+                            </div>
                           </div>
-                        ) : null;
-                      })
+                        ))}
+                      </>
                     ) : (
-                      <span className="text-sm text-gray-500">No permissions assigned</span>
-                    )}
-                    {rolePerms.length > 5 && (
-                      <div className="text-xs text-gray-500">
-                        +{rolePerms.length - 5} more permissions
+                      <div className="text-center py-4">
+                        <div className="text-gray-400 mb-1">🚫</div>
+                        <span className="text-sm text-gray-500">無權限</span>
                       </div>
                     )}
                   </div>

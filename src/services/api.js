@@ -121,6 +121,30 @@ class ApiClient {
   }
 
   // Schedule APIs
+  async getShiftCategories() {
+    return this.request('/api/v1/shift-categories');
+  }
+
+  async createShiftCategory(category) {
+    return this.request('/api/v1/shift-categories', {
+      method: 'POST',
+      body: category,
+    });
+  }
+
+  async updateShiftCategory(categoryId, category) {
+    return this.request(`/api/v1/shift-categories/${categoryId}`, {
+      method: 'PUT',
+      body: category,
+    });
+  }
+
+  async deleteShiftCategory(categoryId) {
+    return this.request(`/api/v1/shift-categories/${categoryId}`, {
+      method: 'DELETE',
+    });
+  }
+
   async getShiftTemplates() {
     return this.request('/api/v1/shift-templates');
   }
@@ -486,6 +510,35 @@ class ApiClient {
     return this.request(`/api/v1/brands/${brandId}/agents`);
   }
 
+  async getBrandMembers(brandId) {
+    return this.request(`/api/v1/brands/${brandId}/members`);
+  }
+
+  // Team Management APIs
+  async getBrandTeams(brandId) {
+    return this.request(`/api/v1/brands/${brandId}/teams`);
+  }
+
+  async createBrandTeam(brandId, teamData) {
+    return this.request(`/api/v1/brands/${brandId}/teams`, {
+      method: 'POST',
+      body: teamData,
+    });
+  }
+
+  async updateBrandTeam(brandId, teamId, teamData) {
+    return this.request(`/api/v1/brands/${brandId}/teams/${teamId}`, {
+      method: 'PUT',
+      body: teamData,
+    });
+  }
+
+  async deleteBrandTeam(brandId, teamId) {
+    return this.request(`/api/v1/brands/${brandId}/teams/${teamId}`, {
+      method: 'DELETE',
+    });
+  }
+
   async syncBrandResources(brandId) {
     return this.request(`/api/v1/brands/${brandId}/sync`, {
       method: 'POST',
@@ -584,6 +637,13 @@ class ApiClient {
     return this.request(`/api/v1/users/${userId}`, {
       method: 'PUT',
       body: user,
+    });
+  }
+
+  async updateUserPassword(userId, passwordData) {
+    return this.request(`/api/v1/users/${userId}/password`, {
+      method: 'PUT',
+      body: passwordData,
     });
   }
 

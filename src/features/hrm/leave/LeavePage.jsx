@@ -6,25 +6,35 @@ import { Badge } from '@/components/ui/badge';
 import { 
   Plus, Calendar, Clock, FileText, CheckCircle, 
   XCircle, AlertCircle, User, Eye, Users, AlertTriangle,
-  Edit, Trash2 
+  Edit, Trash2, Bell 
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import apiClient from '../../../services/api';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../../components/ui/dialog.jsx';
 import EmptyState from '../../../components/ui/empty-state';
+import SearchableSelect from '../../../components/ui/searchable-select';
+import useWebSocket from '../../../hooks/useWebSocket';
+import { useToast } from '../../../components/ui/toast';
 
 const LeavePage = () => {
   const [leaveTypes, setLeaveTypes] = useState([]);
   const [leaveRequests, setLeaveRequests] = useState([]);
   const [users, setUsers] = useState([]);
   const [userBalance, setUserBalance] = useState({});
+  const [memberBalances, setMemberBalances] = useState({});
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    pageSize: 10,
+    totalItems: 0,
+    totalPages: 0
+  });
+  const [requestsTab, setRequestsTab] = useState('pending'); // 'pending' or 'history'
   const [showApplyDialog, setShowApplyDialog] = useState(false);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [approvalDialog, setApprovalDialog] = useState({ open: false, requestId: null, action: '', reason: '' });
   const [leaveFormData, setLeaveFormData] = useState({
     brandId: '',
-    workspaceId: '',
     userId: '',
     typeId: '',
     startDate: '',
@@ -37,7 +47,7 @@ const LeavePage = () => {
   });
   const [brands, setBrands] = useState([]);
   const [workspaces, setWorkspaces] = useState([]);
-  const [workspaceMembers, setWorkspaceMembers] = useState([]);
+  const [brandMembers, setBrandMembers] = useState([]);
   const { user, hasPermission } = useAuthStore();
   const [alertDialog, setAlertDialog] = useState({ open: false, type: 'info', title: '', message: '' });
   const [activeTab, setActiveTab] = useState('requests'); // 'requests', 'categories', or 'manage'
@@ -53,10 +63,31 @@ const LeavePage = () => {
   });
   const [deleteLeaveTypeDialog, setDeleteLeaveTypeDialog] = useState({ open: false, typeId: null, typeName: '' });
 
+  const { subscribe } = useWebSocket('leave_requests');
+  const { toast } = useToast();
+
   useEffect(() => {
     loadLeaveData();
     loadBrands();
-  }, []);
+    
+    // 訂閱 WebSocket 更新
+    const unsubscribe = subscribe('leave_request_update', (data) => {
+      console.log('Received leave request update:', data);
+      
+      // 刷新請假申請列表
+      loadLeaveData();
+      
+      // 顯示通知
+      const message = `Leave request ${data.action} for ${data.data?.member_name || 'user'}`;
+      toast({
+        title: 'Leave Request Update',
+        description: message,
+        variant: data.action === 'approved' ? 'success' : data.action === 'rejected' ? 'destructive' : 'default'
+      });
+    });
+    
+    return unsubscribe;
+  }, [subscribe]);
 
   useEffect(() => {
     if (user) {
@@ -123,9 +154,29 @@ const LeavePage = () => {
       }
 
       // HRM 管理者可以看到所有請假申請，Agent 只能看到自己的
-      const requestParams = isAgent ? { member_id: localStorage.getItem('member_id') || user?.id } : {};
+      const requestParams = isAgent ? 
+        { member_id: localStorage.getItem('member_id') || user?.id } : 
+        { page: pagination.currentPage, limit: pagination.pageSize };
+        
       const requestsResponse = await apiClient.getLeaveRequests(requestParams);
       const requestsData = requestsResponse.data || requestsResponse;
+      
+      // 更新分頁資訊（只在 HRM 管理者模式下）
+      if (!isAgent && requestsResponse.pagination) {
+        setPagination(prev => ({
+          ...prev,
+          totalItems: requestsResponse.pagination.total || requestsData.length,
+          totalPages: requestsResponse.pagination.pages || Math.ceil(requestsData.length / prev.pageSize)
+        }));
+      } else if (!isAgent) {
+        // 如果沒有分頁資訊，使用預設值
+        setPagination(prev => ({
+          ...prev,
+          totalItems: requestsData.length,
+          totalPages: Math.ceil(requestsData.length / prev.pageSize)
+        }));
+      }
+      
       setLeaveRequests(Array.isArray(requestsData) ? requestsData : []);
     } catch (error) {
       console.error('Failed to load leave data:', error);
@@ -161,19 +212,67 @@ const LeavePage = () => {
     }
   };
 
-  const loadWorkspaceMembers = async (workspaceId) => {
-    if (!workspaceId) {
-      setWorkspaceMembers([]);
+  const loadBrandMembers = async (brandId) => {
+    if (!brandId) {
+      setBrandMembers([]);
+      setMemberBalances({});
       return;
     }
     try {
-      const response = await apiClient.getWorkspaceMembers(workspaceId);
+      const response = await apiClient.getBrandMembers(brandId);
       const membersData = response.data || response;
-      setWorkspaceMembers(Array.isArray(membersData) ? membersData : []);
+      setBrandMembers(Array.isArray(membersData) ? membersData : []);
+      
+      // 載入每個成員的請假餘額
+      await loadMemberBalances(membersData);
     } catch (error) {
-      console.error('Failed to load workspace members:', error);
-      setWorkspaceMembers([]);
+      console.error('Failed to load brand members:', error);
+      setBrandMembers([]);
+      setMemberBalances({});
     }
+  };
+
+  const loadMemberBalances = async (members) => {
+    if (!Array.isArray(members) || members.length === 0) return;
+    
+    const balances = {};
+    const currentYear = new Date().getFullYear();
+    
+    for (const member of members) {
+      try {
+        const response = await apiClient.getLeaveBalance(member.id, currentYear);
+        const balanceData = response.data || response;
+        
+        if (Array.isArray(balanceData)) {
+          const memberBalance = {};
+          balanceData.forEach(balance => {
+            const key = balance.leave_type_id || balance.leave_type_name?.replace(/\s+/g, '_').toUpperCase();
+            if (key) {
+              memberBalance[key] = {
+                total: balance.total_days || 0,
+                used: balance.used_days || 0,
+                remaining: balance.remaining_days || (balance.total_days - balance.used_days) || 0
+              };
+            }
+          });
+          balances[member.id] = memberBalance;
+        }
+      } catch (error) {
+        console.warn(`Failed to load balance for member ${member.id}:`, error);
+        // 使用預設餘額
+        const defaultBalance = {};
+        leaveTypes.forEach(type => {
+          defaultBalance[type.id] = {
+            total: type.days_per_year || 14,
+            used: 0,
+            remaining: type.days_per_year || 14
+          };
+        });
+        balances[member.id] = defaultBalance;
+      }
+    }
+    
+    setMemberBalances(balances);
   };
 
   const getStatusColor = (status) => {
@@ -251,16 +350,18 @@ const LeavePage = () => {
   const handleLeaveSubmit = async (e) => {
     e.preventDefault();
     
-    // Check leave balance
+    // Check leave balance for selected member
     const selectedType = leaveTypes.find(type => type.id == leaveFormData.typeId);
-    const userLeaveBalance = userBalance[selectedType?.code];
+    const selectedMemberId = leaveFormData.userId;
+    const memberBalance = selectedMemberId ? memberBalances[selectedMemberId] : null;
+    const balance = memberBalance ? memberBalance[selectedType?.id] : null;
     
-    if (userLeaveBalance && userLeaveBalance.remaining <= 0) {
+    if (balance && balance.remaining <= 0) {
       setAlertDialog({
         open: true,
         type: 'warning',
         title: 'Insufficient Leave Balance',
-        message: `No remaining ${selectedType.name} days available.`
+        message: `No remaining ${selectedType.name} days available for selected member.`
       });
       return;
     }
@@ -281,8 +382,6 @@ const LeavePage = () => {
       };
       
       const response = await apiClient.createLeaveRequest(requestData);
-      const newRequest = response.data || response;
-      setLeaveRequests(prev => [...prev, newRequest]);
       
       setAlertDialog({
         open: true,
@@ -294,7 +393,6 @@ const LeavePage = () => {
       setShowApplyDialog(false);
       setLeaveFormData({
         brandId: '',
-        workspaceId: '',
         userId: '',
         typeId: '',
         startDate: '',
@@ -305,8 +403,11 @@ const LeavePage = () => {
         reason: '',
         isHalfDay: false
       });
-      setWorkspaces([]);
-      setWorkspaceMembers([]);
+      setBrandMembers([]);
+      setMemberBalances({});
+      
+      // 重新載入資料以確保顯示正確的資訊
+      await loadLeaveData();
     } catch (error) {
       setAlertDialog({
         open: true,
@@ -430,78 +531,7 @@ const LeavePage = () => {
     );
   };
 
-  const LeaveRequestCard = ({ request }) => (
-    <Card>
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <User className="w-5 h-5 text-gray-400" />
-            <span className="font-medium">{request.member_name || request.applicant?.name || request.member?.name || 'Unknown User'}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Badge className={getStatusColor(request.status)}>
-              {getStatusIcon(request.status)}
-              {request.status === 'pending' ? 'Pending' : 
-               request.status === 'approved' ? 'Approved' : 'Rejected'}
-            </Badge>
-          </div>
-        </div>
-        
-        <div className="space-y-2 text-sm text-gray-600">
-          <div className="flex items-center gap-2">
-            <FileText className="w-4 h-4" />
-            <span>{request.leave_type_name || 'Unknown Type'} - {request.days || 0} days</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Calendar className="w-4 h-4" />
-            <span>
-              {request.start_date ? new Date(request.start_date).toLocaleDateString() : 'N/A'} - 
-              {request.end_date ? new Date(request.end_date).toLocaleDateString() : 'N/A'}
-            </span>
-          </div>
-          <div>
-            <span className="font-medium">Reason: </span>
-            {request.reason || 'No reason provided'}
-          </div>
-        </div>
 
-        <div className="flex gap-2 mt-4">
-          <Button 
-            size="sm" 
-            variant="outline"
-            onClick={() => {
-              setSelectedRequest(request);
-              setShowDetailDialog(true);
-            }}
-            className="flex items-center gap-1"
-          >
-            <Eye className="w-3 h-3" />
-            View Details
-          </Button>
-          
-          {hasPermission('leave.approve') && request.status === 'pending' && (
-            <>
-              <Button 
-                size="sm" 
-                onClick={() => handleApprovalAction(request.id, 'approve')}
-                className="flex-1"
-              >
-                Approve
-              </Button>
-              <Button 
-                size="sm" 
-                variant="destructive" 
-                onClick={() => handleApprovalAction(request.id, 'reject')}
-                className="flex-1"
-              >
-                Reject
-              </Button>
-            </>
-          )}
-        </div>
-      </CardContent>
-    </Card>
-  );
 
   return (
     <div className="space-y-6">
@@ -553,7 +583,6 @@ const LeavePage = () => {
               onClick={() => {
                 setLeaveFormData({
                   brandId: '',
-                  workspaceId: '',
                   userId: user?.id || '',
                   typeId: '',
                   startDate: '',
@@ -564,8 +593,7 @@ const LeavePage = () => {
                   reason: '',
                   isHalfDay: false
                 });
-                setWorkspaces([]);
-                setWorkspaceMembers([]);
+                setBrandMembers([]);
                 setShowApplyDialog(true);
               }}
               className="flex items-center gap-2"
@@ -622,20 +650,238 @@ const LeavePage = () => {
 
           {/* Leave Requests */}
           <div className="lg:col-span-2">
-            <h2 className="text-lg font-semibold mb-4">Leave Requests</h2>
-            <div className="space-y-4">
-              {Array.isArray(leaveRequests) && leaveRequests.length > 0 ? (
-                leaveRequests.map(request => (
-                  <LeaveRequestCard key={request.id} request={request} />
-                ))
-              ) : (
-                <EmptyState 
-                  type="leave" 
-                  title="No Leave Requests" 
-                  description="No leave request data available." 
-                />
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold">Leave Requests</h2>
+              {pagination.totalItems > 0 && (
+                <span className="text-sm text-gray-600">
+                  Showing {((pagination.currentPage - 1) * pagination.pageSize) + 1} to {Math.min(pagination.currentPage * pagination.pageSize, pagination.totalItems)} of {pagination.totalItems} requests
+                </span>
               )}
             </div>
+            
+            {/* Request Tabs */}
+            <div className="flex border-b mb-4">
+              <button
+                className={`px-4 py-2 text-sm font-medium border-b-2 ${
+                  requestsTab === 'pending' 
+                    ? 'border-blue-500 text-blue-600' 
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+                onClick={() => setRequestsTab('pending')}
+              >
+                Pending Requests
+              </button>
+              <button
+                className={`px-4 py-2 text-sm font-medium border-b-2 ${
+                  requestsTab === 'history' 
+                    ? 'border-blue-500 text-blue-600' 
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+                onClick={() => setRequestsTab('history')}
+              >
+                Review History
+              </button>
+            </div>
+            
+            {/* Requests Table */}
+            <div className="bg-white rounded-lg border overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Employee
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Leave Type
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Period
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Days
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {Array.isArray(leaveRequests) && leaveRequests.length > 0 ? (
+                      leaveRequests
+                        .filter(request => {
+                          if (requestsTab === 'pending') {
+                            return request.status === 'pending';
+                          } else {
+                            return request.status === 'approved' || request.status === 'rejected';
+                          }
+                        })
+                        .map(request => {
+                          const leaveType = leaveTypes.find(type => type.id === request.leave_type_id);
+                          const member = brandMembers.find(member => member.id === request.member_id);
+                          
+                          return (
+                            <tr key={request.id} className="hover:bg-gray-50">
+                              <td className="px-4 py-3 whitespace-nowrap">
+                                <div className="flex items-center">
+                                  <User className="w-4 h-4 text-gray-400 mr-2" />
+                                  <span className="text-sm font-medium text-gray-900">
+                                    {request.member_name || member?.name || 'Unknown User'}
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap">
+                                <span className="text-sm text-gray-900">
+                                  {request.leave_type_name || leaveType?.name || 'Unknown Type'}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap">
+                                <div className="text-sm text-gray-900">
+                                  {request.start_date ? new Date(request.start_date).toLocaleDateString() : 'N/A'}
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  to {request.end_date ? new Date(request.end_date).toLocaleDateString() : 'N/A'}
+                                </div>
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap">
+                                <span className="text-sm font-medium text-gray-900">
+                                  {request.days || 0}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap">
+                                <Badge className={getStatusColor(request.status)}>
+                                  {getStatusIcon(request.status)}
+                                  <span className="ml-1">
+                                    {request.status === 'pending' ? 'Pending' : 
+                                     request.status === 'approved' ? 'Approved' : 'Rejected'}
+                                  </span>
+                                </Badge>
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap text-sm font-medium">
+                                <div className="flex items-center gap-2">
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline"
+                                    onClick={() => {
+                                      setSelectedRequest(request);
+                                      setShowDetailDialog(true);
+                                    }}
+                                  >
+                                    <Eye className="w-3 h-3" />
+                                  </Button>
+                                  
+                                  {hasPermission('leave.approve') && request.status === 'pending' && (
+                                    <>
+                                      <Button 
+                                        size="sm" 
+                                        onClick={() => handleApprovalAction(request.id, 'approve')}
+                                        className="bg-green-600 hover:bg-green-700 text-white"
+                                      >
+                                        <CheckCircle className="w-3 h-3" />
+                                      </Button>
+                                      <Button 
+                                        size="sm" 
+                                        variant="destructive" 
+                                        onClick={() => handleApprovalAction(request.id, 'reject')}
+                                      >
+                                        <XCircle className="w-3 h-3" />
+                                      </Button>
+                                    </>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })
+                    ) : (
+                      <tr>
+                        <td colSpan={6} className="px-4 py-8 text-center">
+                          <EmptyState 
+                            type="leave" 
+                            title={`No ${requestsTab === 'pending' ? 'Pending' : 'Review History'} Requests`}
+                            description={`No ${requestsTab === 'pending' ? 'pending' : 'reviewed'} leave requests available.`}
+                          />
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            
+            {/* Pagination */}
+            {pagination.totalPages > 1 && (
+              <div className="flex items-center justify-between mt-6">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-600">Page size:</span>
+                  <select
+                    className="px-2 py-1 border rounded text-sm"
+                    value={pagination.pageSize}
+                    onChange={(e) => {
+                      const newPageSize = parseInt(e.target.value);
+                      setPagination(prev => ({ ...prev, pageSize: newPageSize, currentPage: 1 }));
+                      setTimeout(() => loadLeaveData(), 100);
+                    }}
+                  >
+                    <option value={5}>5</option>
+                    <option value={10}>10</option>
+                    <option value={20}>20</option>
+                    <option value={50}>50</option>
+                  </select>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={pagination.currentPage === 1}
+                    onClick={() => {
+                      setPagination(prev => ({ ...prev, currentPage: prev.currentPage - 1 }));
+                      setTimeout(() => loadLeaveData(), 100);
+                    }}
+                  >
+                    Previous
+                  </Button>
+                  
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                      const pageNum = i + 1;
+                      return (
+                        <Button
+                          key={pageNum}
+                          variant={pagination.currentPage === pageNum ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => {
+                            setPagination(prev => ({ ...prev, currentPage: pageNum }));
+                            setTimeout(() => loadLeaveData(), 100);
+                          }}
+                        >
+                          {pageNum}
+                        </Button>
+                      );
+                    })}
+                    {pagination.totalPages > 5 && (
+                      <span className="text-sm text-gray-500">...</span>
+                    )}
+                  </div>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={pagination.currentPage === pagination.totalPages}
+                    onClick={() => {
+                      setPagination(prev => ({ ...prev, currentPage: prev.currentPage + 1 }));
+                      setTimeout(() => loadLeaveData(), 100);
+                    }}
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -783,9 +1029,8 @@ const LeavePage = () => {
                         value={leaveFormData.brandId}
                         onChange={(e) => {
                           const brandId = e.target.value;
-                          setLeaveFormData(prev => ({ ...prev, brandId, workspaceId: '', userId: '' }));
-                          setWorkspaceMembers([]);
-                          loadBrandWorkspaces(brandId);
+                          setLeaveFormData(prev => ({ ...prev, brandId, userId: '' }));
+                          loadBrandMembers(brandId);
                         }}
                         required
                       >
@@ -797,39 +1042,19 @@ const LeavePage = () => {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium mb-2">Workspace *</label>
-                      <select
-                        className="w-full p-2 border rounded-md"
-                        value={leaveFormData.workspaceId}
-                        onChange={(e) => {
-                          const workspaceId = e.target.value;
-                          setLeaveFormData(prev => ({ ...prev, workspaceId, userId: '' }));
-                          loadWorkspaceMembers(workspaceId);
-                        }}
-                        required
-                        disabled={!leaveFormData.brandId}
-                      >
-                        <option value="">Select Workspace</option>
-                        {workspaces.map(workspace => (
-                          <option key={workspace.id} value={workspace.id}>{workspace.name}</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
                       <label className="block text-sm font-medium mb-2">Member *</label>
-                      <select
-                        className="w-full p-2 border rounded-md"
+                      <SearchableSelect
+                        options={brandMembers.map(member => ({
+                          value: member.id,
+                          label: `${member.name} (${member.role || 'Member'})`
+                        }))}
                         value={leaveFormData.userId}
-                        onChange={(e) => setLeaveFormData(prev => ({ ...prev, userId: e.target.value }))}
+                        onChange={(value) => setLeaveFormData(prev => ({ ...prev, userId: value }))}
+                        placeholder="Select Member"
+                        searchPlaceholder="Search member by name..."
+                        disabled={!leaveFormData.brandId}
                         required
-                        disabled={!leaveFormData.workspaceId}
-                      >
-                        <option value="">Select Member</option>
-                        {workspaceMembers.map(member => (
-                          <option key={member.id} value={member.id}>{member.name} ({member.role})</option>
-                        ))}
-                      </select>
+                      />
                     </div>
                   </>
                 )}
@@ -844,10 +1069,14 @@ const LeavePage = () => {
                   >
                     <option value="">Select Leave Type</option>
                     {leaveTypes.map(type => {
-                      const balance = userBalance[type.code];
+                      const selectedMemberId = leaveFormData.userId;
+                      const memberBalance = selectedMemberId ? memberBalances[selectedMemberId] : null;
+                      const balance = memberBalance ? memberBalance[type.id] : null;
+                      const remaining = balance?.remaining ?? type.days_per_year ?? 0;
+                      
                       return (
                         <option key={type.id} value={type.id}>
-                          {type.name} (Remaining: {balance?.remaining || 0} days)
+                          {type.name} (Remaining: {remaining} days)
                         </option>
                       );
                     })}

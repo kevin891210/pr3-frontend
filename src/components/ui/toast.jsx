@@ -11,6 +11,12 @@ export const useToast = () => {
   return context;
 };
 
+// 導出 toast 函數供直接使用
+export const toast = ({ title, description, variant = 'default' }) => {
+  // 這是一個簡化版本，實際使用時需要 ToastProvider
+  console.log(`Toast: ${title}${description ? ` - ${description}` : ''}`);
+};
+
 export const ToastProvider = ({ children }) => {
   const [toasts, setToasts] = useState([]);
 
@@ -28,6 +34,14 @@ export const ToastProvider = ({ children }) => {
 
   const removeToast = (id) => {
     setToasts(prev => prev.filter(toast => toast.id !== id));
+  };
+
+  const toast = ({ title, description, variant = 'default' }) => {
+    const message = title + (description ? `\n${description}` : '');
+    const type = variant === 'success' ? 'success' : 
+                variant === 'destructive' ? 'error' : 
+                variant === 'warning' ? 'warning' : 'info';
+    addToast(message, type);
   };
 
   const success = (message, duration) => addToast(message, 'success', duration);
@@ -58,7 +72,7 @@ export const ToastProvider = ({ children }) => {
   };
 
   return (
-    <ToastContext.Provider value={{ success, error, info, warning, confirm }}>
+    <ToastContext.Provider value={{ toast, success, error, info, warning, confirm }}>
       {children}
       <ToastContainer toasts={toasts} removeToast={removeToast} />
     </ToastContext.Provider>

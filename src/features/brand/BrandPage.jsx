@@ -8,6 +8,7 @@ import { Plus, Edit, Trash2, Search, Building2, Users, Bot, UserCheck } from 'lu
 import apiClient from '../../services/api';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../components/ui/dialog.jsx';
 import EmptyState from '../../components/ui/empty-state';
+import Modal from '../../components/ui/modal';
 
 const BrandPage = () => {
   const { t } = useTranslation();
@@ -18,7 +19,13 @@ const BrandPage = () => {
   const [workspaces, setWorkspaces] = useState([]);
   const [bots, setBots] = useState([]);
   const [agents, setAgents] = useState([]);
+  const [teams, setTeams] = useState([]);
   const [resourceLoading, setResourceLoading] = useState(false);
+  const [showTeamModal, setShowTeamModal] = useState(false);
+  const [editingTeam, setEditingTeam] = useState(null);
+  const [teamFormData, setTeamFormData] = useState({ name: '', description: '', memberIds: [], leaderIds: [] });
+  const [leaderSearchTerm, setLeaderSearchTerm] = useState('');
+  const [memberSearchTerm, setMemberSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingBrand, setEditingBrand] = useState(null);
   const [formData, setFormData] = useState({
@@ -65,14 +72,16 @@ const BrandPage = () => {
   const loadBrandResources = async (brandId) => {
     setResourceLoading(true);
     try {
-      const [workspacesData, botsData, agentsData] = await Promise.all([
+      const [workspacesData, botsData, agentsData, teamsData] = await Promise.all([
         apiClient.request(`/api/v1/workspaces-by-brand/${brandId}`),
         apiClient.request(`/api/v1/brands/${brandId}/bots`),
-        apiClient.request(`/api/v1/brands/${brandId}/agents`)
+        apiClient.request(`/api/v1/brands/${brandId}/agents`),
+        apiClient.getBrandTeams(brandId).catch(() => ({ data: [] }))
       ]);
       setWorkspaces(workspacesData.data || workspacesData);
       setBots(botsData.data || botsData);
       setAgents(agentsData.data || agentsData);
+      setTeams(teamsData.data || teamsData);
     } catch (error) {
       console.error('Load resources failed:', error);
       setAlertDialog({
@@ -84,6 +93,7 @@ const BrandPage = () => {
       setWorkspaces([]);
       setBots([]);
       setAgents([]);
+      setTeams([]);
     } finally {
       setResourceLoading(false);
     }
@@ -338,6 +348,71 @@ const BrandPage = () => {
     }
   };
 
+  // Team Management Functions
+  const handleTeamSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const teamData = {
+        name: teamFormData.name,
+        description: teamFormData.description,
+        member_ids: teamFormData.memberIds,
+        leader_ids: teamFormData.leaderIds
+      };
+      
+      if (editingTeam) {
+        await apiClient.updateBrandTeam(selectedBrand.id, editingTeam.id, teamData);
+        setAlertDialog({
+          open: true,
+          type: 'success',
+          title: 'Team Updated',
+          message: 'Team updated successfully'
+        });
+      } else {
+        await apiClient.createBrandTeam(selectedBrand.id, teamData);
+        setAlertDialog({
+          open: true,
+          type: 'success',
+          title: 'Team Created',
+          message: 'Team created successfully'
+        });
+      }
+      
+      loadBrandResources(selectedBrand.id);
+      setShowTeamModal(false);
+      setEditingTeam(null);
+      setTeamFormData({ name: '', description: '', memberIds: [], leaderIds: [] });
+      setLeaderSearchTerm('');
+      setMemberSearchTerm('');
+    } catch (error) {
+      setAlertDialog({
+        open: true,
+        type: 'danger',
+        title: 'Save Failed',
+        message: error.message
+      });
+    }
+  };
+
+  const handleDeleteTeam = async (teamId) => {
+    try {
+      await apiClient.deleteBrandTeam(selectedBrand.id, teamId);
+      setAlertDialog({
+        open: true,
+        type: 'success',
+        title: 'Team Deleted',
+        message: 'Team deleted successfully'
+      });
+      loadBrandResources(selectedBrand.id);
+    } catch (error) {
+      setAlertDialog({
+        open: true,
+        type: 'danger',
+        title: 'Delete Failed',
+        message: error.message
+      });
+    }
+  };
+
   const filteredBrands = brands.filter(brand =>
     brand && brand.name && brand.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -416,11 +491,11 @@ const BrandPage = () => {
                           <td className="py-3 px-4 text-gray-600">{brand.description || '-'}</td>
                           <td className="py-3 px-4">
                             <span className={`px-2 py-1 rounded-full text-xs ${
-                              brand.status === 'active' 
+                              brand.is_active 
                                 ? 'bg-green-100 text-green-700' 
                                 : 'bg-red-100 text-red-700'
                             }`}>
-                              {brand.status === 'active' ? t('active') : t('inactive')}
+                              {brand.is_active ? t('active') : t('inactive')}
                             </span>
                           </td>
                           <td className="py-3 px-4">
@@ -545,22 +620,12 @@ const BrandPage = () => {
                       <thead>
                         <tr className="border-b">
                           <th className="text-left py-3 px-4">Workspace 名稱</th>
-                          <th className="text-left py-3 px-4">Status</th>
                         </tr>
                       </thead>
                       <tbody>
                         {Array.isArray(workspaces) && workspaces.map(workspace => (
                           <tr key={workspace.id} className="border-b hover:bg-gray-50">
                             <td className="py-3 px-4 font-medium">{workspace.name}</td>
-                            <td className="py-3 px-4">
-                              <span className={`px-2 py-1 rounded-full text-xs ${
-                                workspace.status === 'active' 
-                                  ? 'bg-green-100 text-green-700' 
-                                  : 'bg-red-100 text-red-700'
-                              }`}>
-                                {workspace.status === 'active' ? '活躍' : '靜止'}
-                              </span>
-                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -626,22 +691,12 @@ const BrandPage = () => {
                       <thead>
                         <tr className="border-b">
                           <th className="text-left py-3 px-4">Bot 名稱</th>
-                          <th className="text-left py-3 px-4">Status</th>
                         </tr>
                       </thead>
                       <tbody>
                         {Array.isArray(bots) && bots.map(bot => (
                           <tr key={bot.id} className="border-b hover:bg-gray-50">
                             <td className="py-3 px-4 font-medium">{bot.name}</td>
-                            <td className="py-3 px-4">
-                              <span className={`px-2 py-1 rounded-full text-xs ${
-                                bot.status === 'online' 
-                                  ? 'bg-green-100 text-green-700' 
-                                  : 'bg-red-100 text-red-700'
-                              }`}>
-                                {bot.status === 'online' ? 'Online' : 'Offline'}
-                              </span>
-                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -655,84 +710,218 @@ const BrandPage = () => {
 
         <TabsContent value="agents" className="space-y-4">
           {selectedBrand && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <UserCheck className="w-5 h-5" />
-                    {selectedBrand.name} - Agent 管理
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleSyncAgents(selectedBrand.id)}
-                      disabled={syncingAgents}
-                      className="flex items-center gap-1"
-                    >
-                      {syncingAgents ? (
-                        <div className="w-3 h-3 animate-spin rounded-full border border-gray-300 border-t-blue-600" />
-                      ) : (
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                        </svg>
-                      )}
-                      Sync
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setActiveTab('brands')}
-                    >
-                      返回列表
-                    </Button>
-                  </div>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {resourceLoading ? (
-                  <div className="text-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                    <p className="mt-2 text-gray-600">Loading...</p>
-                  </div>
-                ) : !Array.isArray(agents) || agents.length === 0 ? (
-                  <EmptyState 
-                    type="agents" 
-                    title="No Agents" 
-                    description="No agent data available." 
-                  />
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="border-b">
-                          <th className="text-left py-3 px-4">Agent 名稱</th>
-                          <th className="text-left py-3 px-4">Status</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {Array.isArray(agents) && agents.map(agent => (
-                          <tr key={agent.id} className="border-b hover:bg-gray-50">
-                            <td className="py-3 px-4 font-medium">{agent.name}</td>
-                            <td className="py-3 px-4">
-                              <span className={`px-2 py-1 rounded-full text-xs ${
-                                agent.status === 'online' 
-                                  ? 'bg-green-100 text-green-700' 
-                                  : agent.status === 'busy'
-                                  ? 'bg-yellow-100 text-yellow-700'
-                                  : 'bg-red-100 text-red-700'
-                              }`}>
-                                {agent.status === 'online' ? 'Online' : agent.status === 'busy' ? 'Busy' : 'Offline'}
-                              </span>
-                            </td>
+            <>
+              {/* Team Management Section */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Users className="w-5 h-5" />
+                      {selectedBrand.name} - Team 管理
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        onClick={() => {
+                          setEditingTeam(null);
+                          setTeamFormData({ name: '', description: '', memberIds: [], leaderIds: [] });
+                          setShowTeamModal(true);
+                        }}
+                        className="flex items-center gap-1"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Create Team
+                      </Button>
+                    </div>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {teams.length === 0 ? (
+                    <EmptyState 
+                      type="teams" 
+                      title="No Teams" 
+                      description="Create teams to organize your agents." 
+                    />
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {teams.map(team => (
+                        <Card key={team.id} className="border">
+                          <CardContent className="p-4">
+                            <div className="flex items-start justify-between mb-3">
+                              <div>
+                                <h3 className="font-medium">{team.name}</h3>
+                                <p className="text-sm text-gray-600">{team.description}</p>
+                              </div>
+                              <div className="flex gap-1">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    setEditingTeam(team);
+                                    // 需要獲取完整的 team 資料來編輯
+                                    // 目前 API 只返回 preview，需要調用詳細 API
+                                    setTeamFormData({
+                                      name: team.name,
+                                      description: team.description,
+                                      memberIds: team.members_preview?.filter(m => !m.is_leader).map(m => m.id) || [],
+                                      leaderIds: team.leaders_preview?.map(l => l.id) || []
+                                    });
+                                    setShowTeamModal(true);
+                                  }}
+                                >
+                                  <Edit className="w-3 h-3" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={() => handleDeleteTeam(team.id)}
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </Button>
+                              </div>
+                            </div>
+                            <div className="text-sm text-gray-600 space-y-1">
+                              <div><span className="font-medium">{team.member_count || 0}</span> total members</div>
+                              <div><span className="font-medium">{team.leaders_preview?.length || 0}</span> leaders</div>
+                            </div>
+                            {team.leaders_preview && team.leaders_preview.length > 0 && (
+                              <div className="mt-2">
+                                <div className="text-xs text-gray-500 mb-1">Leaders:</div>
+                                <div className="flex flex-wrap gap-1">
+                                  {team.leaders_preview.slice(0, 2).map(leader => (
+                                    <span key={leader.id} className="px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded">
+                                      {leader.name}
+                                    </span>
+                                  ))}
+                                  {team.leaders_preview.length > 2 && (
+                                    <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">
+                                      +{team.leaders_preview.length - 2} more
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                            {team.members_preview && team.members_preview.length > 0 && (
+                              <div className="mt-2">
+                                <div className="text-xs text-gray-500 mb-1">Members:</div>
+                                <div className="flex flex-wrap gap-1">
+                                  {team.members_preview.slice(0, 3).map(member => (
+                                    <span key={member.id} className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded">
+                                      {member.name}
+                                    </span>
+                                  ))}
+                                  {team.members_preview.length > 3 && (
+                                    <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">
+                                      +{team.members_preview.length - 3} more
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Agent List Section */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <UserCheck className="w-5 h-5" />
+                      Agent 列表
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleSyncAgents(selectedBrand.id)}
+                        disabled={syncingAgents}
+                        className="flex items-center gap-1"
+                      >
+                        {syncingAgents ? (
+                          <div className="w-3 h-3 animate-spin rounded-full border border-gray-300 border-t-blue-600" />
+                        ) : (
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                          </svg>
+                        )}
+                        Sync Agents
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setActiveTab('brands')}
+                      >
+                        返回列表
+                      </Button>
+                    </div>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {resourceLoading ? (
+                    <div className="text-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                      <p className="mt-2 text-gray-600">Loading...</p>
+                    </div>
+                  ) : !Array.isArray(agents) || agents.length === 0 ? (
+                    <EmptyState 
+                      type="agents" 
+                      title="No Agents" 
+                      description="Sync agents from the brand to start creating teams." 
+                    />
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b">
+                            <th className="text-left py-3 px-4">Agent 名稱</th>
+                            <th className="text-left py-3 px-4">Team</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                        </thead>
+                        <tbody>
+                          {Array.isArray(agents) && agents.map(agent => {
+                            const agentTeam = teams.find(team => 
+                              (team.members_preview?.some(member => member.id === agent.id)) ||
+                              (team.leaders_preview?.some(leader => leader.id === agent.id))
+                            );
+                            const isLeader = teams.some(team => 
+                              team.leaders_preview?.some(leader => leader.id === agent.id)
+                            );
+                            return (
+                              <tr key={agent.id} className="border-b hover:bg-gray-50">
+                                <td className="py-3 px-4">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-medium">{agent.name}</span>
+                                    {isLeader && (
+                                      <span className="px-1 py-0.5 bg-orange-100 text-orange-700 text-xs rounded">
+                                        Leader
+                                      </span>
+                                    )}
+                                  </div>
+                                </td>
+                                <td className="py-3 px-4">
+                                  {agentTeam ? (
+                                    <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded">
+                                      {agentTeam.name}
+                                    </span>
+                                  ) : (
+                                    <span className="text-gray-400 text-sm">No team</span>
+                                  )}
+                                </td>
+
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </>
           )}
         </TabsContent>
 
@@ -744,13 +933,31 @@ const BrandPage = () => {
       </Tabs>
 
       {/* Add Brand Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-semibold mb-4">
-              {editingBrand ? 'Edit Brand' : 'Add Brand'}
-            </h3>
-            <form onSubmit={handleSubmit} className="space-y-4">
+      <Modal
+        open={showModal}
+        onOpenChange={setShowModal}
+        title={editingBrand ? 'Edit Brand' : 'Add Brand'}
+        size="md"
+        footer={
+          <>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setShowModal(false);
+                setEditingBrand(null);
+                setFormData({ name: '', description: '', apiUrl: '', username: '', password: '', status: 'active' });
+              }}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" form="brand-form">
+              {editingBrand ? 'Update' : 'Add'}
+            </Button>
+          </>
+        }
+      >
+        <form id="brand-form" onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-1">Brand 名稱 *</label>
                 <Input
@@ -810,26 +1017,8 @@ const BrandPage = () => {
                   <option value="inactive">Inactive</option>
                 </select>
               </div>
-              <div className="flex justify-end gap-2 pt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setShowModal(false);
-                    setEditingBrand(null);
-                    setFormData({ name: '', description: '', apiUrl: '', username: '', password: '', status: 'active' });
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit">
-                  {editingBrand ? 'Update' : 'Add'}
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+        </form>
+      </Modal>
 
       {/* Delete確認對話框 */}
       <Dialog open={deleteDialog.open} onOpenChange={(open) => !open && setDeleteDialog({ open: false, brandId: null, brandName: '' })}>
@@ -844,6 +1033,159 @@ const BrandPage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Team Modal */}
+      <Modal
+        open={showTeamModal}
+        onOpenChange={setShowTeamModal}
+        title={editingTeam ? 'Edit Team' : 'Create Team'}
+        size="lg"
+        className="max-h-[80vh]"
+        footer={
+          <>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setShowTeamModal(false);
+                setEditingTeam(null);
+                setTeamFormData({ name: '', description: '', memberIds: [], leaderIds: [] });
+                setLeaderSearchTerm('');
+                setMemberSearchTerm('');
+              }}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" form="team-form">
+              {editingTeam ? 'Update Team' : 'Create Team'}
+            </Button>
+          </>
+        }
+      >
+        <form id="team-form" onSubmit={handleTeamSubmit} className="space-y-4 max-h-[60vh] overflow-y-auto">
+              <div>
+                <label className="block text-sm font-medium mb-1">Team Name *</label>
+                <Input
+                  value={teamFormData.name}
+                  onChange={(e) => setTeamFormData({...teamFormData, name: e.target.value})}
+                  placeholder="Enter team name"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Description</label>
+                <textarea
+                  className="w-full p-2 border rounded-md"
+                  rows="3"
+                  value={teamFormData.description}
+                  onChange={(e) => setTeamFormData({...teamFormData, description: e.target.value})}
+                  placeholder="Enter team description"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Team Leaders</label>
+                <div className="border rounded-md">
+                  <div className="p-2 border-b">
+                    <Input
+                      placeholder="Search leaders..."
+                      value={leaderSearchTerm}
+                      onChange={(e) => setLeaderSearchTerm(e.target.value)}
+                      className="text-sm"
+                    />
+                  </div>
+                  <div className="p-3 max-h-48 overflow-y-auto">
+                    {agents.length === 0 ? (
+                      <p className="text-gray-500 text-sm">No agents available. Please sync agents first.</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {agents
+                          .filter(agent => agent.name.toLowerCase().includes(leaderSearchTerm.toLowerCase()))
+                          .map(agent => (
+                          <label key={agent.id} className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded">
+                            <input
+                              type="checkbox"
+                              checked={teamFormData.leaderIds.includes(agent.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setTeamFormData({
+                                    ...teamFormData,
+                                    leaderIds: [...teamFormData.leaderIds, agent.id]
+                                  });
+                                } else {
+                                  setTeamFormData({
+                                    ...teamFormData,
+                                    leaderIds: teamFormData.leaderIds.filter(id => id !== agent.id)
+                                  });
+                                }
+                              }}
+                            />
+                            <span className="font-medium">{agent.name}</span>
+                          </label>
+                        ))}
+                        {agents.filter(agent => agent.name.toLowerCase().includes(leaderSearchTerm.toLowerCase())).length === 0 && leaderSearchTerm && (
+                          <p className="text-gray-500 text-sm text-center py-2">No leaders found</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <p className="text-sm text-gray-600 mt-1">
+                  Selected: {teamFormData.leaderIds.length} leaders
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Team Members</label>
+                <div className="border rounded-md">
+                  <div className="p-2 border-b">
+                    <Input
+                      placeholder="Search members..."
+                      value={memberSearchTerm}
+                      onChange={(e) => setMemberSearchTerm(e.target.value)}
+                      className="text-sm"
+                    />
+                  </div>
+                  <div className="p-3 max-h-48 overflow-y-auto">
+                    {agents.length === 0 ? (
+                      <p className="text-gray-500 text-sm">No agents available. Please sync agents first.</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {agents
+                          .filter(agent => agent.name.toLowerCase().includes(memberSearchTerm.toLowerCase()))
+                          .map(agent => (
+                          <label key={agent.id} className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded">
+                            <input
+                              type="checkbox"
+                              checked={teamFormData.memberIds.includes(agent.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setTeamFormData({
+                                    ...teamFormData,
+                                    memberIds: [...teamFormData.memberIds, agent.id]
+                                  });
+                                } else {
+                                  setTeamFormData({
+                                    ...teamFormData,
+                                    memberIds: teamFormData.memberIds.filter(id => id !== agent.id)
+                                  });
+                                }
+                              }}
+                            />
+                            <span className="font-medium">{agent.name}</span>
+                          </label>
+                        ))}
+                        {agents.filter(agent => agent.name.toLowerCase().includes(memberSearchTerm.toLowerCase())).length === 0 && memberSearchTerm && (
+                          <p className="text-gray-500 text-sm text-center py-2">No members found</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <p className="text-sm text-gray-600 mt-1">
+                  Selected: {teamFormData.memberIds.length} members
+                </p>
+              </div>
+        </form>
+      </Modal>
 
       {/* 提示對話框 */}
       <Dialog open={alertDialog.open} onOpenChange={(open) => !open && setAlertDialog({ open: false, type: 'info', title: '', message: '' })}>

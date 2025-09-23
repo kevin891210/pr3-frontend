@@ -8,6 +8,8 @@ import { Plus, Clock, Users, AlertTriangle, Edit, Trash2 } from 'lucide-react';
 import apiClient from '../../../services/api';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../../components/ui/dialog.jsx';
 import EmptyState from '../../../components/ui/empty-state';
+import SearchableSelect from '../../../components/ui/searchable-select';
+import Modal from '../../../components/ui/modal';
 
 const SchedulePage = () => {
   const [events, setEvents] = useState([]);
@@ -30,7 +32,6 @@ const SchedulePage = () => {
   });
   const [assignmentFormData, setAssignmentFormData] = useState({
     brand_id: '',
-    workspace_id: '',
     member_id: '',
     template_id: '',
     date: '',
@@ -39,12 +40,7 @@ const SchedulePage = () => {
   const [brands, setBrands] = useState([]);
   const [workspaces, setWorkspaces] = useState([]);
   const [workspaceMembers, setWorkspaceMembers] = useState([]);
-  const [shiftCategories, setShiftCategories] = useState([
-    { id: 'full_day', name: 'Full Day Shift' },
-    { id: 'rotating', name: 'Rotating Shift' },
-    { id: 'split', name: 'Split Shift' },
-    { id: 'flexible', name: 'Flexible Shift' }
-  ]);
+  const [shiftCategories, setShiftCategories] = useState([]);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
   const [categoryFormData, setCategoryFormData] = useState({ name: '' });
@@ -56,9 +52,25 @@ const SchedulePage = () => {
   const [deleteAssignmentDialog, setDeleteAssignmentDialog] = useState({ open: false, assignmentId: null, assignmentTitle: '' });
 
   useEffect(() => {
+    loadShiftCategories();
     loadScheduleData();
     loadBrands();
   }, []);
+
+  const loadShiftCategories = async () => {
+    try {
+      const response = await apiClient.getShiftCategories();
+      const categoriesData = response.data || response;
+      setShiftCategories(Array.isArray(categoriesData) ? categoriesData : []);
+    } catch (error) {
+      console.error('Failed to load shift categories:', error);
+      // Fallback to default categories if API fails
+      setShiftCategories([
+        { id: 'full_day', name: 'Full Day Shift' },
+        { id: 'rotating', name: 'Rotating Shift' }
+      ]);
+    }
+  };
 
   const loadScheduleData = async () => {
     try {
@@ -111,14 +123,47 @@ const SchedulePage = () => {
       const scheduleData = scheduleResponse.data || scheduleResponse;
       const rawAssignments = Array.isArray(scheduleData) ? scheduleData : [];
       
+      // 為每個成員分配顏色
+      const memberColors = {};
+      const colors = [
+        { bg: '#ef4444', border: '#dc2626' }, // red
+        { bg: '#3b82f6', border: '#2563eb' }, // blue
+        { bg: '#10b981', border: '#059669' }, // green
+        { bg: '#f59e0b', border: '#d97706' }, // yellow
+        { bg: '#8b5cf6', border: '#7c3aed' }, // purple
+        { bg: '#06b6d4', border: '#0891b2' }, // cyan
+        { bg: '#ec4899', border: '#db2777' }, // pink
+        { bg: '#84cc16', border: '#65a30d' }, // lime
+        { bg: '#f97316', border: '#ea580c' }, // orange
+        { bg: '#6366f1', border: '#4f46e5' }  // indigo
+      ];
+      
+      let colorIndex = 0;
+      rawAssignments.forEach(assignment => {
+        if (!memberColors[assignment.member_id]) {
+          memberColors[assignment.member_id] = colors[colorIndex % colors.length];
+          colorIndex++;
+        }
+      });
+
       // 轉換 API 資料為 FullCalendar 格式
       const formattedEvents = await Promise.all(rawAssignments.map(async (assignment) => {
         // 找到對應的 shift template
-        const template = formattedTemplates.find(t => t.id === assignment.shift_template_id);
+        let template = formattedTemplates.find(t => t.id === assignment.shift_template_id);
         
         if (!template) {
-          console.warn('Template not found for assignment:', assignment);
-          return null;
+          console.warn('Template not found for assignment:', assignment, 'Available templates:', formattedTemplates.map(t => t.id));
+          // 創建一個默認的 template 以避免丟失 assignment
+          template = {
+            id: assignment.shift_template_id,
+            name: `Unknown Template (${assignment.shift_template_id})`,
+            start_time: '09:00',
+            end_time: '18:00',
+            category: 'unknown',
+            is_cross_day: false,
+            timezone: 'Asia/Taipei',
+            total_break_minutes: 60
+          };
         }
         
         // 組合日期和時間，確保格式正確
@@ -144,15 +189,20 @@ const SchedulePage = () => {
           return null;
         }
         
+        const memberName = assignment.member_name || `Member ${assignment.member_id.substring(0, 8)}`;
+        const memberColor = memberColors[assignment.member_id];
+        
         const event = {
           id: assignment.id,
-          title: `${template.name} - ${assignment.member_name || `Member ${assignment.member_id.substring(0, 8)}`}`,
+          title: `${memberName}\n${template.name} (${startTime}-${endTime})`,
           start: startDateTime,
           end: endDateTime,
-          backgroundColor: '#3b82f6',
-          borderColor: '#2563eb',
+          backgroundColor: memberColor.bg,
+          borderColor: memberColor.border,
+          textColor: '#ffffff',
           extendedProps: {
             memberId: assignment.member_id,
+            memberName: memberName,
             templateId: assignment.shift_template_id,
             templateName: template.name,
             assignmentDate: assignment.date,
@@ -187,32 +237,17 @@ const SchedulePage = () => {
     }
   };
 
-  const loadBrandWorkspaces = async (brandId) => {
+  const loadBrandMembers = async (brandId) => {
     if (!brandId) {
-      setWorkspaces([]);
-      return;
-    }
-    try {
-      const response = await apiClient.getBrandWorkspaces(brandId);
-      const workspacesData = response.data || response;
-      setWorkspaces(Array.isArray(workspacesData) ? workspacesData : []);
-    } catch (error) {
-      console.error('Failed to load brand workspaces:', error);
-      setWorkspaces([]);
-    }
-  };
-
-  const loadWorkspaceMembers = async (workspaceId) => {
-    if (!workspaceId) {
       setWorkspaceMembers([]);
       return;
     }
     try {
-      const response = await apiClient.getWorkspaceMembers(workspaceId);
+      const response = await apiClient.getBrandMembers(brandId);
       const membersData = response.data || response;
       setWorkspaceMembers(Array.isArray(membersData) ? membersData : []);
     } catch (error) {
-      console.error('Failed to load workspace members:', error);
+      console.error('Failed to load brand members:', error);
       setWorkspaceMembers([]);
     }
   };
@@ -257,11 +292,13 @@ const SchedulePage = () => {
 
   const handleEventClick = (info) => {
     const event = info.event;
+    const props = event.extendedProps;
     
     alert(`Shift Details:
-Title: ${event.title}
-Start: ${new Date(event.start).toLocaleString()}
-End: ${new Date(event.end).toLocaleString()}`);
+Member: ${props.memberName || 'Unknown'}
+Shift: ${props.templateName || 'Unknown'}
+Date: ${props.assignmentDate || 'Unknown'}
+Time: ${new Date(event.start).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - ${new Date(event.end).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`);
   };
 
   const handleEditShift = (template) => {
@@ -387,17 +424,10 @@ End: ${new Date(event.end).toLocaleString()}`);
     }
   };
 
-  // Handle brand selection to load workspaces
+  // Handle brand selection to load members
   const handleBrandChange = (brandId) => {
-    setAssignmentFormData(prev => ({ ...prev, brand_id: brandId, workspace_id: '', member_id: '' }));
-    setWorkspaceMembers([]);
-    loadBrandWorkspaces(brandId);
-  };
-
-  // Handle workspace selection to load members
-  const handleWorkspaceChange = (workspaceId) => {
-    setAssignmentFormData(prev => ({ ...prev, workspace_id: workspaceId, member_id: '' }));
-    loadWorkspaceMembers(workspaceId);
+    setAssignmentFormData(prev => ({ ...prev, brand_id: brandId, member_id: '' }));
+    loadBrandMembers(brandId);
   };
 
   // Handle assignment edit
@@ -405,7 +435,6 @@ End: ${new Date(event.end).toLocaleString()}`);
     setEditingAssignment(event);
     setAssignmentFormData({
       brand_id: '',
-      workspace_id: '',
       member_id: event.extendedProps.memberId,
       template_id: event.extendedProps.templateId,
       date: event.extendedProps.assignmentDate,
@@ -448,7 +477,7 @@ End: ${new Date(event.end).toLocaleString()}`);
   // Handle shift assignment submission
   const handleAssignmentSubmit = async () => {
     // Validate required fields
-    if (!assignmentFormData.brand_id || !assignmentFormData.workspace_id || !assignmentFormData.member_id || !assignmentFormData.template_id || !assignmentFormData.date) {
+    if (!assignmentFormData.brand_id || !assignmentFormData.member_id || !assignmentFormData.template_id || !assignmentFormData.date) {
       setAlertDialog({
         open: true,
         type: 'warning',
@@ -486,8 +515,7 @@ End: ${new Date(event.end).toLocaleString()}`);
       
       setShowAssignmentModal(false);
       setEditingAssignment(null);
-      setAssignmentFormData({ brand_id: '', workspace_id: '', member_id: '', template_id: '', date: '', break_schedule: [] });
-      setWorkspaces([]);
+      setAssignmentFormData({ brand_id: '', member_id: '', template_id: '', date: '', break_schedule: [] });
       setWorkspaceMembers([]);
       
       // Reload schedule data to show new assignment
@@ -521,9 +549,7 @@ End: ${new Date(event.end).toLocaleString()}`);
     e.preventDefault();
     try {
       if (editingCategory) {
-        setShiftCategories(prev => prev.map(cat => 
-          cat.id === editingCategory.id ? { ...cat, name: categoryFormData.name } : cat
-        ));
+        await apiClient.updateShiftCategory(editingCategory.id, categoryFormData);
         setAlertDialog({
           open: true,
           type: 'success',
@@ -531,11 +557,7 @@ End: ${new Date(event.end).toLocaleString()}`);
           message: 'Category updated successfully'
         });
       } else {
-        const newCategory = {
-          id: `category_${Date.now()}`,
-          name: categoryFormData.name
-        };
-        setShiftCategories(prev => [...prev, newCategory]);
+        await apiClient.createShiftCategory(categoryFormData);
         setAlertDialog({
           open: true,
           type: 'success',
@@ -546,6 +568,8 @@ End: ${new Date(event.end).toLocaleString()}`);
       setShowCategoryModal(false);
       setEditingCategory(null);
       setCategoryFormData({ name: '' });
+      // Reload categories after successful operation
+      await loadShiftCategories();
     } catch (error) {
       setAlertDialog({
         open: true,
@@ -556,14 +580,25 @@ End: ${new Date(event.end).toLocaleString()}`);
     }
   };
 
-  const confirmDeleteCategory = () => {
-    setShiftCategories(prev => prev.filter(cat => cat.id !== deleteCategoryDialog.categoryId));
-    setAlertDialog({
-      open: true,
-      type: 'success',
-      title: 'Delete Success',
-      message: 'Category deleted successfully'
-    });
+  const confirmDeleteCategory = async () => {
+    try {
+      await apiClient.deleteShiftCategory(deleteCategoryDialog.categoryId);
+      setAlertDialog({
+        open: true,
+        type: 'success',
+        title: 'Delete Success',
+        message: 'Category deleted successfully'
+      });
+      // Reload categories after successful deletion
+      await loadShiftCategories();
+    } catch (error) {
+      setAlertDialog({
+        open: true,
+        type: 'danger',
+        title: 'Delete Failed',
+        message: `Failed to delete category: ${error.message}`
+      });
+    }
     setDeleteCategoryDialog({ open: false, categoryId: null, categoryName: '' });
   };
 
@@ -590,51 +625,68 @@ End: ${new Date(event.end).toLocaleString()}`);
     }));
   };
 
-  const ShiftTemplateCard = ({ template }) => {
-    if (!template) {
-      console.error('Template is null or undefined');
-      return null;
-    }
-    
-    const categoryName = shiftCategories.find(cat => cat.id === template.category)?.name || template.category || 'No Category';
-    
+  const ShiftTemplatesTable = () => {
     return (
-      <Card className="mb-4">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between mb-2">
-            <div>
-              <h3 className="font-medium">{template.name || 'Unnamed Shift'}</h3>
-              <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded mt-1 inline-block">
-                {categoryName}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button size="sm" variant="outline" onClick={() => handleEditShift(template)}>
-                <Edit className="w-3 h-3" />
-              </Button>
-              <Button size="sm" variant="destructive" onClick={() => handleDeleteShift(template)}>
-                <Trash2 className="w-3 h-3" />
-              </Button>
-            </div>
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse">
+          <thead>
+            <tr className="border-b bg-gray-50">
+              <th className="text-left p-3 font-medium">Name</th>
+              <th className="text-left p-3 font-medium">Category</th>
+              <th className="text-left p-3 font-medium">Time</th>
+              <th className="text-left p-3 font-medium">Break</th>
+              <th className="text-left p-3 font-medium">Staff</th>
+              <th className="text-right p-3 font-medium">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {shiftTemplates.map(template => {
+              const categoryName = shiftCategories.find(cat => cat.id === template.category)?.name || template.category || 'Unknown Category';
+              console.log('Template:', template.name, 'Category ID:', template.category, 'Resolved Name:', categoryName);
+              return (
+                <tr key={template.id} className="border-b hover:bg-gray-50">
+                  <td className="p-3">
+                    <div className="font-medium">{template.name || 'Unnamed Shift'}</div>
+                    {template.is_cross_day && <span className="text-xs text-orange-600">(Cross Day)</span>}
+                  </td>
+                  <td className="p-3">
+                    <span className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded">
+                      {categoryName}
+                    </span>
+                  </td>
+                  <td className="p-3 text-sm">
+                    <div className="flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      {template.start_time || 'N/A'} - {template.end_time || 'N/A'}
+                    </div>
+                  </td>
+                  <td className="p-3 text-sm">{template.total_break_minutes || 0} min</td>
+                  <td className="p-3 text-sm">{template.min_staff || 1}-{template.max_staff || 5}</td>
+                  <td className="p-3">
+                    <div className="flex items-center gap-1 justify-end">
+                      <Button size="sm" variant="outline" onClick={() => handleEditShift(template)}>
+                        <Edit className="w-3 h-3" />
+                      </Button>
+                      <Button size="sm" variant="destructive" onClick={() => handleDeleteShift(template)}>
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+        {shiftTemplates.length === 0 && (
+          <div className="p-8">
+            <EmptyState 
+              type="schedule" 
+              title="No Shift Templates" 
+              description="Click 'Add Template' to create your first shift." 
+            />
           </div>
-          <div className="space-y-2 text-sm text-gray-600">
-            <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4" />
-              {template.start_time || 'N/A'} - {template.end_time || 'N/A'}
-              {template.is_cross_day && <span className="text-orange-600">(Cross Day)</span>}
-            </div>
-            <div className="flex items-center gap-4">
-              <div>TZ: {template.timezone || 'Asia/Taipei'}</div>
-            </div>
-            <div>Break: {template.total_break_minutes || 0} min</div>
-            {template.break_periods && template.break_periods.length > 0 && template.break_periods.some(b => b.start_time && b.end_time) && (
-              <div>
-                Periods: {template.break_periods.filter(b => b.start_time && b.end_time).map(b => `${b.start_time}-${b.end_time}`).join(', ')}
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+        )}
+      </div>
     );
   };
 
@@ -737,19 +789,7 @@ End: ${new Date(event.end).toLocaleString()}`);
                       <Plus className="w-4 h-4" />
                       Add Template
                     </Button>
-                    <div>
-                      {shiftTemplates.length > 0 ? (
-                        shiftTemplates.map(template => {
-                          return <ShiftTemplateCard key={template.id} template={template} />;
-                        })
-                      ) : (
-                        <EmptyState 
-                          type="schedule" 
-                          title="No Shift Templates" 
-                          description="Click 'Add Template' to create your first shift." 
-                        />
-                      )}
-                    </div>
+                    <ShiftTemplatesTable />
                   </div>
                 </CardContent>
               </Card>
@@ -771,8 +811,7 @@ End: ${new Date(event.end).toLocaleString()}`);
                       className="w-full flex items-center gap-2 mb-4"
                       onClick={() => {
                         setEditingAssignment(null);
-                        setAssignmentFormData({ brand_id: '', workspace_id: '', member_id: '', template_id: '', date: '', break_schedule: [] });
-                        setWorkspaces([]);
+                        setAssignmentFormData({ brand_id: '', member_id: '', template_id: '', date: '', break_schedule: [] });
                         setWorkspaceMembers([]);
                         setShowAssignmentModal(true);
                       }}
@@ -841,13 +880,23 @@ End: ${new Date(event.end).toLocaleString()}`);
       </Tabs>
 
       {/* Shift Assignment Modal */}
-      {showAssignmentModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-md mx-4">
-            <CardHeader>
-              <CardTitle>{editingAssignment ? 'Edit Assignment' : 'Assign Shift'}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+      <Modal
+        open={showAssignmentModal}
+        onOpenChange={setShowAssignmentModal}
+        title={editingAssignment ? 'Edit Assignment' : 'Assign Shift'}
+        size="md"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setShowAssignmentModal(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAssignmentSubmit}>
+              {editingAssignment ? 'Update Assignment' : 'Assign Shift'}
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-2">Brand *</label>
                 <select
@@ -864,35 +913,18 @@ End: ${new Date(event.end).toLocaleString()}`);
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Workspace *</label>
-                <select
-                  className="w-full p-2 border rounded-md"
-                  value={assignmentFormData.workspace_id}
-                  onChange={(e) => handleWorkspaceChange(e.target.value)}
-                  required
-                  disabled={!assignmentFormData.brand_id}
-                >
-                  <option value="">Select Workspace</option>
-                  {workspaces.map(workspace => (
-                    <option key={workspace.id} value={workspace.id}>{workspace.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
                 <label className="block text-sm font-medium mb-2">Member *</label>
-                <select
-                  className="w-full p-2 border rounded-md"
+                <SearchableSelect
                   value={assignmentFormData.member_id}
-                  onChange={(e) => setAssignmentFormData(prev => ({ ...prev, member_id: e.target.value }))}
-                  required
-                  disabled={!assignmentFormData.workspace_id}
-                >
-                  <option value="">Select Member</option>
-                  {workspaceMembers.map(member => (
-                    <option key={member.id} value={member.id}>{member.name || member.username || member.email || member.id} ({member.role || 'Member'})</option>
-                  ))}
-                </select>
+                  onChange={(value) => setAssignmentFormData(prev => ({ ...prev, member_id: value }))}
+                  placeholder="Select Member"
+                  searchPlaceholder="Search members..."
+                  disabled={!assignmentFormData.brand_id}
+                  options={workspaceMembers.map(member => ({
+                    value: member.id,
+                    label: `${member.name || member.username || member.email || member.id} (${member.role || 'Member'})`
+                  }))}
+                />
               </div>
 
               <div>
@@ -922,39 +954,28 @@ End: ${new Date(event.end).toLocaleString()}`);
                 />
               </div>
 
-              <div className="flex gap-2 pt-4">
-                <Button 
-                  variant="outline" 
-                  onClick={() => setShowAssignmentModal(false)}
-                  className="flex-1"
-                >
-                  Cancel
-                </Button>
-                <Button 
-                  className="flex-1"
-                  onClick={handleAssignmentSubmit}
-                >
-                  {editingAssignment ? 'Update Assignment' : 'Assign Shift'}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
         </div>
-      )}
+      </Modal>
 
       {/* Shift Template Modal */}
-      {showShiftModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg w-full max-w-md mx-4">
-            <div className="flex items-center justify-between p-6 border-b">
-              <h3 className="text-lg font-semibold">
-                {editingShift ? 'Edit Shift Template' : 'Add Shift Template'}
-              </h3>
-              <Button variant="outline" size="sm" onClick={() => setShowShiftModal(false)}>
-                ×
-              </Button>
-            </div>
-            <form onSubmit={handleShiftSubmit} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+      <Modal
+        open={showShiftModal}
+        onOpenChange={setShowShiftModal}
+        title={editingShift ? 'Edit Shift Template' : 'Add Shift Template'}
+        size="md"
+        className="max-h-[80vh]"
+        footer={
+          <>
+            <Button type="button" variant="outline" onClick={() => setShowShiftModal(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" form="shift-form">
+              {editingShift ? 'Update' : 'Create'}
+            </Button>
+          </>
+        }
+      >
+        <form id="shift-form" onSubmit={handleShiftSubmit} className="space-y-4 max-h-[60vh] overflow-y-auto">
               <div>
                 <label className="block text-sm font-medium mb-2">Name *</label>
                 <Input
@@ -1091,32 +1112,27 @@ End: ${new Date(event.end).toLocaleString()}`);
                   <span className="text-sm">Cross Day Shift</span>
                 </label>
               </div>
-              <div className="flex gap-2 pt-4">
-                <Button type="button" variant="outline" onClick={() => setShowShiftModal(false)} className="flex-1">
-                  Cancel
-                </Button>
-                <Button type="submit" className="flex-1">
-                  {editingShift ? 'Update' : 'Create'}
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+        </form>
+      </Modal>
 
       {/* Category Modal */}
-      {showCategoryModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg w-full max-w-md mx-4">
-            <div className="flex items-center justify-between p-6 border-b">
-              <h3 className="text-lg font-semibold">
-                {editingCategory ? 'Edit Category' : 'Add Category'}
-              </h3>
-              <Button variant="outline" size="sm" onClick={() => setShowCategoryModal(false)}>
-                ×
-              </Button>
-            </div>
-            <form onSubmit={handleCategorySubmit} className="p-6 space-y-4">
+      <Modal
+        open={showCategoryModal}
+        onOpenChange={setShowCategoryModal}
+        title={editingCategory ? 'Edit Category' : 'Add Category'}
+        size="md"
+        footer={
+          <>
+            <Button type="button" variant="outline" onClick={() => setShowCategoryModal(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" form="category-form">
+              {editingCategory ? 'Update' : 'Create'}
+            </Button>
+          </>
+        }
+      >
+        <form id="category-form" onSubmit={handleCategorySubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-2">Category Name *</label>
                 <Input
@@ -1126,18 +1142,8 @@ End: ${new Date(event.end).toLocaleString()}`);
                   required
                 />
               </div>
-              <div className="flex gap-2 pt-4">
-                <Button type="button" variant="outline" onClick={() => setShowCategoryModal(false)} className="flex-1">
-                  Cancel
-                </Button>
-                <Button type="submit" className="flex-1">
-                  {editingCategory ? 'Update' : 'Create'}
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+        </form>
+      </Modal>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialog.open} onOpenChange={(open) => !open && setDeleteDialog({ open: false, shiftId: null, shiftName: '' })}>
