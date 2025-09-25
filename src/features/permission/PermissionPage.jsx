@@ -43,8 +43,8 @@ const PermissionPage = () => {
         try {
           const permResponse = await apiClient.getRolePermissions(role.id);
           const responseData = permResponse.data || permResponse;
-          // Handle new API response structure: data.permissions is array of permission objects
-          rolePermissionsMap[role.id] = responseData?.permissions || [];
+          // Handle API response structure: data is array of permission objects
+          rolePermissionsMap[role.id] = responseData || [];
         } catch (error) {
           console.error(`Failed to load permissions for role ${role.name}:`, error);
           rolePermissionsMap[role.id] = [];
@@ -62,25 +62,34 @@ const PermissionPage = () => {
   const loadPermissions = async () => {
     try {
       const response = await apiClient.getPermissions();
-      setPermissions(response.data || response || []);
+      const permissionsData = response.data || response || [];
+      
+      // Group permissions by module
+      const groupedPermissions = permissionsData.reduce((groups, perm) => {
+        const module = perm.module || '其他';
+        if (!groups[module]) groups[module] = [];
+        groups[module].push(perm);
+        return groups;
+      }, {});
+      
+      setPermissions(groupedPermissions);
     } catch (error) {
       console.error('Failed to load permissions:', error);
-      setPermissions([]);
+      setPermissions({});
     }
   };
 
   const handleEditRole = (role) => {
     setEditingRole(role);
-    setTempPermissions([...rolePermissions[role.id] || []]);
+    // Extract permission IDs from role permissions
+    const rolePerms = rolePermissions[role.id] || [];
+    const permissionIds = rolePerms.map(perm => perm.id);
+    setTempPermissions([...permissionIds]);
   };
 
   const handleSaveRole = async () => {
     try {
       await apiClient.updateRolePermissions(editingRole.id, tempPermissions);
-      setRolePermissions({
-        ...rolePermissions,
-        [editingRole.id]: [...tempPermissions]
-      });
       setEditingRole(null);
       setTempPermissions([]);
       // Refresh data to ensure consistency
