@@ -71,7 +71,7 @@ const LoginPage = () => {
           <form onSubmit={handleLogin} className="space-y-4">
             <Input
               type="email"
-              placeholder="kevinchc@me.com"
+              placeholder="Username"
               value={credentials.username}
               onChange={(e) => setCredentials({...credentials, username: e.target.value})}
               required

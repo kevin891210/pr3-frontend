@@ -19,7 +19,8 @@ class ApiClient {
     const url = buildApiUrl(endpoint);
     const config = {
       mode: 'cors',
-      credentials: 'omit',
+      credentials: 'include',
+      referrerPolicy: 'strict-origin-when-cross-origin',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
@@ -84,7 +85,7 @@ class ApiClient {
   }
 
   async agentLogin(credentials) {
-    return this.request('/api/v1/auth/agent-sign-in', {
+    return this.request('/api/v1/agent/auth/agent-sign-in', {
       method: 'POST',
       body: {
         brand_id: credentials.brandId || credentials.brand_id,
@@ -172,6 +173,16 @@ class ApiClient {
   async getScheduleAssignments(params = {}) {
     const query = new URLSearchParams(params).toString();
     return this.request(`/api/v1/schedule-assignments${query ? `?${query}` : ''}`);
+  }
+
+  async getAgentScheduleAssignments(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    const thirdPartyToken = localStorage.getItem('third_party_token');
+    const headers = thirdPartyToken ? { 'X-Third-Party-Token': thirdPartyToken } : {};
+    
+    return this.request(`/api/v1/agent/schedule-assignments${query ? `?${query}` : ''}`, {
+      headers
+    });
   }
 
   async createScheduleAssignment(assignment) {
@@ -294,7 +305,17 @@ class ApiClient {
 
   // Permission APIs
   async getUserPermissions() {
-    return this.request('/api/v1/permissions/me');
+    // 使用第三方 token 調用權限 API
+    const thirdPartyToken = localStorage.getItem('third_party_token');
+    if (!thirdPartyToken) {
+      throw new Error('Third party token not found');
+    }
+    
+    return this.request('/api/v1/permissions/me', {
+      headers: {
+        'X-Third-Party-Token': thirdPartyToken
+      }
+    });
   }
 
   async getMenuPermissions() {
@@ -412,6 +433,14 @@ class ApiClient {
     }
     
     return response;
+  }
+
+  /**
+   * Agent 專用 Brand 列表
+   */
+  async getAgentBrands(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return this.request(`/api/v1/agent/brands${query ? `?${query}` : ''}`);
   }
 
   /**
@@ -671,7 +700,13 @@ class ApiClient {
     if (!userId) {
       throw new Error('User ID is required for agent profile');
     }
-    return this.request(`/api/v1/agent/profile?user_id=${userId}`);
+    // Agent profile 也可能需要第三方 token
+    const thirdPartyToken = localStorage.getItem('third_party_token');
+    const headers = thirdPartyToken ? { 'X-Third-Party-Token': thirdPartyToken } : {};
+    
+    return this.request(`/api/v1/agent/profile?user_id=${userId}`, {
+      headers
+    });
   }
 
   async updateAgentStatus(status) {
@@ -731,6 +766,13 @@ class ApiClient {
     }
     
     return response;
+  }
+
+  /**
+   * Agent 專用請假類型列表
+   */
+  async getAgentLeaveTypes() {
+    return this.request('/api/v1/agent/leave-types');
   }
 
   /**

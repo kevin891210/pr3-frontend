@@ -3,7 +3,9 @@
   "api": {
     "baseUrl": "https://hrmapi.prteam3.com",
     "authPath": "/api/v1/auth/sign-in",
-    "workspacesPath": "/api/v1/users/workspaces",
+    "agentAuthPath": "/api/v1/agent-auth/sign-in",
+    "brandsPath": "/api/v1/brands",
+    "workspacesPath": "/api/v1/workspaces-by-brand",
     "botsPath": "/api/v1/bots/all-bots",
     "membersPath": "/api/v1/workspaces/:id/members"
   },

@@ -50,6 +50,7 @@ const SchedulePage = () => {
   const [showAssignmentModal, setShowAssignmentModal] = useState(false);
   const [editingAssignment, setEditingAssignment] = useState(null);
   const [deleteAssignmentDialog, setDeleteAssignmentDialog] = useState({ open: false, assignmentId: null, assignmentTitle: '' });
+  const [showPastAssignments, setShowPastAssignments] = useState(false);
 
   useEffect(() => {
     loadShiftCategories();
@@ -148,8 +149,8 @@ const SchedulePage = () => {
 
       // 轉換 API 資料為 FullCalendar 格式
       const formattedEvents = await Promise.all(rawAssignments.map(async (assignment) => {
-        // 找到對應的 shift template
-        let template = formattedTemplates.find(t => t.id === assignment.shift_template_id);
+        // 使用 JOIN 查詢返回的 shift_template 資訊，或從本地模板查找
+        let template = assignment.shift_template || formattedTemplates.find(t => t.id === assignment.shift_template_id);
         
         if (!template) {
           console.warn('Template not found for assignment:', assignment, 'Available templates:', formattedTemplates.map(t => t.id));
@@ -168,17 +169,29 @@ const SchedulePage = () => {
         
         // 組合日期和時間，確保格式正確
         const assignmentDate = assignment.date;
-        const startTime = template.start_time;
-        const endTime = template.end_time;
+        const startTime = template.start_time || '09:00';
+        const endTime = template.end_time || '18:00';
         
-        // 驗證日期和時間格式
-        if (!assignmentDate || !startTime || !endTime) {
-          console.warn('Missing date or time data for assignment:', assignment);
+        // 驗證日期格式
+        if (!assignmentDate) {
+          console.warn('Missing date data for assignment:', assignment);
           return null;
         }
         
-        const startDateTime = `${assignmentDate}T${startTime}`;
-        const endDateTime = `${assignmentDate}T${endTime}`;
+        // 處理跨日班次
+        let startDateTime, endDateTime;
+        if (template.is_cross_day && startTime > endTime) {
+          // 跨日班次：開始時間在當天，結束時間在隔天
+          startDateTime = `${assignmentDate}T${startTime}:00`;
+          const nextDay = new Date(assignmentDate);
+          nextDay.setDate(nextDay.getDate() + 1);
+          const nextDayStr = nextDay.toISOString().split('T')[0];
+          endDateTime = `${nextDayStr}T${endTime}:00`;
+        } else {
+          // 一般班次：同一天
+          startDateTime = `${assignmentDate}T${startTime}:00`;
+          endDateTime = `${assignmentDate}T${endTime}:00`;
+        }
         
         // 驗證生成的日期時間是否有效
         const startDate = new Date(startDateTime);
@@ -206,7 +219,9 @@ const SchedulePage = () => {
             templateId: assignment.shift_template_id,
             templateName: template.name,
             assignmentDate: assignment.date,
-            createdAt: assignment.created_at
+            createdAt: assignment.created_at,
+            startTime: startTime,
+            endTime: endTime
           }
         };
         
@@ -821,32 +836,64 @@ Time: ${new Date(event.start).toLocaleTimeString([], {hour: '2-digit', minute:'2
                     </Button>
                     
                     <div className="space-y-3">
-                      <h3 className="text-sm font-medium text-gray-700">Recent Assignments</h3>
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-sm font-medium text-gray-700">Recent Assignments</h3>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => setShowPastAssignments(!showPastAssignments)}
+                          className="text-xs"
+                        >
+                          {showPastAssignments ? 'Hide Past' : 'Show Past'}
+                        </Button>
+                      </div>
                       {Array.isArray(events) && events.length > 0 ? (
-                        events.slice(0, 5).map(event => (
-                          <Card key={event.id} className="p-3">
-                            <div className="flex items-center justify-between">
-                              <div className="flex-1">
-                                <div className="font-medium text-sm">{event.title}</div>
-                                <div className="text-xs text-gray-500">
-                                  {event.start && !isNaN(new Date(event.start)) ? (
-                                    `${new Date(event.start).toLocaleDateString()} - ${new Date(event.start).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`
-                                  ) : (
-                                    event.extendedProps?.assignmentDate || 'No Date'
-                                  )}
+                        (() => {
+                          const today = new Date();
+                          today.setHours(0, 0, 0, 0);
+                          
+                          const filteredEvents = showPastAssignments 
+                            ? events 
+                            : events.filter(event => {
+                                const eventDate = new Date(event.start);
+                                eventDate.setHours(0, 0, 0, 0);
+                                return eventDate >= today;
+                              });
+                          
+                          return filteredEvents.slice(0, 5).map(event => {
+                            const eventDate = new Date(event.start);
+                            eventDate.setHours(0, 0, 0, 0);
+                            const isPast = eventDate < today;
+                            
+                            return (
+                              <Card key={event.id} className={`p-3 ${isPast ? 'opacity-60 bg-gray-50' : ''}`}>
+                                <div className="flex items-center justify-between">
+                                  <div className="flex-1">
+                                    <div className={`font-medium text-sm ${isPast ? 'text-gray-500' : ''}`}>
+                                      {event.title}
+                                      {isPast && <span className="ml-2 text-xs text-gray-400">(Past)</span>}
+                                    </div>
+                                    <div className="text-xs text-gray-500">
+                                      {event.start && !isNaN(new Date(event.start)) ? (
+                                        `${new Date(event.start).toLocaleDateString()} - ${new Date(event.start).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`
+                                      ) : (
+                                        event.extendedProps?.assignmentDate || 'No Date'
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <Button size="sm" variant="outline" onClick={() => handleEditAssignment(event)}>
+                                      <Edit className="w-3 h-3" />
+                                    </Button>
+                                    <Button size="sm" variant="destructive" onClick={() => handleDeleteAssignment(event)}>
+                                      <Trash2 className="w-3 h-3" />
+                                    </Button>
+                                  </div>
                                 </div>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <Button size="sm" variant="outline" onClick={() => handleEditAssignment(event)}>
-                                  <Edit className="w-3 h-3" />
-                                </Button>
-                                <Button size="sm" variant="destructive" onClick={() => handleDeleteAssignment(event)}>
-                                  <Trash2 className="w-3 h-3" />
-                                </Button>
-                              </div>
-                            </div>
-                          </Card>
-                        ))
+                              </Card>
+                            );
+                          });
+                        })()
                       ) : (
                         <EmptyState 
                           type="schedule" 

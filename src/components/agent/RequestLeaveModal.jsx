@@ -23,7 +23,7 @@ const RequestLeaveModal = ({ isOpen, onClose }) => {
 
   const loadLeaveTypes = async () => {
     try {
-      const response = await apiClient.getLeaveTypes();
+      const response = await apiClient.getAgentLeaveTypes();
       const typesData = response.data || response;
       setLeaveTypes(Array.isArray(typesData) ? typesData : []);
       if (typesData.length > 0) {
@@ -75,22 +75,22 @@ const RequestLeaveModal = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg w-full max-w-md mx-4">
-        <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-xl font-semibold">Request Leave</h2>
-          <Button variant="outline" size="sm" onClick={onClose}>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-4 sm:p-6 border-b sticky top-0 bg-white">
+          <h2 className="text-lg sm:text-xl font-semibold">Request Leave</h2>
+          <Button variant="outline" size="sm" onClick={onClose} className="p-2">
             <X className="w-4 h-4" />
           </Button>
         </div>
         
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4">
           <div>
             <label className="block text-sm font-medium mb-2">Leave Type</label>
             <select
               value={formData.type}
               onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value }))}
-              className="w-full p-2 border rounded-md"
+              className="w-full p-3 border rounded-md text-base"
               required
             >
               <option value="">Select Leave Type</option>
@@ -102,34 +102,39 @@ const RequestLeaveModal = ({ isOpen, onClose }) => {
             </select>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-2">Start Date</label>
-            <Input
-              type="date"
-              value={formData.startDate}
-              onChange={(e) => setFormData(prev => ({ ...prev, startDate: e.target.value }))}
-              required
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Start Date</label>
+              <Input
+                type="date"
+                value={formData.startDate}
+                onChange={(e) => setFormData(prev => ({ ...prev, startDate: e.target.value }))}
+                className="h-12 text-base"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">End Date</label>
+              <Input
+                type="date"
+                value={formData.endDate}
+                onChange={(e) => setFormData(prev => ({ ...prev, endDate: e.target.value }))}
+                className="h-12 text-base"
+                required
+              />
+            </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-2">End Date</label>
-            <Input
-              type="date"
-              value={formData.endDate}
-              onChange={(e) => setFormData(prev => ({ ...prev, endDate: e.target.value }))}
-              required
-            />
-          </div>
-
-          <div>
-            <label className="flex items-center gap-2">
+          <div className="p-3 bg-gray-50 rounded-lg">
+            <label className="flex items-center gap-3">
               <input
                 type="checkbox"
                 checked={formData.isHalfDay}
                 onChange={(e) => setFormData(prev => ({ ...prev, isHalfDay: e.target.checked }))}
+                className="w-4 h-4"
               />
-              <span className="text-sm">Half Day</span>
+              <span className="text-sm font-medium">Half Day Leave</span>
             </label>
           </div>
 
@@ -138,17 +143,17 @@ const RequestLeaveModal = ({ isOpen, onClose }) => {
             <textarea
               value={formData.reason}
               onChange={(e) => setFormData(prev => ({ ...prev, reason: e.target.value }))}
-              className="w-full p-2 border rounded-md h-20 resize-none"
+              className="w-full p-3 border rounded-md h-24 resize-none text-base"
               placeholder="Please provide a reason for your leave request"
               required
             />
           </div>
 
-          <div className="flex gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={onClose} className="flex-1">
+          <div className="flex flex-col sm:flex-row gap-3 pt-4">
+            <Button type="button" variant="outline" onClick={onClose} className="flex-1 h-12">
               Cancel
             </Button>
-            <Button type="submit" disabled={loading} className="flex-1">
+            <Button type="submit" disabled={loading} className="flex-1 h-12">
               {loading ? 'Submitting...' : 'Submit Request'}
             </Button>
           </div>

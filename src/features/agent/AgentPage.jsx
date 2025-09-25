@@ -50,21 +50,21 @@ const AgentPage = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 p-4 sm:p-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Agent Dashboard</h1>
-          <p className="text-gray-600">Welcome back, {user?.name || 'Agent'}</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Agent Dashboard</h1>
+          <p className="text-gray-600 text-sm sm:text-base">Welcome back, {user?.name || 'Agent'}</p>
         </div>
-        <div className="flex items-center gap-3">
-          <Avatar className="w-10 h-10">
-            <AvatarFallback>
+        <div className="flex items-center gap-3 self-start sm:self-auto">
+          <Avatar className="w-8 h-8 sm:w-10 sm:h-10">
+            <AvatarFallback className="text-sm">
               {user?.name?.charAt(0) || 'A'}
             </AvatarFallback>
           </Avatar>
           <div>
-            <div className="font-medium">{user?.name || 'Agent'}</div>
+            <div className="font-medium text-sm sm:text-base">{user?.name || 'Agent'}</div>
             <Badge variant="secondary" className="text-xs">
               {user?.role || 'Agent'}
             </Badge>
@@ -72,26 +72,32 @@ const AgentPage = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Today's Schedule */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="w-5 h-5" />
+          <CardHeader className="pb-3 sm:pb-6">
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <Calendar className="w-4 h-4 sm:w-5 sm:h-5" />
               Today's Schedule
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-0">
             {loading ? (
-              <div className="text-center py-4 text-gray-500">Loading...</div>
+              <div className="text-center py-8 text-gray-500">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                Loading...
+              </div>
             ) : todaySchedule.length === 0 ? (
-              <div className="text-center py-4 text-gray-500">No schedule today</div>
+              <div className="text-center py-8 text-gray-500">
+                <Calendar className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                No schedule today
+              </div>
             ) : (
               <div className="space-y-3">
                 {todaySchedule.map(schedule => (
-                  <div key={schedule.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div>
-                      <div className="font-medium">{schedule.shift}</div>
+                  <div key={schedule.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 bg-gray-50 rounded-lg gap-2">
+                    <div className="flex-1">
+                      <div className="font-medium text-gray-900 mb-1">{schedule.shift}</div>
                       <div className="text-sm text-gray-600 flex items-center gap-1">
                         <Clock className="w-3 h-3" />
                         {schedule.time}
@@ -99,7 +105,7 @@ const AgentPage = () => {
                     </div>
                     <Badge 
                       variant={schedule.status === 'confirmed' ? 'default' : 'secondary'}
-                      className="text-xs"
+                      className="text-xs self-start sm:self-auto"
                     >
                       {schedule.status === 'confirmed' ? 'Confirmed' : 'Break'}
                     </Badge>
@@ -112,30 +118,34 @@ const AgentPage = () => {
 
         {/* Notices */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Bell className="w-5 h-5" />
+          <CardHeader className="pb-3 sm:pb-6">
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <Bell className="w-4 h-4 sm:w-5 sm:h-5" />
               Latest Notices
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-0">
             {loading ? (
-              <div className="text-center py-4 text-gray-500">Loading...</div>
+              <div className="text-center py-8 text-gray-500">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                Loading...
+              </div>
             ) : notices.length === 0 ? (
-              <div className="text-center py-4 text-gray-500">No notices</div>
+              <div className="text-center py-8 text-gray-500">
+                <Bell className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                No notices
+              </div>
             ) : (
               <div className="space-y-3">
                 {notices.map(notice => (
-                  <div key={notice.id} className="flex items-start justify-between p-3 bg-gray-50 rounded-lg">
-                    <div className="flex-1">
-                      <div className="font-medium flex items-center gap-2">
-                        {notice.title}
-                        {notice.unread && (
-                          <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                        )}
-                      </div>
-                      <div className="text-sm text-gray-600">{notice.time}</div>
+                  <div key={notice.id} className="p-4 bg-gray-50 rounded-lg">
+                    <div className="flex items-start gap-2 mb-2">
+                      <div className="font-medium text-gray-900 flex-1">{notice.title}</div>
+                      {notice.unread && (
+                        <div className="w-2 h-2 bg-red-500 rounded-full mt-1 flex-shrink-0"></div>
+                      )}
                     </div>
+                    <div className="text-sm text-gray-600">📅 {notice.time}</div>
                   </div>
                 ))}
               </div>
@@ -146,37 +156,37 @@ const AgentPage = () => {
 
       {/* Quick Actions */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="w-5 h-5" />
+        <CardHeader className="pb-3 sm:pb-6">
+          <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+            <FileText className="w-4 h-4 sm:w-5 sm:h-5" />
             Quick Actions
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-3 gap-4">
+        <CardContent className="pt-0">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
             <Button 
               variant="outline" 
-              className="h-20 flex flex-col gap-2"
+              className="h-16 sm:h-20 flex flex-col gap-2 text-center"
               onClick={() => setShowScheduleModal(true)}
             >
-              <Calendar className="w-6 h-6" />
-              <span className="text-sm">View Schedule</span>
+              <Calendar className="w-5 h-5 sm:w-6 sm:h-6" />
+              <span className="text-xs sm:text-sm">View Schedule</span>
             </Button>
             <Button 
               variant="outline" 
-              className="h-20 flex flex-col gap-2"
+              className="h-16 sm:h-20 flex flex-col gap-2 text-center"
               onClick={() => setShowLeaveModal(true)}
             >
-              <FileText className="w-6 h-6" />
-              <span className="text-sm">Request Leave</span>
+              <FileText className="w-5 h-5 sm:w-6 sm:h-6" />
+              <span className="text-xs sm:text-sm">Request Leave</span>
             </Button>
             <Button 
               variant="outline" 
-              className="h-20 flex flex-col gap-2"
+              className="h-16 sm:h-20 flex flex-col gap-2 text-center"
               onClick={() => setShowNoticesModal(true)}
             >
-              <Bell className="w-6 h-6" />
-              <span className="text-sm">View Notices</span>
+              <Bell className="w-5 h-5 sm:w-6 sm:h-6" />
+              <span className="text-xs sm:text-sm">View Notices</span>
             </Button>
           </div>
         </CardContent>
@@ -184,22 +194,22 @@ const AgentPage = () => {
 
       {/* Leave Balance */}
       <Card>
-        <CardHeader>
-          <CardTitle>Leave Balance</CardTitle>
+        <CardHeader className="pb-3 sm:pb-6">
+          <CardTitle className="text-base sm:text-lg">Leave Balance</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-3 gap-4">
+        <CardContent className="pt-0">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
             <div className="text-center p-4 bg-blue-50 rounded-lg">
-              <div className="text-2xl font-bold text-blue-600">{leaveBalance.annual || 0}</div>
-              <div className="text-sm text-gray-600">Annual (Days)</div>
+              <div className="text-xl sm:text-2xl font-bold text-blue-600">{leaveBalance.annual || 0}</div>
+              <div className="text-xs sm:text-sm text-gray-600">Annual (Days)</div>
             </div>
             <div className="text-center p-4 bg-green-50 rounded-lg">
-              <div className="text-2xl font-bold text-green-600">{leaveBalance.sick || 0}</div>
-              <div className="text-sm text-gray-600">Sick (Days)</div>
+              <div className="text-xl sm:text-2xl font-bold text-green-600">{leaveBalance.sick || 0}</div>
+              <div className="text-xs sm:text-sm text-gray-600">Sick (Days)</div>
             </div>
             <div className="text-center p-4 bg-yellow-50 rounded-lg">
-              <div className="text-2xl font-bold text-yellow-600">{leaveBalance.personal || 0}</div>
-              <div className="text-sm text-gray-600">Personal (Days)</div>
+              <div className="text-xl sm:text-2xl font-bold text-yellow-600">{leaveBalance.personal || 0}</div>
+              <div className="text-xs sm:text-sm text-gray-600">Personal (Days)</div>
             </div>
           </div>
         </CardContent>

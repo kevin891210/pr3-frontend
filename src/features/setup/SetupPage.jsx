@@ -23,7 +23,7 @@ const SetupPage = () => {
     
     // 認證相關
     { key: 'auth', path: '/api/v1/auth/sign-in', label: 'Admin Authentication', category: 'auth' },
-    { key: 'agentAuth', path: '/api/v1/auth/agent-sign-in', label: 'Agent Authentication', category: 'auth' },
+    { key: 'agentAuth', path: '/api/v1/agent-auth/sign-in', label: 'Agent Authentication', category: 'auth' },
     { key: 'adminInit', path: '/api/v1/admin/init', label: 'Admin Initialization', category: 'auth' },
     
     // 使用者與工作區
