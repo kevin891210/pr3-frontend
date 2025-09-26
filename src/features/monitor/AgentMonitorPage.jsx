@@ -272,25 +272,25 @@ const AgentMonitorPage = () => {
 
             <div>
               <label className="block text-sm font-medium mb-2">刷新間隔</label>
-              <div className="flex gap-1">
+              <div className="flex gap-1 items-center">
                 <Input
                   type="number"
                   min="0"
                   max="59"
                   value={refreshInterval.minutes}
                   onChange={(e) => setRefreshInterval(prev => ({ ...prev, minutes: parseInt(e.target.value) || 0 }))}
-                  className="w-16 text-center"
+                  className="w-12 sm:w-16 text-center text-sm"
                 />
-                <span className="text-sm self-center">分</span>
+                <span className="text-xs sm:text-sm self-center">分</span>
                 <Input
                   type="number"
                   min="0"
                   max="59"
                   value={refreshInterval.seconds}
                   onChange={(e) => setRefreshInterval(prev => ({ ...prev, seconds: parseInt(e.target.value) || 0 }))}
-                  className="w-16 text-center"
+                  className="w-12 sm:w-16 text-center text-sm"
                 />
-                <span className="text-sm self-center">秒</span>
+                <span className="text-xs sm:text-sm self-center">秒</span>
               </div>
             </div>
 

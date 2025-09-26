@@ -15,6 +15,7 @@ import EmptyState from '../../../components/ui/empty-state';
 import SearchableSelect from '../../../components/ui/searchable-select';
 import useWebSocket from '../../../hooks/useWebSocket';
 import { useToast } from '../../../components/ui/toast';
+import ResponsiveTable from '../../../components/ui/responsive-table';
 
 const LeavePage = () => {
   const [leaveTypes, setLeaveTypes] = useState([]);
@@ -535,9 +536,9 @@ const LeavePage = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Leave Management</h1>
-        <div className="flex gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <h1 className="text-xl sm:text-2xl font-bold">Leave Management</h1>
+        <div className="flex flex-col sm:flex-row gap-2">
           {activeTab === 'categories' && hasPermission('leave.admin') && (
             <Button 
               onClick={() => {
@@ -625,7 +626,7 @@ const LeavePage = () => {
       </div>
 
       {activeTab === 'requests' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
           {/* Leave Balance */}
           <div>
             <h2 className="text-lg font-semibold mb-4">Leave Balance</h2>
@@ -649,7 +650,7 @@ const LeavePage = () => {
           </div>
 
           {/* Leave Requests */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 order-first lg:order-last">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold">Leave Requests</h2>
               {pagination.totalItems > 0 && (
@@ -685,131 +686,123 @@ const LeavePage = () => {
             
             {/* Requests Table */}
             <div className="bg-white rounded-lg border overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Employee
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Leave Type
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Period
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Days
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {Array.isArray(leaveRequests) && leaveRequests.length > 0 ? (
-                      leaveRequests
-                        .filter(request => {
-                          if (requestsTab === 'pending') {
-                            return request.status === 'pending';
-                          } else {
-                            return request.status === 'approved' || request.status === 'rejected';
-                          }
-                        })
-                        .map(request => {
-                          const leaveType = leaveTypes.find(type => type.id === request.leave_type_id);
-                          const member = brandMembers.find(member => member.id === request.member_id);
-                          
-                          return (
-                            <tr key={request.id} className="hover:bg-gray-50">
-                              <td className="px-4 py-3 whitespace-nowrap">
-                                <div className="flex items-center">
-                                  <User className="w-4 h-4 text-gray-400 mr-2" />
-                                  <span className="text-sm font-medium text-gray-900">
-                                    {request.member_name || member?.name || 'Unknown User'}
-                                  </span>
-                                </div>
-                              </td>
-                              <td className="px-4 py-3 whitespace-nowrap">
-                                <span className="text-sm text-gray-900">
-                                  {request.leave_type_name || leaveType?.name || 'Unknown Type'}
-                                </span>
-                              </td>
-                              <td className="px-4 py-3 whitespace-nowrap">
-                                <div className="text-sm text-gray-900">
-                                  {request.start_date ? new Date(request.start_date).toLocaleDateString() : 'N/A'}
-                                </div>
-                                <div className="text-xs text-gray-500">
-                                  to {request.end_date ? new Date(request.end_date).toLocaleDateString() : 'N/A'}
-                                </div>
-                              </td>
-                              <td className="px-4 py-3 whitespace-nowrap">
-                                <span className="text-sm font-medium text-gray-900">
-                                  {request.days || 0}
-                                </span>
-                              </td>
-                              <td className="px-4 py-3 whitespace-nowrap">
-                                <Badge className={getStatusColor(request.status)}>
-                                  {getStatusIcon(request.status)}
-                                  <span className="ml-1">
-                                    {request.status === 'pending' ? 'Pending' : 
-                                     request.status === 'approved' ? 'Approved' : 'Rejected'}
-                                  </span>
-                                </Badge>
-                              </td>
-                              <td className="px-4 py-3 whitespace-nowrap text-sm font-medium">
-                                <div className="flex items-center gap-2">
-                                  <Button 
-                                    size="sm" 
-                                    variant="outline"
-                                    onClick={() => {
-                                      setSelectedRequest(request);
-                                      setShowDetailDialog(true);
-                                    }}
-                                  >
-                                    <Eye className="w-3 h-3" />
-                                  </Button>
-                                  
-                                  {hasPermission('leave.approve') && request.status === 'pending' && (
-                                    <>
-                                      <Button 
-                                        size="sm" 
-                                        onClick={() => handleApprovalAction(request.id, 'approve')}
-                                        className="bg-green-600 hover:bg-green-700 text-white"
-                                      >
-                                        <CheckCircle className="w-3 h-3" />
-                                      </Button>
-                                      <Button 
-                                        size="sm" 
-                                        variant="destructive" 
-                                        onClick={() => handleApprovalAction(request.id, 'reject')}
-                                      >
-                                        <XCircle className="w-3 h-3" />
-                                      </Button>
-                                    </>
-                                  )}
-                                </div>
-                              </td>
-                            </tr>
-                          );
-                        })
-                    ) : (
-                      <tr>
-                        <td colSpan={6} className="px-4 py-8 text-center">
-                          <EmptyState 
-                            type="leave" 
-                            title={`No ${requestsTab === 'pending' ? 'Pending' : 'Review History'} Requests`}
-                            description={`No ${requestsTab === 'pending' ? 'pending' : 'reviewed'} leave requests available.`}
-                          />
-                        </td>
-                      </tr>
+              <ResponsiveTable
+                data={leaveRequests.filter(request => {
+                  if (requestsTab === 'pending') {
+                    return request.status === 'pending';
+                  } else {
+                    return request.status === 'approved' || request.status === 'rejected';
+                  }
+                }).map(request => {
+                  const leaveType = leaveTypes.find(type => type.id === request.leave_type_id);
+                  const member = brandMembers.find(member => member.id === request.member_id);
+                  return {
+                    ...request,
+                    leaveType,
+                    member,
+                    displayName: request.member_name || member?.name || 'Unknown User',
+                    displayType: request.leave_type_name || leaveType?.name || 'Unknown Type'
+                  };
+                })}
+                columns={[
+                  {
+                    key: 'displayName',
+                    header: 'Employee',
+                    render: (value) => (
+                      <div className="flex items-center">
+                        <User className="w-4 h-4 text-gray-400 mr-2" />
+                        <span className="text-sm font-medium text-gray-900">{value}</span>
+                      </div>
+                    )
+                  },
+                  {
+                    key: 'displayType',
+                    header: 'Leave Type',
+                    render: (value) => (
+                      <span className="text-sm text-gray-900">{value}</span>
+                    )
+                  },
+                  {
+                    key: 'start_date',
+                    header: 'Period',
+                    render: (value, row) => (
+                      <div>
+                        <div className="text-sm text-gray-900">
+                          {value ? new Date(value).toLocaleDateString() : 'N/A'}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          to {row.end_date ? new Date(row.end_date).toLocaleDateString() : 'N/A'}
+                        </div>
+                      </div>
+                    )
+                  },
+                  {
+                    key: 'days',
+                    header: 'Days',
+                    render: (value) => (
+                      <span className="text-sm font-medium text-gray-900">{value || 0}</span>
+                    )
+                  },
+                  {
+                    key: 'status',
+                    header: 'Status',
+                    render: (value) => (
+                      <Badge className={getStatusColor(value)}>
+                        {getStatusIcon(value)}
+                        <span className="ml-1">
+                          {value === 'pending' ? 'Pending' : 
+                           value === 'approved' ? 'Approved' : 'Rejected'}
+                        </span>
+                      </Badge>
+                    )
+                  }
+                ]}
+                actions={(request) => (
+                  <>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => {
+                        setSelectedRequest(request);
+                        setShowDetailDialog(true);
+                      }}
+                      className="flex items-center gap-1 w-full md:w-auto justify-start md:justify-center"
+                    >
+                      <Eye className="w-3 h-3" />
+                      <span className="md:hidden">View</span>
+                    </Button>
+                    
+                    {hasPermission('leave.approve') && request.status === 'pending' && (
+                      <>
+                        <Button 
+                          size="sm" 
+                          onClick={() => handleApprovalAction(request.id, 'approve')}
+                          className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-1 w-full md:w-auto justify-start md:justify-center"
+                        >
+                          <CheckCircle className="w-3 h-3" />
+                          <span className="md:hidden">Approve</span>
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="destructive" 
+                          onClick={() => handleApprovalAction(request.id, 'reject')}
+                          className="flex items-center gap-1 w-full md:w-auto justify-start md:justify-center"
+                        >
+                          <XCircle className="w-3 h-3" />
+                          <span className="md:hidden">Reject</span>
+                        </Button>
+                      </>
                     )}
-                  </tbody>
-                </table>
-              </div>
+                  </>
+                )}
+                emptyState={
+                  <EmptyState 
+                    type="leave" 
+                    title={`No ${requestsTab === 'pending' ? 'Pending' : 'Review History'} Requests`}
+                    description={`No ${requestsTab === 'pending' ? 'pending' : 'reviewed'} leave requests available.`}
+                  />
+                }
+              />
             </div>
             
             {/* Pagination */}

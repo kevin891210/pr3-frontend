@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input.jsx';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog.jsx';
 import { Plus, Edit, Trash2, MoreHorizontal } from 'lucide-react';
 import { apiClient } from '@/services/api.js';
+import ResponsiveDialog from '@/components/ui/responsive-dialog';
 
 const SalaryGrades = () => {
   const { t } = useTranslation();
@@ -127,14 +128,14 @@ const SalaryGrades = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-semibold">{t('salary.grades')}</h2>
-          <p className="text-gray-600">{t('salary.gradesDescription')}</p>
+          <h2 className="text-lg sm:text-xl font-semibold">{t('salary.grades')}</h2>
+          <p className="text-sm sm:text-base text-gray-600">{t('salary.gradesDescription')}</p>
         </div>
-        <Button onClick={handleCreate} className="flex items-center gap-2">
+        <Button onClick={handleCreate} className="flex items-center justify-center gap-2 w-full sm:w-auto">
           <Plus className="h-4 w-4" />
-          {t('salary.addGrade')}
+          <span>{t('salary.addGrade')}</span>
         </Button>
       </div>
 
@@ -143,7 +144,7 @@ const SalaryGrades = () => {
           <div className="text-gray-500">{t('common.loading')}</div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {grades.map((grade) => (
           <Card key={grade.id} className="relative">
             <CardHeader className="pb-3">
@@ -168,7 +169,7 @@ const SalaryGrades = () => {
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="grid grid-cols-3 gap-3 text-sm">
+              <div className="grid grid-cols-3 gap-2 sm:gap-3 text-xs sm:text-sm">
                 <div>
                   <span className="text-gray-500">{t('salary.monthlySalary')}</span>
                   <div className="font-semibold">${grade.base_salary.toLocaleString()}</div>
@@ -185,7 +186,7 @@ const SalaryGrades = () => {
               
               <div className="border-t pt-3">
                 <div className="text-sm text-gray-500 mb-2">{t('salary.overtimeMultiplier')}</div>
-                <div className="grid grid-cols-3 gap-2 text-xs">
+                <div className="grid grid-cols-3 gap-1 sm:gap-2 text-xs">
                   <div className="text-center">
                     <div className="text-gray-500">{t('salary.weekday')}</div>
                     <div className="font-medium">{grade.overtime_rate_weekday}x</div>
@@ -216,82 +217,88 @@ const SalaryGrades = () => {
         </div>
       )}
 
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>{editingGrade ? t('salary.editGrade') : t('salary.addGrade')}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium mb-2 block">{t('salary.gradeName')}</label>
-              <Input
-                value={formData.grade_name}
-                onChange={(e) => setFormData({...formData, grade_name: e.target.value})}
-                placeholder={t('salary.enterGradeName')}
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-2 block">{t('salary.gradeLevel')}</label>
-              <Input
-                type="number"
-                value={formData.grade_level}
-                onChange={(e) => setFormData({...formData, grade_level: parseInt(e.target.value)})}
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-2 block">{t('salary.baseSalary')}</label>
-              <Input
-                type="number"
-                value={formData.base_salary}
-                onChange={(e) => setFormData({...formData, base_salary: parseInt(e.target.value) || 0})}
-                placeholder={t('salary.enterMonthlySalary')}
-              />
-              {formData.base_salary > 0 && (
-                <div className="mt-2 text-sm text-gray-600 space-y-1">
-                  <div>{t('salary.dailySalary')}: ${calculateDailyRate(formData.base_salary).toLocaleString()}</div>
-                  <div>{t('salary.hourlyRate')}: ${calculateHourlyRate(formData.base_salary).toLocaleString()}</div>
-                </div>
-              )}
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-2 block">{t('salary.overtimeMultiplier')}</label>
-              <div className="grid grid-cols-3 gap-2">
-                <div>
-                  <label className="text-xs text-gray-500">{t('salary.weekday')}</label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={formData.overtime_rate_weekday || ''}
-                    onChange={(e) => setFormData({...formData, overtime_rate_weekday: parseFloat(e.target.value) || 0})}
-                  />
-                </div>
-                <div>
-                  <label className="text-xs text-gray-500">{t('salary.weekend')}</label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={formData.overtime_rate_weekend || ''}
-                    onChange={(e) => setFormData({...formData, overtime_rate_weekend: parseFloat(e.target.value) || 0})}
-                  />
-                </div>
-                <div>
-                  <label className="text-xs text-gray-500">{t('salary.holiday')}</label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={formData.overtime_rate_holiday || ''}
-                    onChange={(e) => setFormData({...formData, overtime_rate_holiday: parseFloat(e.target.value) || 0})}
-                  />
-                </div>
+      <ResponsiveDialog
+        open={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        title={editingGrade ? t('salary.editGrade') : t('salary.addGrade')}
+        size="md"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="w-full sm:w-auto">
+              {t('common.cancel')}
+            </Button>
+            <Button onClick={handleSave} className="w-full sm:w-auto">
+              {t('common.save')}
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="text-sm font-medium mb-2 block">{t('salary.gradeName')}</label>
+            <Input
+              value={formData.grade_name}
+              onChange={(e) => setFormData({...formData, grade_name: e.target.value})}
+              placeholder={t('salary.enterGradeName')}
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium mb-2 block">{t('salary.gradeLevel')}</label>
+            <Input
+              type="number"
+              value={formData.grade_level}
+              onChange={(e) => setFormData({...formData, grade_level: parseInt(e.target.value)})}
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium mb-2 block">{t('salary.baseSalary')}</label>
+            <Input
+              type="number"
+              value={formData.base_salary}
+              onChange={(e) => setFormData({...formData, base_salary: parseInt(e.target.value) || 0})}
+              placeholder={t('salary.enterMonthlySalary')}
+            />
+            {formData.base_salary > 0 && (
+              <div className="mt-2 text-sm text-gray-600 space-y-1">
+                <div>{t('salary.dailySalary')}: ${calculateDailyRate(formData.base_salary).toLocaleString()}</div>
+                <div>{t('salary.hourlyRate')}: ${calculateHourlyRate(formData.base_salary).toLocaleString()}</div>
+              </div>
+            )}
+          </div>
+          <div>
+            <label className="text-sm font-medium mb-2 block">{t('salary.overtimeMultiplier')}</label>
+            <div className="grid grid-cols-3 gap-2">
+              <div>
+                <label className="text-xs text-gray-500">{t('salary.weekday')}</label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={formData.overtime_rate_weekday || ''}
+                  onChange={(e) => setFormData({...formData, overtime_rate_weekday: parseFloat(e.target.value) || 0})}
+                />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500">{t('salary.weekend')}</label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={formData.overtime_rate_weekend || ''}
+                  onChange={(e) => setFormData({...formData, overtime_rate_weekend: parseFloat(e.target.value) || 0})}
+                />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500">{t('salary.holiday')}</label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={formData.overtime_rate_holiday || ''}
+                  onChange={(e) => setFormData({...formData, overtime_rate_holiday: parseFloat(e.target.value) || 0})}
+                />
               </div>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>{t('common.cancel')}</Button>
-            <Button onClick={handleSave}>{t('common.save')}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        </div>
+      </ResponsiveDialog>
     </div>
   );
 };

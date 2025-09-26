@@ -738,17 +738,17 @@ Time: ${new Date(event.start).toLocaleTimeString([], {hour: '2-digit', minute:'2
         </TabsList>
 
         <TabsContent value="setup" className="space-y-4">
-          <div className="grid grid-cols-10 gap-4">
-            {/* Categories - 30% */}
-            <div className="col-span-3">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {/* Categories */}
+            <div className="lg:col-span-1">
               <Card>
                 <CardHeader>
-                  <CardTitle>Categories</CardTitle>
+                  <CardTitle className="text-base">Categories</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
                     <Button 
-                      className="w-full flex items-center gap-2"
+                      className="w-full flex items-center gap-2 text-sm"
                       onClick={() => {
                         setEditingCategory(null);
                         setCategoryFormData({ name: '' });
@@ -758,43 +758,43 @@ Time: ${new Date(event.start).toLocaleTimeString([], {hour: '2-digit', minute:'2
                       <Plus className="w-4 h-4" />
                       Add Category
                     </Button>
-                    {shiftCategories.map(category => (
-                      <Card key={category.id} className="p-3">
-                        <div className="flex items-center justify-between">
-                          <span className="font-medium text-sm">{category.name}</span>
-                          <div className="flex gap-1">
-                            <Button size="sm" variant="outline" onClick={() => handleEditCategory(category)}>
-                              <Edit className="w-3 h-3" />
-                            </Button>
-                            <Button size="sm" variant="destructive" onClick={() => handleDeleteCategory(category)}>
-                              <Trash2 className="w-3 h-3" />
-                            </Button>
+                    <div className="space-y-2">
+                      {shiftCategories.map(category => (
+                        <div key={category.id} className="p-3 border rounded-lg">
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium text-sm">{category.name}</span>
+                            <div className="flex gap-1">
+                              <Button size="sm" variant="outline" onClick={() => handleEditCategory(category)}>
+                                <Edit className="w-3 h-3" />
+                              </Button>
+                              <Button size="sm" variant="destructive" onClick={() => handleDeleteCategory(category)}>
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            </div>
                           </div>
                         </div>
-                      </Card>
-                    ))}
-                    {shiftCategories.length === 0 && (
-                      <EmptyState 
-                        type="schedule" 
-                        title="No Categories" 
-                        description="Click 'Add Category' to create your first category." 
-                      />
-                    )}
+                      ))}
+                      {shiftCategories.length === 0 && (
+                        <div className="text-center py-4 text-gray-500 text-sm">
+                          No categories yet
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </CardContent>
               </Card>
             </div>
 
-            {/* Shift Templates - 70% */}
-            <div className="col-span-7">
+            {/* Shift Templates */}
+            <div className="lg:col-span-2">
               <Card>
                 <CardHeader>
-                  <CardTitle>Shift Templates</CardTitle>
+                  <CardTitle className="text-base">Shift Templates</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div>
                     <Button 
-                      className="w-full flex items-center gap-2 mb-4"
+                      className="w-full flex items-center gap-2 mb-4 text-sm"
                       onClick={() => {
                         setEditingShift(null);
                         setShiftFormData({ name: '', category: '', start_time: '', end_time: '', is_cross_day: false, timezone: 'Asia/Taipei', total_break_minutes: 60, break_periods: [{ start_time: '', end_time: '' }] });
@@ -804,7 +804,51 @@ Time: ${new Date(event.start).toLocaleTimeString([], {hour: '2-digit', minute:'2
                       <Plus className="w-4 h-4" />
                       Add Template
                     </Button>
-                    <ShiftTemplatesTable />
+                    <div className="hidden md:block">
+                      <ShiftTemplatesTable />
+                    </div>
+                    {/* Mobile Template Cards */}
+                    <div className="md:hidden space-y-3">
+                      {shiftTemplates.map(template => {
+                        const categoryName = shiftCategories.find(cat => cat.id === template.category)?.name || template.category || 'Unknown';
+                        return (
+                          <div key={template.id} className="p-3 border rounded-lg">
+                            <div className="flex items-start justify-between mb-2">
+                              <div className="flex-1">
+                                <h3 className="font-medium text-sm">{template.name || 'Unnamed Shift'}</h3>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <span className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded">
+                                    {categoryName}
+                                  </span>
+                                  {template.is_cross_day && <span className="text-xs text-orange-600">(Cross Day)</span>}
+                                </div>
+                              </div>
+                              <div className="flex gap-1">
+                                <Button size="sm" variant="outline" onClick={() => handleEditShift(template)}>
+                                  <Edit className="w-3 h-3" />
+                                </Button>
+                                <Button size="sm" variant="destructive" onClick={() => handleDeleteShift(template)}>
+                                  <Trash2 className="w-3 h-3" />
+                                </Button>
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
+                              <div className="flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                {template.start_time || 'N/A'} - {template.end_time || 'N/A'}
+                              </div>
+                              <div>Break: {template.total_break_minutes || 0} min</div>
+                              <div>Staff: {template.min_staff || 1}-{template.max_staff || 5}</div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      {shiftTemplates.length === 0 && (
+                        <div className="text-center py-8 text-gray-500 text-sm">
+                          No templates yet
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -914,11 +958,43 @@ Time: ${new Date(event.start).toLocaleTimeString([], {hour: '2-digit', minute:'2
                   <CardTitle>Schedule Calendar</CardTitle>
                 </CardHeader>
                 <CardContent className="p-6">
-                  <FullCalendarComponent
-                    events={events}
-                    onDateClick={handleDateClick}
-                    onEventClick={handleEventClick}
-                  />
+                  {/* Desktop Calendar */}
+                  <div className="hidden md:block">
+                    <FullCalendarComponent
+                      events={events}
+                      onDateClick={handleDateClick}
+                      onEventClick={handleEventClick}
+                    />
+                  </div>
+                  {/* Mobile Schedule List */}
+                  <div className="md:hidden">
+                    <div className="space-y-3">
+                      {events.length > 0 ? (
+                        events
+                          .sort((a, b) => new Date(a.start) - new Date(b.start))
+                          .slice(0, 20)
+                          .map(event => (
+                            <div key={event.id} className="p-3 border rounded-lg" onClick={() => handleEventClick({ event })}>
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <h3 className="font-medium text-sm">{event.extendedProps?.memberName || 'Unknown Member'}</h3>
+                                  <p className="text-xs text-gray-600">{event.extendedProps?.templateName || 'Unknown Template'}</p>
+                                  <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
+                                    <span>{event.start ? new Date(event.start).toLocaleDateString() : 'No Date'}</span>
+                                    <span>{event.extendedProps?.startTime || 'N/A'} - {event.extendedProps?.endTime || 'N/A'}</span>
+                                  </div>
+                                </div>
+                                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: event.backgroundColor || '#3b82f6' }}></div>
+                              </div>
+                            </div>
+                          ))
+                      ) : (
+                        <div className="text-center py-8 text-gray-500 text-sm">
+                          No schedules found. Click "Assign Shift" to create one.
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             </div>

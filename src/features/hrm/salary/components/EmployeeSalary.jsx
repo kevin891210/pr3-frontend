@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge.jsx';
 import { Input } from '@/components/ui/input.jsx';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogFooter } from '@/components/ui/dialog.jsx';
 import { Search, Plus, Edit, History, Trash2, Upload } from 'lucide-react';
+import ResponsiveDialog from '@/components/ui/responsive-dialog.jsx';
 import BatchImportModal from './BatchImportModal.jsx';
 import apiClient from '../../../../services/api.js';
 
@@ -445,62 +446,65 @@ const EmployeeSalary = () => {
         </CardContent>
       </Card>
 
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>{editingEmployee ? t('salary.editEmployee') : t('salary.addEmployee')}</DialogTitle>
-            <DialogDescription>
-              {editingEmployee ? t('salary.editEmployeeDesc') : t('salary.addEmployeeDesc')}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium mb-2 block">員工姓名</label>
-              <Input
-                value={formData.member_name}
-                onChange={(e) => setFormData({...formData, member_name: e.target.value})}
-                placeholder="輸入員工姓名"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-2 block">員工信箱</label>
-              <Input
-                type="email"
-                value={formData.member_email}
-                onChange={(e) => setFormData({...formData, member_email: e.target.value})}
-                placeholder="輸入員工信箱"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-2 block">薪資等級</label>
-              <select 
-                className="w-full p-2 border rounded-md"
-                value={formData.salary_grade_id}
-                onChange={(e) => setFormData({...formData, salary_grade_id: e.target.value})}
-              >
-                <option value="">請選擇薪資等級</option>
-                {salaryGrades.map(grade => (
-                  <option key={grade.id} value={grade.id}>
-                    {grade.grade_name} - ${grade.base_salary.toLocaleString()}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-2 block">生效日期</label>
-              <Input
-                type="date"
-                value={formData.effective_date}
-                onChange={(e) => setFormData({...formData, effective_date: e.target.value})}
-              />
-            </div>
+      <ResponsiveDialog
+        open={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        title={editingEmployee ? t('salary.editEmployee') : t('salary.addEmployee')}
+        size="md"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="w-full sm:w-auto">
+              {t('common.cancel')}
+            </Button>
+            <Button onClick={handleSave} className="w-full sm:w-auto">
+              {t('common.save')}
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="text-sm font-medium mb-2 block">員工姓名</label>
+            <Input
+              value={formData.member_name}
+              onChange={(e) => setFormData({...formData, member_name: e.target.value})}
+              placeholder="輸入員工姓名"
+            />
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>{t('common.cancel')}</Button>
-            <Button onClick={handleSave}>{t('common.save')}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          <div>
+            <label className="text-sm font-medium mb-2 block">員工信箱</label>
+            <Input
+              type="email"
+              value={formData.member_email}
+              onChange={(e) => setFormData({...formData, member_email: e.target.value})}
+              placeholder="輸入員工信箱"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium mb-2 block">薪資等級</label>
+            <select 
+              className="w-full p-2 border rounded-md"
+              value={formData.salary_grade_id}
+              onChange={(e) => setFormData({...formData, salary_grade_id: e.target.value})}
+            >
+              <option value="">請選擇薪資等級</option>
+              {salaryGrades.map(grade => (
+                <option key={grade.id} value={grade.id}>
+                  {grade.grade_name} - ${grade.base_salary.toLocaleString()}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-sm font-medium mb-2 block">生效日期</label>
+            <Input
+              type="date"
+              value={formData.effective_date}
+              onChange={(e) => setFormData({...formData, effective_date: e.target.value})}
+            />
+          </div>
+        </div>
+      </ResponsiveDialog>
 
       <Dialog open={showBatchDialog} onOpenChange={setShowBatchDialog}>
         <DialogContent className="max-w-md">
