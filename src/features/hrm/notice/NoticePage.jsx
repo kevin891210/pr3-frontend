@@ -98,8 +98,16 @@ const NoticePage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      // 準備發送的數據
+      const submitData = { ...formData };
+      
+      // 當選擇 "All Brands" 時，不發送 workspaceId
+      if (submitData.brandId === 'all') {
+        delete submitData.workspaceId;
+      }
+      
       if (editingNotice) {
-        const updatedNotice = await apiClient.updateNotice(editingNotice.id, formData);
+        const updatedNotice = await apiClient.updateNotice(editingNotice.id, submitData);
         setNotices(notices.map(notice => notice.id === editingNotice.id ? updatedNotice : notice));
         setAlertDialog({
           open: true,
@@ -108,7 +116,7 @@ const NoticePage = () => {
           message: 'Notice updated successfully'
         });
       } else {
-        const newNotice = await apiClient.createNotice(formData);
+        const newNotice = await apiClient.createNotice(submitData);
         setNotices([newNotice, ...notices]);
         setAlertDialog({
           open: true,
