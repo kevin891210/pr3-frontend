@@ -284,7 +284,14 @@ const NoticePage = () => {
                     return (
                       <tr key={notice.id} className="border-b hover:bg-gray-50">
                         <td className="py-3 px-4 font-medium">{notice.title}</td>
-                        <td className="py-3 px-4 text-gray-600">{brand?.name || 'All Brands'}</td>
+                        <td className="py-3 px-4 text-gray-600">
+                          {brand?.name || 'All Brands'}
+                          {notice.workspaceId === 'all' && brand && (
+                            <span className="ml-2 text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded">
+                              All Workspaces
+                            </span>
+                          )}
+                        </td>
                         <td className="py-3 px-4 text-gray-600">
                           {new Date(notice.startTime).toLocaleString()}
                         </td>
@@ -405,6 +412,7 @@ const NoticePage = () => {
                     disabled={!formData.brandId}
                   >
                     <option value="">{t('notice.selectWorkspace')}</option>
+                    <option value="all">All Workspaces</option>
                     {Array.isArray(workspaces) && workspaces.map(workspace => (
                       <option key={workspace.id} value={workspace.id}>{workspace.name}</option>
                     ))}
