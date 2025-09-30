@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input.jsx';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog.jsx';
 import { Calculator, Plus, Eye, Check, DollarSign, Trash2, RefreshCw } from 'lucide-react';
 import { apiClient } from '@/services/api.js';
+import MobilePagination from '@/components/ui/mobile-pagination.jsx';
 
 const SalaryCalculation = () => {
   const { t } = useTranslation();
@@ -543,46 +544,61 @@ const SalaryCalculation = () => {
                 </table>
               </div>
               {pagination.total > 0 && (
-                <div ref={paginationRef} className="flex items-center justify-between px-4 py-3 border-t bg-white" style={{height: '80px', minHeight: '80px'}}>
-                  <div className="flex items-center space-x-4">
-                    <div className="text-sm text-gray-700">
-                      顯示 {startIndex} 至 {endIndex} 筆，共 {pagination.total} 筆記錄
+                <div ref={paginationRef} className="border-t bg-white" style={{minHeight: '80px'}}>
+                  {/* Desktop Pagination */}
+                  <div className="hidden sm:flex items-center justify-between px-4 py-3">
+                    <div className="flex items-center space-x-4">
+                      <div className="text-sm text-gray-700">
+                        顯示 {startIndex} 至 {endIndex} 筆，共 {pagination.total} 筆記錄
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm text-gray-700">每頁顯示</span>
+                        <select 
+                          className="border rounded px-2 py-1 text-sm"
+                          value={pagination.pageSize}
+                          onChange={(e) => handlePageSizeChange(parseInt(e.target.value))}
+                        >
+                          <option value={5}>5</option>
+                          <option value={10}>10</option>
+                          <option value={20}>20</option>
+                          <option value={50}>50</option>
+                        </select>
+                        <span className="text-sm text-gray-700">筆</span>
+                      </div>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <span className="text-sm text-gray-700">每頁顯示</span>
-                      <select 
-                        className="border rounded px-2 py-1 text-sm"
-                        value={pagination.pageSize}
-                        onChange={(e) => handlePageSizeChange(parseInt(e.target.value))}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(pagination.currentPage - 1)}
+                        disabled={pagination.currentPage === 1}
                       >
-                        <option value={5}>5</option>
-                        <option value={10}>10</option>
-                        <option value={20}>20</option>
-                        <option value={50}>50</option>
-                      </select>
-                      <span className="text-sm text-gray-700">筆</span>
+                        上一頁
+                      </Button>
+                      <span className="text-sm">
+                        {pagination.currentPage} / {totalPages}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(pagination.currentPage + 1)}
+                        disabled={pagination.currentPage === totalPages}
+                      >
+                        下一頁
+                      </Button>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handlePageChange(pagination.currentPage - 1)}
-                      disabled={pagination.currentPage === 1}
-                    >
-                      上一頁
-                    </Button>
-                    <span className="text-sm">
-                      {pagination.currentPage} / {totalPages}
-                    </span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handlePageChange(pagination.currentPage + 1)}
-                      disabled={pagination.currentPage === totalPages}
-                    >
-                      下一頁
-                    </Button>
+                  
+                  {/* Mobile Pagination */}
+                  <div className="sm:hidden p-4">
+                    <MobilePagination
+                      currentPage={pagination.currentPage}
+                      totalPages={totalPages}
+                      pageSize={pagination.pageSize}
+                      total={pagination.total}
+                      onPageChange={handlePageChange}
+                      onPageSizeChange={handlePageSizeChange}
+                    />
                   </div>
                 </div>
               )}

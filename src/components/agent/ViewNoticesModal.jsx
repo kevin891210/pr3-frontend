@@ -72,43 +72,49 @@ const ViewNoticesModal = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg w-full max-w-2xl mx-4 max-h-[80vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-xl font-semibold flex items-center gap-2">
-            <Bell className="w-5 h-5" />
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-4 sm:p-6 border-b sticky top-0 bg-white">
+          <h2 className="text-lg sm:text-xl font-semibold flex items-center gap-2">
+            <Bell className="w-4 h-4 sm:w-5 sm:h-5" />
             All Notices
           </h2>
-          <Button variant="outline" size="sm" onClick={onClose}>
+          <Button variant="outline" size="sm" onClick={onClose} className="p-2">
             <X className="w-4 h-4" />
           </Button>
         </div>
         
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           {loading ? (
-            <div className="text-center py-8 text-gray-500">Loading...</div>
+            <div className="text-center py-8 text-gray-500">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
+              Loading...
+            </div>
           ) : notices.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">No notices available</div>
+            <div className="text-center py-8 text-gray-500">
+              <Bell className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+              No notices available
+            </div>
           ) : (
             <div className="space-y-4">
               {notices.map(notice => (
-                <Card key={notice.id} className={notice.unread ? 'border-blue-200 bg-blue-50' : ''}>
+                <Card key={notice.id} className={`shadow-sm ${notice.unread ? 'border-blue-200 bg-blue-50' : ''}`}>
                   <CardContent className="p-4">
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-medium">{notice.title}</h3>
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-3">
+                      <div className="flex items-start gap-2 flex-1">
+                        <h3 className="font-medium text-gray-900 flex-1">{notice.title}</h3>
                         {notice.unread && (
-                          <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                          <div className="w-2 h-2 bg-blue-500 rounded-full mt-1 flex-shrink-0"></div>
                         )}
                       </div>
-                      <Badge className={getPriorityColor(notice.priority)}>
+                      <Badge className={`${getPriorityColor(notice.priority)} self-start`}>
                         {notice.priority}
                       </Badge>
                     </div>
                     
-                    <p className="text-sm text-gray-600 mb-3">{notice.content}</p>
+                    <p className="text-sm text-gray-600 mb-3 leading-relaxed">{notice.content}</p>
                     
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                       <div className="flex items-center gap-1 text-xs text-gray-500">
                         <Clock className="w-3 h-3" />
                         {notice.time}
@@ -118,6 +124,7 @@ const ViewNoticesModal = ({ isOpen, onClose }) => {
                           size="sm" 
                           variant="outline"
                           onClick={() => markAsRead(notice.id)}
+                          className="self-start sm:self-auto"
                         >
                           Mark as Read
                         </Button>

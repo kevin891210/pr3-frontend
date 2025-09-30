@@ -136,7 +136,7 @@ ops/
 設定頁面會自動驗證以下後端端點：
 - `GET /health` - 服務健康檢查
 - `POST /api/v1/auth/sign-in` - 管理者認證
-- `POST /api/v1/auth/agent-sign-in` - Agent 認證
+- `POST /api/v1/agent/auth/agent-sign-in` - Agent 認證
 - `GET /api/v1/brands` - 品牌列表
 - `GET /api/v1/workspaces-by-brand/{brand_id}` - 品牌工作區列表
 - `GET /api/v1/bots/all-bots` - Bot 列表
@@ -150,13 +150,21 @@ Agent 登入需要以下必要回應欄位：
 {
   "success": true,
   "data": {
-    "token": "local-uuid-token",
-    "brand_id": "brand_id",
-    "member_id": "third_party_user_id",
-    "member_name": "third_party_user_name",
-    "third_party_token": "third_party_jwt_token"
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "brand_id": "e729d768-515b-468d-9cb0-adbb9d511814",
+    "member_id": "119f6166-c105-489b-993e-9388cc68b956",
+    "member_name": "Kevin",
+    "third_party_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
   }
 }
+```
+
+### Agent 專用 API 端點
+```json
+GET /api/v1/agent/brands - Agent 可用品牌列表
+GET /api/v1/agent/schedule-assignments - Agent 排班查詢 (包含 member_name)
+GET /api/v1/agent/leave-types - Agent 請假類型列表
+POST /api/v1/agent/auth/agent-sign-in - Agent 登入認證
 ```
 
 ### 請假管理 API
@@ -313,6 +321,40 @@ DELETE /api/v1/shift-templates/{id}
 **排班指派管理**：
 ```json
 GET /api/v1/schedule-assignments
+參數:
+- member_id (可選): 指定用戶 ID，只返回該用戶的排班指派
+- start_date (可選): 開始日期過濾
+- end_date (可選): 結束日期過濾  
+- template_id (可選): 班別模板 ID 過濾
+
+回應格式 (使用 JOIN 查詢優化):
+{
+  "success": true,
+  "data": [
+    {
+      "id": "4c2ee066-b7f4-4287-ad4b-66d3d7aa3be8",
+      "member_id": "f3d341d4-6681-429a-b534-7426e236f24a",
+      "member_name": "Kevin",
+      "shift_template_id": "2",
+      "date": "2025-09-23",
+      "created_at": "2025-09-23T04:16:51Z",
+      "shift_template": {
+        "id": "2",
+        "name": "Morning Shift",
+        "category": "full_day",
+        "start_time": "09:00",
+        "end_time": "18:00",
+        "is_cross_day": false,
+        "timezone": "Asia/Taipei",
+        "total_break_minutes": 60,
+        "break_periods": [],
+        "min_staff": 1,
+        "max_staff": 5
+      }
+    }
+  ]
+}
+
 POST /api/v1/schedule-assignments
 PUT /api/v1/schedule-assignments/{id}
 DELETE /api/v1/schedule-assignments/{id}

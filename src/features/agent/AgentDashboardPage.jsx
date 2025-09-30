@@ -7,11 +7,12 @@ import { useAuthStore } from '@/store/authStore';
 import apiClient from '@/services/api';
 import RequestLeaveModal from '@/components/agent/RequestLeaveModal';
 import SimpleCalendar from '@/components/calendar/SimpleCalendar';
+import MobileScheduleView from '@/components/agent/MobileScheduleView';
 
 const AgentDashboardPage = () => {
   const { t } = useTranslation();
   const { user, logout } = useAuthStore();
-  const [profile, setProfile] = useState(null);
+
   const [schedule, setSchedule] = useState([]);
   const [notices, setNotices] = useState([]);
   const [leaveBalance, setLeaveBalance] = useState({});
@@ -28,15 +29,6 @@ const AgentDashboardPage = () => {
       const today = new Date().toISOString().split('T')[0];
       const memberId = localStorage.getItem('member_id') || user?.member_id || user?.id;
       
-      // Load profile
-      try {
-        const profileRes = await apiClient.getAgentProfile(user?.id, user?.workspace_id);
-        setProfile(profileRes.data || profileRes);
-      } catch (profileError) {
-        console.warn('Failed to load profile:', profileError.message);
-        setProfile(null);
-      }
-      
       // Load notices
       try {
         const noticesRes = await apiClient.getAgentNotices(user?.workspace_id);
@@ -48,7 +40,7 @@ const AgentDashboardPage = () => {
       
       // Load schedule
       try {
-        const scheduleRes = await apiClient.getScheduleAssignments({ 
+        const scheduleRes = await apiClient.getAgentScheduleAssignments({ 
           member_id: memberId,
           start_date: today,
           end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
@@ -56,14 +48,34 @@ const AgentDashboardPage = () => {
         const scheduleData = scheduleRes?.data || [];
         
         if (Array.isArray(scheduleData) && scheduleData.length > 0) {
-          const calendarEvents = scheduleData.map(assignment => ({
-            id: assignment.id,
-            title: assignment.shift_name || 'Work Shift',
-            start: assignment.start_datetime || assignment.date,
-            end: assignment.end_datetime || assignment.date,
-            backgroundColor: '#3b82f6',
-            borderColor: '#1d4ed8'
-          }));
+          const calendarEvents = scheduleData.map(assignment => {
+            // Use shift_template data if available from JOIN query
+            const template = assignment.shift_template;
+            const startTime = template?.start_time || '09:00';
+            const endTime = template?.end_time || '18:00';
+            
+            // Handle cross-day shifts
+            let startDateTime, endDateTime;
+            if (template?.is_cross_day && startTime > endTime) {
+              startDateTime = `${assignment.date}T${startTime}:00`;
+              const nextDay = new Date(assignment.date);
+              nextDay.setDate(nextDay.getDate() + 1);
+              const nextDayStr = nextDay.toISOString().split('T')[0];
+              endDateTime = `${nextDayStr}T${endTime}:00`;
+            } else {
+              startDateTime = `${assignment.date}T${startTime}:00`;
+              endDateTime = `${assignment.date}T${endTime}:00`;
+            }
+            
+            return {
+              id: assignment.id,
+              title: template?.name || 'Work Shift',
+              start: startDateTime,
+              end: endDateTime,
+              backgroundColor: '#3b82f6',
+              borderColor: '#1d4ed8'
+            };
+          });
           setSchedule(calendarEvents);
         } else {
           setSchedule([]);
@@ -94,7 +106,6 @@ const AgentDashboardPage = () => {
       }
     } catch (error) {
       console.error('Failed to load agent data:', error);
-      setProfile(null);
       setSchedule([]);
       setNotices([]);
       setLeaveBalance([]);
@@ -120,17 +131,18 @@ const AgentDashboardPage = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
+      <header className="bg-white shadow-sm border-b sticky top-0 z-40">
+        <div className="px-4 sm:px-6">
+          <div className="flex justify-between items-center h-14 sm:h-16">
             <div className="flex items-center">
-              <h1 className="text-xl font-semibold text-gray-900">Agent Dashboard</h1>
+              <h1 className="text-lg sm:text-xl font-semibold text-gray-900 truncate">Agent Dashboard</h1>
             </div>
-            <div className="flex items-center gap-4">
-              <Button variant="outline" size="sm" onClick={handleLogout}>
-                <User className="w-4 h-4 mr-2" />
-                {user?.member_name || profile?.name || user?.name || 'Agent'}
-                <LogOut className="w-4 h-4 ml-2" />
+            <div className="flex items-center">
+              <Button variant="outline" size="sm" onClick={handleLogout} className="text-xs sm:text-sm px-2 sm:px-3">
+                <User className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">{user?.member_name || 'Agent'}</span>
+                <span className="sm:hidden">Me</span>
+                <LogOut className="w-3 h-3 sm:w-4 sm:h-4 ml-1 sm:ml-2" />
               </Button>
             </div>
           </div>
@@ -138,50 +150,58 @@ const AgentDashboardPage = () => {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <main className="px-4 sm:px-6 py-4 sm:py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
           
           {/* Schedule Calendar */}
           <Card className="lg:col-span-2">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="w-5 h-5" />
+            <CardHeader className="pb-3 sm:pb-6">
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                <Calendar className="w-4 h-4 sm:w-5 sm:h-5" />
                 My Schedule
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <SimpleCalendar
-                events={Array.isArray(schedule) ? schedule : []}
-                onDateClick={() => {}}
-                onEventClick={() => {}}
-              />
+            <CardContent className="pt-0">
+              {/* Mobile Schedule View */}
+              <div className="block sm:hidden">
+                <MobileScheduleView events={Array.isArray(schedule) ? schedule : []} />
+              </div>
+              
+              {/* Desktop Calendar View */}
+              <div className="hidden sm:block min-h-[400px]">
+                <SimpleCalendar
+                  events={Array.isArray(schedule) ? schedule : []}
+                  onDateClick={() => {}}
+                  onEventClick={() => {}}
+                />
+              </div>
             </CardContent>
           </Card>
 
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {/* Leave Balance */}
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Calendar className="w-5 h-5" />
+              <CardHeader className="pb-3 sm:pb-6">
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                  <Calendar className="w-4 h-4 sm:w-5 sm:h-5" />
                   Leave Balance
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-0">
                 {Array.isArray(leaveBalance) && leaveBalance.length > 0 ? (
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {leaveBalance.map((balance) => (
-                      <div key={balance.id} className="flex justify-between">
-                        <span className="text-sm">{balance.leave_type_name}:</span>
-                        <span className="font-medium">{balance.remaining_days} days</span>
+                      <div key={balance.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                        <span className="text-sm font-medium text-gray-700">{balance.leave_type_name}</span>
+                        <span className="font-bold text-blue-600">{balance.remaining_days} days</span>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-gray-500">No leave balance data</p>
+                  <p className="text-gray-500 text-center py-4">No leave balance data</p>
                 )}
                 <Button 
-                  className="w-full mt-4" 
+                  className="w-full mt-4 h-10 sm:h-11" 
                   onClick={() => setShowLeaveModal(true)}
                 >
                   Request Leave
@@ -191,20 +211,20 @@ const AgentDashboardPage = () => {
 
             {/* Leave Requests */}
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Calendar className="w-5 h-5" />
+              <CardHeader className="pb-3 sm:pb-6">
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                  <Calendar className="w-4 h-4 sm:w-5 sm:h-5" />
                   My Leave Requests
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-0">
                 {Array.isArray(leaveRequests) && leaveRequests.length > 0 ? (
                   <div className="space-y-3">
                     {leaveRequests.slice(0, 3).map((request) => (
-                      <div key={request.id} className="p-3 border rounded-lg">
-                        <div className="flex justify-between items-start mb-2">
-                          <h4 className="font-medium">{request.leave_type_name}</h4>
-                          <span className={`px-2 py-1 text-xs rounded-full ${
+                      <div key={request.id} className="p-3 border rounded-lg bg-white shadow-sm">
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 mb-2">
+                          <h4 className="font-medium text-gray-900">{request.leave_type_name}</h4>
+                          <span className={`px-2 py-1 text-xs rounded-full self-start ${
                             request.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                             request.status === 'approved' ? 'bg-green-100 text-green-800' :
                             'bg-red-100 text-red-800'
@@ -212,42 +232,44 @@ const AgentDashboardPage = () => {
                             {request.status}
                           </span>
                         </div>
-                        <p className="text-sm text-gray-600">
-                          {new Date(request.start_date).toLocaleDateString()} - {new Date(request.end_date).toLocaleDateString()}
-                        </p>
-                        <p className="text-sm text-gray-600">{request.days} days</p>
+                        <div className="space-y-1">
+                          <p className="text-sm text-gray-600">
+                            📅 {new Date(request.start_date).toLocaleDateString()} - {new Date(request.end_date).toLocaleDateString()}
+                          </p>
+                          <p className="text-sm text-gray-600">⏱️ {request.days} days</p>
+                        </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-gray-500">No leave requests</p>
+                  <p className="text-gray-500 text-center py-4">No leave requests</p>
                 )}
               </CardContent>
             </Card>
 
             {/* Notices */}
             <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Bell className="w-5 h-5" />
+            <CardHeader className="pb-3 sm:pb-6">
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                <Bell className="w-4 h-4 sm:w-5 sm:h-5" />
                 Latest Notices
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-0">
               {Array.isArray(notices) && notices.length > 0 ? (
                 <div className="space-y-3">
                   {notices.slice(0, 5).map((notice, index) => (
-                    <div key={index} className="p-3 border rounded-lg">
-                      <h4 className="font-medium">{notice.title}</h4>
-                      <p className="text-sm text-gray-600 mt-1">{notice.content}</p>
-                      <p className="text-xs text-gray-400 mt-2">
-                        {new Date(notice.created_at).toLocaleDateString()}
+                    <div key={index} className="p-3 border rounded-lg bg-white shadow-sm">
+                      <h4 className="font-medium text-gray-900 mb-2">{notice.title}</h4>
+                      <p className="text-sm text-gray-600 mb-2 line-clamp-2">{notice.content}</p>
+                      <p className="text-xs text-gray-400">
+                        📅 {new Date(notice.created_at).toLocaleDateString()}
                       </p>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-gray-500">No notices available</p>
+                <p className="text-gray-500 text-center py-4">No notices available</p>
               )}
             </CardContent>
           </Card>

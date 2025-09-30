@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import apiClient from '../../services/api';
+import ResponsiveTable from '../../components/ui/responsive-table';
 
 const AgentMonitorV2Page = () => {
   const { t } = useTranslation();
@@ -221,33 +222,42 @@ const AgentMonitorV2Page = () => {
 
 
   const AgentCard = ({ agent }) => (
-    <div className="bg-white border rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
+    <div className="bg-white border rounded-lg p-3 sm:p-4 shadow-sm hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
           <img 
             src={agent.avatar || 'https://via.placeholder.com/40'} 
             alt={agent.name}
-            className="w-10 h-10 rounded-full object-cover"
+            className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover flex-shrink-0"
           />
-          <div>
-            <h3 className="font-semibold text-gray-900">{agent.name}</h3>
-            <div className="flex gap-2 mt-1">
+          <div className="min-w-0 flex-1">
+            <h3 className="font-semibold text-gray-900 text-sm sm:text-base truncate">{agent.name}</h3>
+            <div className="flex flex-wrap gap-1 mt-1">
               {agent.is_online && (
-                <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">
+                <span className="px-1.5 py-0.5 text-xs bg-green-100 text-green-800 rounded-full lg:inline hidden">
                   {t('online')}
                 </span>
               )}
               {agent.is_available && (
-                <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
+                <span className="px-1.5 py-0.5 text-xs bg-blue-100 text-blue-800 rounded-full lg:inline hidden">
                   {t('available')}
                 </span>
               )}
+              {/* Mobile/Tablet status indicators */}
+              <div className="flex gap-1 lg:hidden">
+                {agent.is_online && (
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                )}
+                {agent.is_available && (
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                )}
+              </div>
             </div>
           </div>
         </div>
-        <div className="text-right">
-          <div className="text-2xl font-bold text-gray-900">{agent.total_chats}</div>
-          <div className="text-sm text-gray-500">{t('chats')}</div>
+        <div className="text-right flex-shrink-0">
+          <div className="text-xl sm:text-2xl font-bold text-gray-900">{agent.total_chats}</div>
+          <div className="text-xs sm:text-sm text-gray-500">{t('chats')}</div>
         </div>
       </div>
     </div>
@@ -285,17 +295,17 @@ const AgentMonitorV2Page = () => {
           {capacity ? (
             <div className="space-y-4">
               {/* Summary Stats - Always visible */}
-              <div className="grid grid-cols-3 gap-4">
-                <div className="text-center p-3 bg-blue-50 rounded-lg">
-                  <div className="text-xl font-bold text-blue-600">{capacity.total_chats}</div>
+              <div className="grid grid-cols-3 gap-2 sm:gap-4">
+                <div className="text-center p-2 sm:p-3 bg-blue-50 rounded-lg">
+                  <div className="text-lg sm:text-xl font-bold text-blue-600">{capacity.total_chats}</div>
                   <div className="text-xs text-gray-600">{t('totalChats')}</div>
                 </div>
-                <div className="text-center p-3 bg-green-50 rounded-lg">
-                  <div className="text-xl font-bold text-green-600">{capacity.total_tickets}</div>
+                <div className="text-center p-2 sm:p-3 bg-green-50 rounded-lg">
+                  <div className="text-lg sm:text-xl font-bold text-green-600">{capacity.total_tickets}</div>
                   <div className="text-xs text-gray-600">{t('totalTickets')}</div>
                 </div>
-                <div className="text-center p-3 bg-purple-50 rounded-lg">
-                  <div className="text-xl font-bold text-purple-600">{capacity.online_agents?.length || 0}</div>
+                <div className="text-center p-2 sm:p-3 bg-purple-50 rounded-lg">
+                  <div className="text-lg sm:text-xl font-bold text-purple-600">{capacity.online_agents?.length || 0}</div>
                   <div className="text-xs text-gray-600">{t('onlineAgents')}</div>
                 </div>
               </div>
@@ -304,7 +314,7 @@ const AgentMonitorV2Page = () => {
               {!isCollapsed && capacity.online_agents?.length > 0 && (
                 <div>
                   <h4 className="font-medium mb-2">{t('onlineAgents')}</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                     {capacity.online_agents.map(agent => (
                       <AgentCard key={agent.id} agent={agent} />
                     ))}
@@ -359,7 +369,7 @@ const AgentMonitorV2Page = () => {
     const agentData = getAgentCapacityData();
     
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {agentData.length > 0 ? (
           agentData.map(agent => (
             <Card key={agent.name}>
@@ -375,15 +385,24 @@ const AgentMonitorV2Page = () => {
                       <span className="text-sm">{agent.name}</span>
                       <div className="flex gap-1 mt-1">
                         {agent.is_online && (
-                          <span className="px-1 py-0.5 text-xs bg-green-100 text-green-800 rounded-full">
+                          <span className="px-1 py-0.5 text-xs bg-green-100 text-green-800 rounded-full lg:inline hidden">
                             {t('online')}
                           </span>
                         )}
                         {agent.is_available && (
-                          <span className="px-1 py-0.5 text-xs bg-blue-100 text-blue-800 rounded-full">
+                          <span className="px-1 py-0.5 text-xs bg-blue-100 text-blue-800 rounded-full lg:inline hidden">
                             {t('available')}
                           </span>
                         )}
+                        {/* Mobile/Tablet status indicators */}
+                        <div className="flex gap-1 lg:hidden">
+                          {agent.is_online && (
+                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          )}
+                          {agent.is_available && (
+                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -424,19 +443,19 @@ const AgentMonitorV2Page = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <Monitor className="w-6 h-6" />
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <Monitor className="w-5 h-5 sm:w-6 sm:h-6" />
             {t('agentMonitorV2Title')}
           </h1>
-          <p className="text-gray-600">{t('description')}</p>
+          <p className="text-sm sm:text-base text-gray-600">{t('description')}</p>
         </div>
       </div>
       
-    <div className="flex h-full gap-6">
-      {/* Team Widget - 20% on large screens, 30% on medium screens */}
-      <div className="w-[30%] lg:w-[20%] space-y-4">
+    <div className="flex flex-col lg:flex-row h-full gap-4 lg:gap-6">
+      {/* Team Widget - Full width on mobile, sidebar on desktop */}
+      <div className="w-full lg:w-[30%] xl:w-[20%] space-y-4">
         <Card>
           <CardHeader>
             <CardTitle>{t('monitorSettings')}</CardTitle>
@@ -504,8 +523,8 @@ const AgentMonitorV2Page = () => {
 
       </div>
 
-      {/* Loading Panel - 70% */}
-      <div className="flex-1 space-y-4">
+      {/* Main Panel - Full width on mobile, flex-1 on desktop */}
+      <div className="w-full lg:flex-1 space-y-4">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-xl font-semibold">{t('teamCapacityMonitor')}</h2>
@@ -516,7 +535,7 @@ const AgentMonitorV2Page = () => {
               <p className="text-sm text-red-600">{error}</p>
             )}
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <Button
               variant="outline"
               onClick={loadBrands}
@@ -543,8 +562,8 @@ const AgentMonitorV2Page = () => {
         {selectedBrand && selectedWorkspace && teams.length > 0 ? (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="teams">{t('teamCapacityMonitor')}</TabsTrigger>
-              <TabsTrigger value="agents">{t('agentCapacityMonitor')}</TabsTrigger>
+              <TabsTrigger value="teams" className="text-xs sm:text-sm">Teams</TabsTrigger>
+              <TabsTrigger value="agents" className="text-xs sm:text-sm">Agents</TabsTrigger>
             </TabsList>
 
             <TabsContent value="teams" className="space-y-4">
@@ -554,7 +573,7 @@ const AgentMonitorV2Page = () => {
                   <CardTitle>{t('teamFilter')}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                     {teams.map(team => (
                       <label key={team.id} className="flex items-center space-x-2">
                         <input
@@ -596,7 +615,7 @@ const AgentMonitorV2Page = () => {
                   const brand = brands.find(b => b.id === selectedBrand);
                   if (!brand) return null;
                   return (
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                       <div className="text-center p-4 bg-gray-50 rounded-lg">
                         <div className={`text-2xl font-bold ${
                           brand.status === 'active' ? 'text-green-600' : 'text-red-600'

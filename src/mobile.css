@@ -1,0 +1,131 @@
+/* 手機優化樣式 */
+
+/* 基礎響應式設定 */
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  overflow-x: hidden;
+}
+
+/* 確保在手機上有適當的觸控目標大小 */
+@media (max-width: 768px) {
+  /* 防止水平滾動 */
+  body {
+    width: 100vw;
+    overflow-x: hidden;
+  }
+  /* 按鈕最小觸控區域 */
+  button {
+    min-height: 44px;
+  }
+  
+  /* 輸入框在手機上的優化 */
+  input, select, textarea {
+    font-size: 16px; /* 防止 iOS Safari 縮放 */
+  }
+  
+  /* 表格在手機上的優化 */
+  table {
+    font-size: 14px;
+  }
+  
+  /* 卡片間距優化 */
+  .space-y-6 > * + * {
+    margin-top: 1rem;
+  }
+  
+  /* 對話框在手機上全屏顯示 */
+  .mobile-dialog {
+    margin: 0;
+    width: 100vw;
+    height: 100vh;
+    max-width: none;
+    max-height: none;
+    border-radius: 0;
+  }
+  
+  /* 底部導航安全區域 */
+  .bottom-nav {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  /* 頂部導航安全區域 */
+  .top-nav {
+    padding-top: env(safe-area-inset-top);
+  }
+}
+
+/* 響應式文字大小 */
+@media (max-width: 640px) {
+  .text-responsive-xl {
+    font-size: 1.25rem;
+    line-height: 1.75rem;
+  }
+  
+  .text-responsive-lg {
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+  }
+  
+  .text-responsive-base {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+  }
+}
+
+/* 觸控優化 */
+@media (hover: none) and (pointer: coarse) {
+  /* 移除 hover 效果在觸控設備上 */
+  .hover\:bg-gray-50:hover {
+    background-color: transparent;
+  }
+  
+  /* 增加觸控反饋 */
+  button:active,
+  .clickable:active {
+    transform: scale(0.98);
+    transition: transform 0.1s ease;
+  }
+}
+
+/* 橫屏模式優化 */
+@media (max-width: 768px) and (orientation: landscape) {
+  /* 減少垂直間距 */
+  .space-y-6 > * + * {
+    margin-top: 0.75rem;
+  }
+  
+  /* 對話框高度調整 */
+  .responsive-dialog {
+    max-height: 90vh;
+  }
+}
+
+/* 暗色模式支援 */
+@media (prefers-color-scheme: dark) {
+  /* 可以在這裡添加暗色模式樣式 */
+}
+
+/* 高對比度模式支援 */
+@media (prefers-contrast: high) {
+  /* 增強對比度 */
+  .border {
+    border-width: 2px;
+  }
+  
+  button {
+    border-width: 2px;
+  }
+}
+
+/* 減少動畫偏好 */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

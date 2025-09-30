@@ -35,11 +35,7 @@ const AgentGrid = ({ agents, type, title, icon: Icon, maxCols = 2, collapsible =
               className="py-4" 
             />
           ) : (
-            <div className={`grid gap-3 ${
-              maxCols === 4 ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4' : 
-              maxCols === 3 ? 'grid-cols-1 md:grid-cols-3' :
-              'grid-cols-1 md:grid-cols-2'
-            }`}>
+            <div className="grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {agents.map(agent => (
                 <AgentCard key={agent.id} agent={agent} type={type} />
               ))}

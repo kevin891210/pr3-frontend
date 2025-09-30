@@ -79,20 +79,20 @@ const AgentCard = ({ agent, type }) => {
   };
 
   return (
-    <div className={`p-4 rounded-lg border transition-colors cursor-pointer ${config.bgColor}`}>
+    <div className={`p-3 sm:p-4 rounded-lg border transition-colors cursor-pointer ${config.bgColor}`}>
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Avatar className="w-8 h-8">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+          <Avatar className="w-7 h-7 sm:w-8 sm:h-8 flex-shrink-0">
             <AvatarFallback className="text-xs font-medium">
               {getInitials(agent.name)}
             </AvatarFallback>
           </Avatar>
-          <div>
-            <div className="font-medium text-sm text-gray-900">{agent.name}</div>
+          <div className="min-w-0 flex-1">
+            <div className="font-medium text-xs sm:text-sm text-gray-900 truncate">{agent.name}</div>
             <div className="text-xs text-gray-500">{formatLastActive(agent.last_active)}</div>
           </div>
         </div>
-        <StatusIcon className={`w-4 h-4 ${config.iconColor}`} />
+        <StatusIcon className={`w-4 h-4 ${config.iconColor} flex-shrink-0`} />
       </div>
     </div>
   );

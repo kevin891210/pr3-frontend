@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs.jsx';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card.jsx';
 import { DollarSign, Users, Calculator, FileText, Settings, TrendingUp } from 'lucide-react';
+import MobileTabSelect from '@/components/ui/mobile-tab-select.jsx';
 import SalaryGrades from './components/SalaryGrades';
 import EmployeeSalary from './components/EmployeeSalary';
 import SalaryCalculation from './components/SalaryCalculation';
@@ -14,39 +15,43 @@ const SalaryPage = () => {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('settings');
 
+  const tabOptions = [
+    { value: 'settings', label: t('salary.settings'), icon: Settings },
+    { value: 'grades', label: t('salary.grades'), icon: DollarSign },
+    { value: 'employees', label: t('salary.employees'), icon: Users },
+    { value: 'adjustments', label: t('salary.adjustments'), icon: TrendingUp },
+    { value: 'calculation', label: t('salary.calculation'), icon: Calculator },
+    { value: 'reports', label: t('salary.reports'), icon: FileText }
+  ];
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">{t('salary.management')}</h1>
-        <p className="text-gray-600">{t('salary.settingsDescription')}</p>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{t('salary.management')}</h1>
+        <p className="text-sm sm:text-base text-gray-600">{t('salary.settingsDescription')}</p>
+      </div>
+
+      {/* Mobile Tab Selector */}
+      <div className="block sm:hidden mb-6">
+        <MobileTabSelect
+          tabs={tabOptions}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+        />
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="settings" className="flex items-center gap-2">
-            <Settings className="h-4 w-4" />
-            {t('salary.settings')}
-          </TabsTrigger>
-          <TabsTrigger value="grades" className="flex items-center gap-2">
-            <DollarSign className="h-4 w-4" />
-            {t('salary.grades')}
-          </TabsTrigger>
-          <TabsTrigger value="employees" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            {t('salary.employees')}
-          </TabsTrigger>
-          <TabsTrigger value="adjustments" className="flex items-center gap-2">
-            <TrendingUp className="h-4 w-4" />
-            {t('salary.adjustments')}
-          </TabsTrigger>
-          <TabsTrigger value="calculation" className="flex items-center gap-2">
-            <Calculator className="h-4 w-4" />
-            {t('salary.calculation')}
-          </TabsTrigger>
-          <TabsTrigger value="reports" className="flex items-center gap-2">
-            <FileText className="h-4 w-4" />
-            {t('salary.reports')}
-          </TabsTrigger>
+        {/* Desktop Tab List */}
+        <TabsList className="hidden sm:grid w-full grid-cols-6 gap-1">
+          {tabOptions.map((tab) => {
+            const Icon = tab.icon;
+            return (
+              <TabsTrigger key={tab.value} value={tab.value} className="flex items-center gap-1 text-xs sm:text-sm">
+                <Icon className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span>{tab.label}</span>
+              </TabsTrigger>
+            );
+          })}
         </TabsList>
 
         <TabsContent value="settings" className="mt-6">

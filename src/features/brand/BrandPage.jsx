@@ -9,6 +9,7 @@ import apiClient from '../../services/api';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../components/ui/dialog.jsx';
 import EmptyState from '../../components/ui/empty-state';
 import Modal from '../../components/ui/modal';
+import ResponsiveTable from '../../components/ui/responsive-table';
 
 const BrandPage = () => {
   const { t } = useTranslation();
@@ -46,6 +47,10 @@ const BrandPage = () => {
   const [brandUsers, setBrandUsers] = useState([]);
   const [allUsers, setAllUsers] = useState([]);
   const [userLoading, setUserLoading] = useState(false);
+  const [pagination, setPagination] = useState({ currentPage: 1, pageSize: 10 });
+  const [workspacePagination, setWorkspacePagination] = useState({ currentPage: 1, pageSize: 10 });
+  const [botPagination, setBotPagination] = useState({ currentPage: 1, pageSize: 10 });
+  const [agentPagination, setAgentPagination] = useState({ currentPage: 1, pageSize: 10 });
 
   useEffect(() => {
     loadBrands();
@@ -416,27 +421,97 @@ const BrandPage = () => {
   const filteredBrands = brands.filter(brand =>
     brand && brand.name && brand.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
+  
+  const totalPages = Math.ceil(filteredBrands.length / pagination.pageSize);
+  const startIndex = (pagination.currentPage - 1) * pagination.pageSize;
+  const paginatedBrands = filteredBrands.slice(startIndex, startIndex + pagination.pageSize);
+  
+  const handlePageChange = (page) => {
+    setPagination(prev => ({ ...prev, currentPage: page }));
+  };
+  
+  const handlePageSizeChange = (size) => {
+    setPagination({ currentPage: 1, pageSize: size });
+  };
+  
+  // Workspace pagination
+  const workspaceTotalPages = Math.ceil(workspaces.length / workspacePagination.pageSize);
+  const workspaceStartIndex = (workspacePagination.currentPage - 1) * workspacePagination.pageSize;
+  const paginatedWorkspaces = workspaces.slice(workspaceStartIndex, workspaceStartIndex + workspacePagination.pageSize);
+  
+  const handleWorkspacePageChange = (page) => {
+    setWorkspacePagination(prev => ({ ...prev, currentPage: page }));
+  };
+  
+  const handleWorkspacePageSizeChange = (size) => {
+    setWorkspacePagination({ currentPage: 1, pageSize: size });
+  };
+  
+  // Bot pagination
+  const botTotalPages = Math.ceil(bots.length / botPagination.pageSize);
+  const botStartIndex = (botPagination.currentPage - 1) * botPagination.pageSize;
+  const paginatedBots = bots.slice(botStartIndex, botStartIndex + botPagination.pageSize);
+  
+  const handleBotPageChange = (page) => {
+    setBotPagination(prev => ({ ...prev, currentPage: page }));
+  };
+  
+  const handleBotPageSizeChange = (size) => {
+    setBotPagination({ currentPage: 1, pageSize: size });
+  };
+  
+  // Agent pagination
+  const agentTotalPages = Math.ceil(agents.length / agentPagination.pageSize);
+  const agentStartIndex = (agentPagination.currentPage - 1) * agentPagination.pageSize;
+  const paginatedAgents = agents.slice(agentStartIndex, agentStartIndex + agentPagination.pageSize);
+  
+  const handleAgentPageChange = (page) => {
+    setAgentPagination(prev => ({ ...prev, currentPage: page }));
+  };
+  
+  const handleAgentPageSizeChange = (size) => {
+    setAgentPagination({ currentPage: 1, pageSize: size });
+  };
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{t('brandManagement')}</h1>
-          <p className="text-gray-600">{t('manageBrands')}</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{t('brandManagement')}</h1>
+          <p className="text-sm sm:text-base text-gray-600">{t('manageBrands')}</p>
         </div>
-        <Button onClick={() => setShowModal(true)} className="flex items-center gap-2">
+        <Button 
+          onClick={() => setShowModal(true)} 
+          className="flex items-center justify-center gap-2 w-full sm:w-auto"
+        >
           <Plus className="w-4 h-4" />
-          {t('addBrand')}
+          <span>{t('addBrand')}</span>
         </Button>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="brands">{t('brandList')}</TabsTrigger>
-          <TabsTrigger value="workspaces" disabled={!selectedBrand}>{t('workspaceManagement')}</TabsTrigger>
-          <TabsTrigger value="bots" disabled={!selectedBrand}>{t('botManagement')}</TabsTrigger>
-          <TabsTrigger value="agents" disabled={!selectedBrand}>{t('agentManagement')}</TabsTrigger>
-          <TabsTrigger value="users" disabled={!selectedBrand}>User Access</TabsTrigger>
+        {/* Mobile Tab Selector */}
+        <div className="block sm:hidden mb-6">
+          <select
+            value={activeTab}
+            onChange={(e) => setActiveTab(e.target.value)}
+            className="w-full p-3 pr-10 border border-gray-300 rounded-lg bg-white text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="brands">{t('brandList')}</option>
+            <option value="workspaces" disabled={!selectedBrand}>Workspaces</option>
+            <option value="bots" disabled={!selectedBrand}>Bots</option>
+            <option value="agents" disabled={!selectedBrand}>Agents</option>
+            <option value="users" disabled={!selectedBrand}>Users</option>
+          </select>
+        </div>
+        
+        {/* Desktop Tab List */}
+        <TabsList className="hidden sm:grid w-full grid-cols-5 gap-1">
+          <TabsTrigger value="brands" className="text-xs sm:text-sm">{t('brandList')}</TabsTrigger>
+          <TabsTrigger value="workspaces" disabled={!selectedBrand} className="text-xs sm:text-sm">Workspaces</TabsTrigger>
+          <TabsTrigger value="bots" disabled={!selectedBrand} className="text-xs sm:text-sm">Bots</TabsTrigger>
+          <TabsTrigger value="agents" disabled={!selectedBrand} className="text-xs sm:text-sm">Agents</TabsTrigger>
+          <TabsTrigger value="users" disabled={!selectedBrand} className="text-xs sm:text-sm">Users</TabsTrigger>
         </TabsList>
 
         <TabsContent value="brands" className="space-y-4">
@@ -474,92 +549,180 @@ const BrandPage = () => {
                   description={t('noBrandData')} 
                 />
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="text-left py-3 px-4">{t('brandName')}</th>
-                        <th className="text-left py-3 px-4">{t('description')}</th>
-                        <th className="text-left py-3 px-4">{t('status')}</th>
-                        <th className="text-left py-3 px-4">{t('actions')}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredBrands.map(brand => (
-                        <tr key={brand.id} className="border-b hover:bg-gray-50">
-                          <td className="py-3 px-4 font-medium">{brand.name}</td>
-                          <td className="py-3 px-4 text-gray-600">{brand.description || '-'}</td>
-                          <td className="py-3 px-4">
-                            <span className={`px-2 py-1 rounded-full text-xs ${
-                              brand.is_active 
-                                ? 'bg-green-100 text-green-700' 
-                                : 'bg-red-100 text-red-700'
-                            }`}>
-                              {brand.is_active ? t('active') : t('inactive')}
-                            </span>
-                          </td>
-                          <td className="py-3 px-4">
-                            <div className="flex items-center gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleBrandSelect(brand)}
-                                className="flex items-center gap-1"
-                              >
-                                <Users className="w-3 h-3" />
-                                {t('manage')}
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                  setEditingBrand(brand);
-                                  setFormData({
-                                    name: brand.name || '',
-                                    description: brand.description || '',
-                                    apiUrl: brand.api_url || brand.apiUrl || '',
-                                    username: brand.username || '',
-                                    password: '',
-                                    status: brand.status || brand.is_active ? 'active' : 'inactive'
-                                  });
-                                  setShowModal(true);
-                                }}
-                                className="flex items-center gap-1"
-                              >
-                                <Edit className="w-3 h-3" />
-                                {t('edit')}
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleSyncBrand(brand.id)}
-                                disabled={syncingBrands.has(brand.id)}
-                                className="flex items-center gap-1"
-                              >
-                                {syncingBrands.has(brand.id) ? (
-                                  <div className="w-3 h-3 animate-spin rounded-full border border-gray-300 border-t-blue-600" />
-                                ) : (
-                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                  </svg>
-                                )}
-                                {t('sync')}
-                              </Button>
-                              <Button
-                                variant="destructive"
-                                size="sm"
-                                onClick={() => handleDeleteBrand(brand)}
-                                className="flex items-center gap-1"
-                              >
-                                <Trash2 className="w-3 h-3" />
-                                {t('delete')}
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <ResponsiveTable
+                  data={paginatedBrands}
+                  columns={[
+                    {
+                      key: 'name',
+                      header: t('brandName'),
+                      render: (value) => <span className="font-medium">{value}</span>
+                    },
+                    {
+                      key: 'description',
+                      header: t('description'),
+                      render: (value) => <span className="text-gray-600">{value || '-'}</span>
+                    },
+                    {
+                      key: 'is_active',
+                      header: t('status'),
+                      render: (value) => (
+                        <span className={`px-2 py-1 rounded-full text-xs ${
+                          value 
+                            ? 'bg-green-100 text-green-700' 
+                            : 'bg-red-100 text-red-700'
+                        }`}>
+                          {value ? t('active') : t('inactive')}
+                        </span>
+                      )
+                    }
+                  ]}
+                  actions={(brand) => (
+                    <>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleBrandSelect(brand)}
+                        className="flex items-center gap-1 w-full md:w-auto justify-start md:justify-center"
+                      >
+                        <Users className="w-3 h-3" />
+                        <span className="md:hidden">{t('manage')}</span>
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setEditingBrand(brand);
+                          setFormData({
+                            name: brand.name || '',
+                            description: brand.description || '',
+                            apiUrl: brand.api_url || brand.apiUrl || '',
+                            username: brand.username || '',
+                            password: '',
+                            status: brand.status || brand.is_active ? 'active' : 'inactive'
+                          });
+                          setShowModal(true);
+                        }}
+                        className="flex items-center gap-1 w-full md:w-auto justify-start md:justify-center"
+                      >
+                        <Edit className="w-3 h-3" />
+                        <span className="md:hidden">{t('edit')}</span>
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleSyncBrand(brand.id)}
+                        disabled={syncingBrands.has(brand.id)}
+                        className="flex items-center gap-1 w-full md:w-auto justify-start md:justify-center"
+                      >
+                        {syncingBrands.has(brand.id) ? (
+                          <div className="w-3 h-3 animate-spin rounded-full border border-gray-300 border-t-blue-600" />
+                        ) : (
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                          </svg>
+                        )}
+                        <span className="md:hidden">{t('sync')}</span>
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleDeleteBrand(brand)}
+                        className="flex items-center gap-1 w-full md:w-auto justify-start md:justify-center"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        <span className="md:hidden">{t('delete')}</span>
+                      </Button>
+                    </>
+                  )}
+                  loading={loading}
+                  emptyState={
+                    <EmptyState 
+                      type="brands" 
+                      title={t('noBrandsFound')} 
+                      description={t('noBrandData')} 
+                    />
+                  }
+                />
+              )}
+              
+              {/* Pagination */}
+              {filteredBrands.length > 0 && (
+                <div className="mt-4 border-t pt-4">
+                  {/* Desktop Pagination */}
+                  <div className="hidden sm:flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <span className="text-sm text-gray-700">
+                        顯示 {startIndex + 1} 至 {Math.min(startIndex + pagination.pageSize, filteredBrands.length)} 筆，共 {filteredBrands.length} 筆
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-gray-700">每頁顯示</span>
+                        <select 
+                          className="border rounded px-2 py-1 text-sm"
+                          value={pagination.pageSize}
+                          onChange={(e) => handlePageSizeChange(parseInt(e.target.value))}
+                        >
+                          <option value={10}>10</option>
+                          <option value={20}>20</option>
+                          <option value={30}>30</option>
+                          <option value={100}>100</option>
+                        </select>
+                        <span className="text-sm text-gray-700">筆</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(pagination.currentPage - 1)}
+                        disabled={pagination.currentPage === 1}
+                      >
+                        上一頁
+                      </Button>
+                      <span className="text-sm">
+                        {pagination.currentPage} / {totalPages}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(pagination.currentPage + 1)}
+                        disabled={pagination.currentPage === totalPages}
+                      >
+                        下一頁
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  {/* Mobile Pagination */}
+                  <div className="sm:hidden space-y-3">
+                    <div className="text-sm text-gray-600 text-center">
+                      顯示 {startIndex + 1} 至 {Math.min(startIndex + pagination.pageSize, filteredBrands.length)} 筆，共 {filteredBrands.length} 筆
+                    </div>
+                    <div className="flex gap-3">
+                      <div className="flex-1 relative">
+                        <select
+                          value={pagination.currentPage}
+                          onChange={(e) => handlePageChange(parseInt(e.target.value))}
+                          className="w-full p-3 pr-10 border border-gray-300 rounded-lg bg-white text-sm appearance-none"
+                        >
+                          {Array.from({ length: totalPages }, (_, i) => (
+                            <option key={i + 1} value={i + 1}>第 {i + 1} 頁</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="flex-1 relative">
+                        <select
+                          value={pagination.pageSize}
+                          onChange={(e) => handlePageSizeChange(parseInt(e.target.value))}
+                          className="w-full p-3 pr-10 border border-gray-300 rounded-lg bg-white text-sm appearance-none"
+                        >
+                          <option value={10}>10 筆/頁</option>
+                          <option value={20}>20 筆/頁</option>
+                          <option value={30}>30 筆/頁</option>
+                          <option value={100}>100 筆/頁</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
             </CardContent>
@@ -615,22 +778,105 @@ const BrandPage = () => {
                     description="No workspace data available." 
                   />
                 ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="border-b">
-                          <th className="text-left py-3 px-4">Workspace 名稱</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {Array.isArray(workspaces) && workspaces.map(workspace => (
-                          <tr key={workspace.id} className="border-b hover:bg-gray-50">
-                            <td className="py-3 px-4 font-medium">{workspace.name}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                  <>
+                    <ResponsiveTable
+                      data={paginatedWorkspaces}
+                      columns={[
+                        {
+                          key: 'name',
+                          header: 'Workspace 名稱',
+                          render: (value) => <span className="font-medium">{value}</span>
+                        }
+                      ]}
+                      loading={resourceLoading}
+                      emptyState={
+                        <EmptyState 
+                          type="users" 
+                          title="No Workspaces" 
+                          description="No workspace data available." 
+                        />
+                      }
+                    />
+                    
+                    {/* Workspace Pagination */}
+                    {workspaces.length > 0 && (
+                      <div className="mt-4 border-t pt-4">
+                        <div className="hidden sm:flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <span className="text-sm text-gray-700">
+                              顯示 {workspaceStartIndex + 1} 至 {Math.min(workspaceStartIndex + workspacePagination.pageSize, workspaces.length)} 筆，共 {workspaces.length} 筆
+                            </span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-gray-700">每頁顯示</span>
+                              <select 
+                                className="border rounded px-2 py-1 text-sm"
+                                value={workspacePagination.pageSize}
+                                onChange={(e) => handleWorkspacePageSizeChange(parseInt(e.target.value))}
+                              >
+                                <option value={10}>10</option>
+                                <option value={20}>20</option>
+                                <option value={30}>30</option>
+                                <option value={100}>100</option>
+                              </select>
+                              <span className="text-sm text-gray-700">筆</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleWorkspacePageChange(workspacePagination.currentPage - 1)}
+                              disabled={workspacePagination.currentPage === 1}
+                            >
+                              上一頁
+                            </Button>
+                            <span className="text-sm">
+                              {workspacePagination.currentPage} / {workspaceTotalPages}
+                            </span>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleWorkspacePageChange(workspacePagination.currentPage + 1)}
+                              disabled={workspacePagination.currentPage === workspaceTotalPages}
+                            >
+                              下一頁
+                            </Button>
+                          </div>
+                        </div>
+                        
+                        <div className="sm:hidden space-y-3">
+                          <div className="text-sm text-gray-600 text-center">
+                            顯示 {workspaceStartIndex + 1} 至 {Math.min(workspaceStartIndex + workspacePagination.pageSize, workspaces.length)} 筆，共 {workspaces.length} 筆
+                          </div>
+                          <div className="flex gap-3">
+                            <div className="flex-1 relative">
+                              <select
+                                value={workspacePagination.currentPage}
+                                onChange={(e) => handleWorkspacePageChange(parseInt(e.target.value))}
+                                className="w-full p-3 pr-10 border border-gray-300 rounded-lg bg-white text-sm appearance-none"
+                              >
+                                {Array.from({ length: workspaceTotalPages }, (_, i) => (
+                                  <option key={i + 1} value={i + 1}>第 {i + 1} 頁</option>
+                                ))}
+                              </select>
+                            </div>
+                            <div className="flex-1 relative">
+                              <select
+                                value={workspacePagination.pageSize}
+                                onChange={(e) => handleWorkspacePageSizeChange(parseInt(e.target.value))}
+                                className="w-full p-3 pr-10 border border-gray-300 rounded-lg bg-white text-sm appearance-none"
+                              >
+                                <option value={10}>10 筆/頁</option>
+                                <option value={20}>20 筆/頁</option>
+                                <option value={30}>30 筆/頁</option>
+                                <option value={100}>100 筆/頁</option>
+                              </select>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
               </CardContent>
             </Card>
@@ -686,22 +932,105 @@ const BrandPage = () => {
                     description="No bot data available." 
                   />
                 ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="border-b">
-                          <th className="text-left py-3 px-4">Bot 名稱</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {Array.isArray(bots) && bots.map(bot => (
-                          <tr key={bot.id} className="border-b hover:bg-gray-50">
-                            <td className="py-3 px-4 font-medium">{bot.name}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                  <>
+                    <ResponsiveTable
+                      data={paginatedBots}
+                      columns={[
+                        {
+                          key: 'name',
+                          header: 'Bot 名稱',
+                          render: (value) => <span className="font-medium">{value}</span>
+                        }
+                      ]}
+                      loading={resourceLoading}
+                      emptyState={
+                        <EmptyState 
+                          type="bots" 
+                          title="No Bots" 
+                          description="No bot data available." 
+                        />
+                      }
+                    />
+                    
+                    {/* Bot Pagination */}
+                    {bots.length > 0 && (
+                      <div className="mt-4 border-t pt-4">
+                        <div className="hidden sm:flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <span className="text-sm text-gray-700">
+                              顯示 {botStartIndex + 1} 至 {Math.min(botStartIndex + botPagination.pageSize, bots.length)} 筆，共 {bots.length} 筆
+                            </span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-gray-700">每頁顯示</span>
+                              <select 
+                                className="border rounded px-2 py-1 text-sm"
+                                value={botPagination.pageSize}
+                                onChange={(e) => handleBotPageSizeChange(parseInt(e.target.value))}
+                              >
+                                <option value={10}>10</option>
+                                <option value={20}>20</option>
+                                <option value={30}>30</option>
+                                <option value={100}>100</option>
+                              </select>
+                              <span className="text-sm text-gray-700">筆</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleBotPageChange(botPagination.currentPage - 1)}
+                              disabled={botPagination.currentPage === 1}
+                            >
+                              上一頁
+                            </Button>
+                            <span className="text-sm">
+                              {botPagination.currentPage} / {botTotalPages}
+                            </span>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleBotPageChange(botPagination.currentPage + 1)}
+                              disabled={botPagination.currentPage === botTotalPages}
+                            >
+                              下一頁
+                            </Button>
+                          </div>
+                        </div>
+                        
+                        <div className="sm:hidden space-y-3">
+                          <div className="text-sm text-gray-600 text-center">
+                            顯示 {botStartIndex + 1} 至 {Math.min(botStartIndex + botPagination.pageSize, bots.length)} 筆，共 {bots.length} 筆
+                          </div>
+                          <div className="flex gap-3">
+                            <div className="flex-1 relative">
+                              <select
+                                value={botPagination.currentPage}
+                                onChange={(e) => handleBotPageChange(parseInt(e.target.value))}
+                                className="w-full p-3 pr-10 border border-gray-300 rounded-lg bg-white text-sm appearance-none"
+                              >
+                                {Array.from({ length: botTotalPages }, (_, i) => (
+                                  <option key={i + 1} value={i + 1}>第 {i + 1} 頁</option>
+                                ))}
+                              </select>
+                            </div>
+                            <div className="flex-1 relative">
+                              <select
+                                value={botPagination.pageSize}
+                                onChange={(e) => handleBotPageSizeChange(parseInt(e.target.value))}
+                                className="w-full p-3 pr-10 border border-gray-300 rounded-lg bg-white text-sm appearance-none"
+                              >
+                                <option value={10}>10 筆/頁</option>
+                                <option value={20}>20 筆/頁</option>
+                                <option value={30}>30 筆/頁</option>
+                                <option value={100}>100 筆/頁</option>
+                              </select>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
               </CardContent>
             </Card>
@@ -873,51 +1202,136 @@ const BrandPage = () => {
                       description="Sync agents from the brand to start creating teams." 
                     />
                   ) : (
-                    <div className="overflow-x-auto">
-                      <table className="w-full">
-                        <thead>
-                          <tr className="border-b">
-                            <th className="text-left py-3 px-4">Agent 名稱</th>
-                            <th className="text-left py-3 px-4">Team</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {Array.isArray(agents) && agents.map(agent => {
-                            const agentTeam = teams.find(team => 
-                              (team.members_preview?.some(member => member.id === agent.id)) ||
-                              (team.leaders_preview?.some(leader => leader.id === agent.id))
-                            );
-                            const isLeader = teams.some(team => 
-                              team.leaders_preview?.some(leader => leader.id === agent.id)
-                            );
-                            return (
-                              <tr key={agent.id} className="border-b hover:bg-gray-50">
-                                <td className="py-3 px-4">
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-medium">{agent.name}</span>
-                                    {isLeader && (
-                                      <span className="px-1 py-0.5 bg-orange-100 text-orange-700 text-xs rounded">
-                                        Leader
-                                      </span>
-                                    )}
-                                  </div>
-                                </td>
-                                <td className="py-3 px-4">
-                                  {agentTeam ? (
-                                    <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded">
-                                      {agentTeam.name}
-                                    </span>
-                                  ) : (
-                                    <span className="text-gray-400 text-sm">No team</span>
-                                  )}
-                                </td>
-
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
+                    <>
+                      <ResponsiveTable
+                        data={paginatedAgents.map(agent => {
+                          const agentTeam = teams.find(team => 
+                            (team.members_preview?.some(member => member.id === agent.id)) ||
+                            (team.leaders_preview?.some(leader => leader.id === agent.id))
+                          );
+                          const isLeader = teams.some(team => 
+                            team.leaders_preview?.some(leader => leader.id === agent.id)
+                          );
+                          return { ...agent, agentTeam, isLeader };
+                        })}
+                        columns={[
+                          {
+                            key: 'name',
+                            header: 'Agent 名稱',
+                            render: (value, row) => (
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium">{value}</span>
+                                {row.isLeader && (
+                                  <span className="px-1 py-0.5 bg-orange-100 text-orange-700 text-xs rounded">
+                                    Leader
+                                  </span>
+                                )}
+                              </div>
+                            )
+                          },
+                          {
+                            key: 'agentTeam',
+                            header: 'Team',
+                            render: (value) => (
+                              value ? (
+                                <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded">
+                                  {value.name}
+                                </span>
+                              ) : (
+                                <span className="text-gray-400 text-sm">No team</span>
+                              )
+                            )
+                          }
+                        ]}
+                        loading={resourceLoading}
+                        emptyState={
+                          <EmptyState 
+                            type="agents" 
+                            title="No Agents" 
+                            description="Sync agents from the brand to start creating teams." 
+                          />
+                        }
+                      />
+                      
+                      {/* Agent Pagination */}
+                      {agents.length > 0 && (
+                        <div className="mt-4 border-t pt-4">
+                          <div className="hidden sm:flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                              <span className="text-sm text-gray-700">
+                                顯示 {agentStartIndex + 1} 至 {Math.min(agentStartIndex + agentPagination.pageSize, agents.length)} 筆，共 {agents.length} 筆
+                              </span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm text-gray-700">每頁顯示</span>
+                                <select 
+                                  className="border rounded px-2 py-1 text-sm"
+                                  value={agentPagination.pageSize}
+                                  onChange={(e) => handleAgentPageSizeChange(parseInt(e.target.value))}
+                                >
+                                  <option value={10}>10</option>
+                                  <option value={20}>20</option>
+                                  <option value={30}>30</option>
+                                  <option value={100}>100</option>
+                                </select>
+                                <span className="text-sm text-gray-700">筆</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleAgentPageChange(agentPagination.currentPage - 1)}
+                                disabled={agentPagination.currentPage === 1}
+                              >
+                                上一頁
+                              </Button>
+                              <span className="text-sm">
+                                {agentPagination.currentPage} / {agentTotalPages}
+                              </span>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleAgentPageChange(agentPagination.currentPage + 1)}
+                                disabled={agentPagination.currentPage === agentTotalPages}
+                              >
+                                下一頁
+                              </Button>
+                            </div>
+                          </div>
+                          
+                          <div className="sm:hidden space-y-3">
+                            <div className="text-sm text-gray-600 text-center">
+                              顯示 {agentStartIndex + 1} 至 {Math.min(agentStartIndex + agentPagination.pageSize, agents.length)} 筆，共 {agents.length} 筆
+                            </div>
+                            <div className="flex gap-3">
+                              <div className="flex-1 relative">
+                                <select
+                                  value={agentPagination.currentPage}
+                                  onChange={(e) => handleAgentPageChange(parseInt(e.target.value))}
+                                  className="w-full p-3 pr-10 border border-gray-300 rounded-lg bg-white text-sm appearance-none"
+                                >
+                                  {Array.from({ length: agentTotalPages }, (_, i) => (
+                                    <option key={i + 1} value={i + 1}>第 {i + 1} 頁</option>
+                                  ))}
+                                </select>
+                              </div>
+                              <div className="flex-1 relative">
+                                <select
+                                  value={agentPagination.pageSize}
+                                  onChange={(e) => handleAgentPageSizeChange(parseInt(e.target.value))}
+                                  className="w-full p-3 pr-10 border border-gray-300 rounded-lg bg-white text-sm appearance-none"
+                                >
+                                  <option value={10}>10 筆/頁</option>
+                                  <option value={20}>20 筆/頁</option>
+                                  <option value={30}>30 筆/頁</option>
+                                  <option value={100}>100 筆/頁</option>
+                                </select>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )}
                 </CardContent>
               </Card>

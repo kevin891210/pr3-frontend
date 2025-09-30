@@ -4,7 +4,9 @@ import { loadAppConfig, isInitialized } from './config/bootstrap';
 import { useAuthStore } from './store/authStore';
 import { ToastProvider } from './components/ui/toast.jsx';
 import './locales/i18n';
+import './mobile.css';
 import Layout from './components/Layout.jsx';
+import MobileLayout from './components/MobileLayout.jsx';
 import SetupPage from './features/setup/SetupPage';
 import LoginPage from './features/auth/LoginPage';
 import AgentLoginPage from './features/auth/AgentLoginPage';
@@ -20,6 +22,7 @@ import AgentDashboardPage from './features/agent/AgentDashboardPage';
 import AgentMonitorPage from './features/monitor/AgentMonitorPage';
 import AgentMonitorV2Page from './features/monitor/AgentMonitorV2Page';
 import TestPage from './features/test/TestPage.jsx';
+import MobileTestPage from './features/test/MobileTestPage.jsx';
 import SalaryPage from './features/hrm/salary/SalaryPage.jsx';
 import AttendancePage from './features/hrm/attendance/AttendancePage.jsx';
 import PermissionPage from './features/permission/PermissionPage.jsx';
@@ -71,7 +74,8 @@ function App() {
     if (!isAuthenticated) {
       return <Navigate to="/login" />;
     }
-    return <Layout>{children}</Layout>;
+    // 使用 MobileLayout 來提供響應式體驗
+    return <MobileLayout>{children}</MobileLayout>;
   };
 
   if (!configLoaded) {
@@ -172,6 +176,10 @@ function App() {
         <Route 
           path="/test" 
           element={<ProtectedRoute><TestPage /></ProtectedRoute>} 
+        />
+        <Route 
+          path="/mobile-test" 
+          element={<ProtectedRoute><MobileTestPage /></ProtectedRoute>} 
         />
         <Route 
           path="/salary" 
