@@ -295,12 +295,14 @@ const NoticePage = () => {
                         <td className="py-3 px-4 text-gray-600">
                           {notice.brandId === 'all' ? (
                             <span className="font-medium text-blue-600">All Brands</span>
+                          ) : notice.brandId === null || notice.brandId === undefined ? (
+                            <span className="font-medium text-purple-600">Global Broadcast</span>
                           ) : (
                             brand?.name || 'Unknown Brand'
                           )}
-                          {notice.brandId === 'all' ? (
+                          {notice.brandId === 'all' || notice.brandId === null || notice.brandId === undefined ? (
                             <span className="ml-2 text-xs bg-purple-100 text-purple-600 px-2 py-1 rounded">
-                              Global Broadcast
+                              Global
                             </span>
                           ) : notice.workspaceId === 'all' && brand ? (
                             <span className="ml-2 text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded">
@@ -315,8 +317,8 @@ const NoticePage = () => {
                           {new Date(notice.endTime).toLocaleString()}
                         </td>
                         <td className="py-3 px-4">
-                          <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(status)}`}>
-                            {t(`notice.${status}`)}
+                          <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(notice.status || status)}`}>
+                            {notice.status === 'published' ? 'Published' : notice.status === 'draft' ? 'Draft' : t(`notice.${status}`)}
                           </span>
                         </td>
                         <td className="py-3 px-4">

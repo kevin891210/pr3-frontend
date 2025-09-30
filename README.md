@@ -450,23 +450,54 @@ GET /api/v1/notices
 POST /api/v1/notices
 PUT /api/v1/notices/{id}
 DELETE /api/v1/notices/{id}
+```
 
-創建公告格式:
+**創建公告格式**：
+
+1. **全域廣播（All Brands）**：
+```json
 {
-  "title": "string (required)",
-  "content": "string (required)",
-  "startTime": "string (required, ISO datetime)",
-  "endTime": "string (required, ISO datetime)",
-  "brandId": "string (required)",
-  "workspaceId": "string (optional, 'all' for all workspaces)",
-  "status": "published|draft"
+  "title": "Global Notice",
+  "content": "This is a global announcement",
+  "startTime": "2025-01-17T10:00:00",
+  "endTime": "2025-01-17T18:00:00",
+  "brandId": "all",
+  "status": "published"
+  // 注意：沒有 workspaceId 欄位
+}
+```
+
+2. **特定品牌全部工作區**：
+```json
+{
+  "title": "Brand Notice",
+  "content": "This is for all workspaces in a brand",
+  "startTime": "2025-01-17T10:00:00",
+  "endTime": "2025-01-17T18:00:00",
+  "brandId": "brand_123",
+  "workspaceId": "all",
+  "status": "published"
+}
+```
+
+3. **特定工作區**：
+```json
+{
+  "title": "Workspace Notice",
+  "content": "This is for a specific workspace",
+  "startTime": "2025-01-17T10:00:00",
+  "endTime": "2025-01-17T18:00:00",
+  "brandId": "brand_123",
+  "workspaceId": "workspace_456",
+  "status": "published"
 }
 ```
 
 **全域廣播功能**：
-- 支援選擇「All Workspaces」向品牌下所有工作區廣播
-- 當 `workspaceId` 設為 `"all"` 時，該品牌下所有成員都能看到公告
-- 後端需要在查詢公告時處理 `workspaceId="all"` 的邏輯
+- 支援三層級公告：全域廣播、品牌廣播、工作區廣播
+- 全域廣播時 `brandId` 設為 `"all"`，且不包含 `workspaceId` 欄位
+- 品牌廣播時 `workspaceId` 設為 `"all"`
+- 工作區廣播時指定具體的 `brandId` 和 `workspaceId`
 
 ### 智能打卡系統 API
 **監控與測試**：
