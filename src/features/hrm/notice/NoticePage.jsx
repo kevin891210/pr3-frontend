@@ -107,8 +107,7 @@ const NoticePage = () => {
       }
       
       if (editingNotice) {
-        const updatedNotice = await apiClient.updateNotice(editingNotice.id, submitData);
-        setNotices(notices.map(notice => notice.id === editingNotice.id ? updatedNotice : notice));
+        await apiClient.updateNotice(editingNotice.id, submitData);
         setAlertDialog({
           open: true,
           type: 'success',
@@ -116,8 +115,7 @@ const NoticePage = () => {
           message: 'Notice updated successfully'
         });
       } else {
-        const newNotice = await apiClient.createNotice(submitData);
-        setNotices([newNotice, ...notices]);
+        await apiClient.createNotice(submitData);
         setAlertDialog({
           open: true,
           type: 'success',
@@ -125,6 +123,10 @@ const NoticePage = () => {
           message: 'Notice added successfully'
         });
       }
+      
+      // 自動刷新數據
+      await loadData();
+      
       setShowModal(false);
       setEditingNotice(null);
       setFormData({ title: '', content: '', startTime: '', endTime: '', brandId: '', workspaceId: '', status: 'published' });
@@ -182,13 +184,15 @@ const NoticePage = () => {
     const { noticeId } = deleteDialog;
     try {
       await apiClient.deleteNotice(noticeId);
-      setNotices(notices.filter(notice => notice.id !== noticeId));
       setAlertDialog({
         open: true,
         type: 'success',
         title: t('messages.deleteSuccess'),
         message: 'Notice deleted successfully'
       });
+      
+      // 自動刷新數據
+      await loadData();
     } catch (error) {
       console.error('Delete notice failed:', error);
       // Mock success for development
@@ -200,6 +204,7 @@ const NoticePage = () => {
         message: 'Notice deleted successfully (mock)'
       });
     }
+    setDeleteDialog({ open: false, noticeId: null, noticeTitle: '' });
   };
 
   const getStatusColor = (status) => {
@@ -287,7 +292,6 @@ const NoticePage = () => {
                 </thead>
                 <tbody>
                   {filteredNotices.map(notice => {
-                    const status = getNoticeStatus(notice);
                     const brand = brands.find(b => b.id === notice.brandId);
                     return (
                       <tr key={notice.id} className="border-b hover:bg-gray-50">
@@ -317,8 +321,8 @@ const NoticePage = () => {
                           {new Date(notice.endTime).toLocaleString()}
                         </td>
                         <td className="py-3 px-4">
-                          <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(notice.status || status)}`}>
-                            {notice.status === 'published' ? 'Published' : notice.status === 'draft' ? 'Draft' : t(`notice.${status}`)}
+                          <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(notice.status)}`}>
+                            {notice.status === 'published' ? 'Published' : notice.status === 'draft' ? 'Draft' : notice.status}
                           </span>
                         </td>
                         <td className="py-3 px-4">
