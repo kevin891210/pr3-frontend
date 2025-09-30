@@ -262,13 +262,13 @@ const MonthlyScheduleModal = ({
                 <button
                   key={date}
                   onClick={() => handleDateToggle(date)}
-                  className={`
-                    p-2 text-sm border rounded transition-colors min-h-[40px] flex items-center justify-center
-                    ${isSelected ? 'bg-blue-500 text-white border-blue-500' : ''}
-                    ${isScheduled && !isSelected ? 'bg-green-100 border-green-300' : ''}
-                    ${isWeekend && !isSelected && !isScheduled ? 'bg-gray-50' : ''}
-                    ${!isSelected && !isScheduled ? 'hover:bg-gray-100' : ''}
-                  `}
+                  className={[
+                    'p-2 text-sm border rounded transition-colors min-h-[40px] flex items-center justify-center',
+                    isSelected ? 'bg-blue-500 text-white border-blue-500' : '',
+                    isScheduled && !isSelected ? 'bg-green-100 border-green-300' : '',
+                    isWeekend && !isSelected && !isScheduled ? 'bg-gray-50' : '',
+                    !isSelected && !isScheduled ? 'hover:bg-gray-100' : ''
+                  ].filter(Boolean).join(' ')}
                 >
                   {day}
                 </button>
