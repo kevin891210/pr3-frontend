@@ -12,7 +12,7 @@ import SearchableSelect from '../../../components/ui/searchable-select';
 import Modal from '../../../components/ui/modal';
 import MonthlyScheduleModal from './MonthlyScheduleModal';
 import CsvImportModal from './CsvImportModal';
-import TestButtons from './TestButtons';
+
 
 const SchedulePage = () => {
   const [events, setEvents] = useState([]);
@@ -870,7 +870,7 @@ Time: ${new Date(event.start).toLocaleTimeString([], {hour: '2-digit', minute:'2
                 </CardHeader>
                 <CardContent>
                   <div>
-                    <TestButtons />
+  
                     <div className="space-y-2 mb-4">
                       <Button 
                         className="w-full flex items-center gap-2"
