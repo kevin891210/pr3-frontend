@@ -273,7 +273,7 @@ const MonthlyScheduleModal = ({
                   {day}
                 </button>
               );
-            })
+            })}
           </div>
           <div className="flex gap-4 text-sm">
             <div className="flex items-center gap-1">
