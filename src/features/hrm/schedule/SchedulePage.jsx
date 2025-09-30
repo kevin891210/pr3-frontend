@@ -183,7 +183,18 @@ const SchedulePage = () => {
         }
         
         const startDateTime = `${assignmentDate}T${startTime}`;
-        const endDateTime = `${assignmentDate}T${endTime}`;
+        let endDateTime;
+        
+        // 處理跨日排班
+        if (template.is_cross_day) {
+          // 如果是跨日班，結束時間是隔天
+          const nextDay = new Date(assignmentDate);
+          nextDay.setDate(nextDay.getDate() + 1);
+          const nextDayStr = nextDay.toISOString().split('T')[0];
+          endDateTime = `${nextDayStr}T${endTime}`;
+        } else {
+          endDateTime = `${assignmentDate}T${endTime}`;
+        }
         
         // 驗證生成的日期時間是否有效
         const startDate = new Date(startDateTime);
@@ -199,7 +210,7 @@ const SchedulePage = () => {
         
         const event = {
           id: assignment.id,
-          title: `${memberName}\n${template.name} (${startTime}-${endTime})`,
+          title: `${memberName}\n${template.name} (${startTime}-${endTime})${template.is_cross_day ? ' 跨日' : ''}`,
           start: startDateTime,
           end: endDateTime,
           backgroundColor: memberColor.bg,
@@ -211,7 +222,8 @@ const SchedulePage = () => {
             templateId: assignment.shift_template_id,
             templateName: template.name,
             assignmentDate: assignment.date,
-            createdAt: assignment.created_at
+            createdAt: assignment.created_at,
+            isCrossDay: template.is_cross_day
           }
         };
         
@@ -299,11 +311,20 @@ const SchedulePage = () => {
     const event = info.event;
     const props = event.extendedProps;
     
+    const startTime = new Date(event.start).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    const endTime = new Date(event.end).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    const startDate = new Date(event.start).toLocaleDateString();
+    const endDate = new Date(event.end).toLocaleDateString();
+    
+    const timeDisplay = props.isCrossDay 
+      ? `${startDate} ${startTime} - ${endDate} ${endTime} (跨日班)`
+      : `${startTime} - ${endTime}`;
+    
     alert(`Shift Details:
 Member: ${props.memberName || 'Unknown'}
 Shift: ${props.templateName || 'Unknown'}
 Date: ${props.assignmentDate || 'Unknown'}
-Time: ${new Date(event.start).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - ${new Date(event.end).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`);
+Time: ${timeDisplay}`);
   };
 
   const handleEditShift = (template) => {
