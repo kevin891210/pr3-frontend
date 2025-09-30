@@ -4,12 +4,14 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Clock, Users, AlertTriangle, Edit, Trash2 } from 'lucide-react';
+import { Plus, Clock, Users, AlertTriangle, Edit, Trash2, Calendar, Upload } from 'lucide-react';
 import apiClient from '../../../services/api';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../../components/ui/dialog.jsx';
 import EmptyState from '../../../components/ui/empty-state';
 import SearchableSelect from '../../../components/ui/searchable-select';
 import Modal from '../../../components/ui/modal';
+import MonthlyScheduleModal from './MonthlyScheduleModal';
+import CsvImportModal from './CsvImportModal';
 
 const SchedulePage = () => {
   const [events, setEvents] = useState([]);
@@ -50,6 +52,8 @@ const SchedulePage = () => {
   const [showAssignmentModal, setShowAssignmentModal] = useState(false);
   const [editingAssignment, setEditingAssignment] = useState(null);
   const [deleteAssignmentDialog, setDeleteAssignmentDialog] = useState({ open: false, assignmentId: null, assignmentTitle: '' });
+  const [showMonthlyModal, setShowMonthlyModal] = useState(false);
+  const [showCsvImportModal, setShowCsvImportModal] = useState(false);
 
   useEffect(() => {
     loadShiftCategories();
@@ -474,6 +478,64 @@ Time: ${new Date(event.start).toLocaleTimeString([], {hour: '2-digit', minute:'2
     setDeleteAssignmentDialog({ open: false, assignmentId: null, assignmentTitle: '' });
   };
 
+  // Handle monthly schedule submission
+  const handleMonthlySubmit = async (assignments) => {
+    try {
+      // Create all assignments in batch
+      const promises = assignments.map(assignment => 
+        apiClient.createScheduleAssignment(assignment)
+      );
+      
+      await Promise.all(promises);
+      
+      setAlertDialog({
+        open: true,
+        type: 'success',
+        title: 'Batch Assignment Success',
+        message: `Successfully created ${assignments.length} schedule assignments`
+      });
+      
+      setShowMonthlyModal(false);
+      await loadScheduleData();
+    } catch (error) {
+      setAlertDialog({
+        open: true,
+        type: 'danger',
+        title: 'Batch Assignment Failed',
+        message: `Failed to create assignments: ${error.message}`
+      });
+    }
+  };
+
+  // Handle CSV import submission
+  const handleCsvImportSubmit = async (assignments) => {
+    try {
+      // Create all assignments in batch
+      const promises = assignments.map(assignment => 
+        apiClient.createScheduleAssignment(assignment)
+      );
+      
+      await Promise.all(promises);
+      
+      setAlertDialog({
+        open: true,
+        type: 'success',
+        title: 'CSV Import Success',
+        message: `Successfully imported ${assignments.length} schedule assignments`
+      });
+      
+      setShowCsvImportModal(false);
+      await loadScheduleData();
+    } catch (error) {
+      setAlertDialog({
+        open: true,
+        type: 'danger',
+        title: 'CSV Import Failed',
+        message: `Failed to import assignments: ${error.message}`
+      });
+    }
+  };
+
   // Handle shift assignment submission
   const handleAssignmentSubmit = async () => {
     // Validate required fields
@@ -807,18 +869,38 @@ Time: ${new Date(event.start).toLocaleTimeString([], {hour: '2-digit', minute:'2
                 </CardHeader>
                 <CardContent>
                   <div>
-                    <Button 
-                      className="w-full flex items-center gap-2 mb-4"
-                      onClick={() => {
-                        setEditingAssignment(null);
-                        setAssignmentFormData({ brand_id: '', member_id: '', template_id: '', date: '', break_schedule: [] });
-                        setWorkspaceMembers([]);
-                        setShowAssignmentModal(true);
-                      }}
-                    >
-                      <Plus className="w-4 h-4" />
-                      Assign Shift
-                    </Button>
+                    <div className="space-y-2 mb-4">
+                      <Button 
+                        className="w-full flex items-center gap-2"
+                        onClick={() => {
+                          setEditingAssignment(null);
+                          setAssignmentFormData({ brand_id: '', member_id: '', template_id: '', date: '', break_schedule: [] });
+                          setWorkspaceMembers([]);
+                          setShowAssignmentModal(true);
+                        }}
+                      >
+                        <Plus className="w-4 h-4" />
+                        Assign Shift
+                      </Button>
+                      
+                      <Button 
+                        className="w-full flex items-center gap-2"
+                        variant="outline"
+                        onClick={() => setShowMonthlyModal(true)}
+                      >
+                        <Calendar className="w-4 h-4" />
+                        Monthly Schedule
+                      </Button>
+                      
+                      <Button 
+                        className="w-full flex items-center gap-2"
+                        variant="outline"
+                        onClick={() => setShowCsvImportModal(true)}
+                      >
+                        <Upload className="w-4 h-4" />
+                        Import CSV
+                      </Button>
+                    </div>
                     
                     <div className="space-y-3">
                       <h3 className="text-sm font-medium text-gray-700">Recent Assignments</h3>
@@ -1198,6 +1280,28 @@ Time: ${new Date(event.start).toLocaleTimeString([], {hour: '2-digit', minute:'2
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Monthly Schedule Modal */}
+      <MonthlyScheduleModal
+        open={showMonthlyModal}
+        onOpenChange={setShowMonthlyModal}
+        brands={brands}
+        workspaceMembers={workspaceMembers}
+        shiftTemplates={shiftTemplates}
+        onBrandChange={loadBrandMembers}
+        onSubmit={handleMonthlySubmit}
+      />
+
+      {/* CSV Import Modal */}
+      <CsvImportModal
+        open={showCsvImportModal}
+        onOpenChange={setShowCsvImportModal}
+        brands={brands}
+        workspaceMembers={workspaceMembers}
+        shiftTemplates={shiftTemplates}
+        onBrandChange={loadBrandMembers}
+        onSubmit={handleCsvImportSubmit}
+      />
     </div>
   );
 };
