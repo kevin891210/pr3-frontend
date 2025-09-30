@@ -117,18 +117,19 @@ const MonthlyScheduleModal = ({
       onOpenChange={onOpenChange}
       title="Monthly Schedule Assignment"
       size="lg"
+      className="max-h-[90vh] w-full max-w-4xl"
       footer={
-        <>
+        <div className="flex justify-end gap-2 pt-4 border-t">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit}>
+          <Button onClick={handleSubmit} disabled={formData.schedules.length === 0}>
             Create {formData.schedules.length} Assignments
           </Button>
-        </>
+        </div>
       }
     >
-      <div className="space-y-6">
+      <div className="space-y-4 max-h-[60vh] overflow-y-auto px-1">
         {/* Basic Info */}
         <div className="grid grid-cols-2 gap-4">
           <div>
@@ -197,9 +198,9 @@ const MonthlyScheduleModal = ({
         <Card>
           <CardContent className="p-4">
             <h3 className="font-medium mb-3">Bulk Assignment</h3>
-            <div className="flex gap-2 mb-3">
+            <div className="flex flex-col sm:flex-row gap-2 mb-3">
               <select
-                className="flex-1 p-2 border rounded-md"
+                className="flex-1 p-2 border rounded-md min-w-0"
                 value={bulkTemplate}
                 onChange={(e) => setBulkTemplate(e.target.value)}
               >
@@ -213,6 +214,7 @@ const MonthlyScheduleModal = ({
               <Button 
                 onClick={handleBulkAssign}
                 disabled={!bulkTemplate || selectedDates.length === 0}
+                className="whitespace-nowrap"
               >
                 <Plus className="w-4 h-4 mr-1" />
                 Assign to {selectedDates.length} days
@@ -225,9 +227,9 @@ const MonthlyScheduleModal = ({
         </Card>
 
         {/* Calendar Grid */}
-        <div>
+        <div className="sticky top-0 bg-white pb-2">
           <h3 className="font-medium mb-3">Select Dates</h3>
-          <div className="grid grid-cols-7 gap-1 mb-4">
+          <div className="grid grid-cols-7 gap-1 mb-4 text-center">
             {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
               <div key={day} className="p-2 text-center text-sm font-medium text-gray-600">
                 {day}
@@ -242,10 +244,10 @@ const MonthlyScheduleModal = ({
                   key={date}
                   onClick={() => handleDateToggle(date)}
                   className={`
-                    p-2 text-sm border rounded transition-colors
+                    p-2 text-sm border rounded transition-colors min-h-[40px] flex items-center justify-center
                     ${isSelected ? 'bg-blue-500 text-white border-blue-500' : ''}
-                    ${isScheduled ? 'bg-green-100 border-green-300' : ''}
-                    ${isWeekend ? 'bg-gray-50' : ''}
+                    ${isScheduled && !isSelected ? 'bg-green-100 border-green-300' : ''}
+                    ${isWeekend && !isSelected && !isScheduled ? 'bg-gray-50' : ''}
                     ${!isSelected && !isScheduled ? 'hover:bg-gray-100' : ''}
                   `}
                 >
@@ -274,7 +276,7 @@ const MonthlyScheduleModal = ({
         {formData.schedules.length > 0 && (
           <div>
             <h3 className="font-medium mb-3">Scheduled Shifts ({formData.schedules.length})</h3>
-            <div className="max-h-40 overflow-y-auto space-y-2">
+            <div className="max-h-32 overflow-y-auto space-y-2 border rounded p-2">
               {formData.schedules.map(schedule => {
                 const template = shiftTemplates.find(t => t.id === schedule.template_id);
                 return (
