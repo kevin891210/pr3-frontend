@@ -869,9 +869,7 @@ Time: ${new Date(event.start).toLocaleTimeString([], {hour: '2-digit', minute:'2
                   <CardTitle>Shift Management</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div>
-  
-                    <div className="space-y-2 mb-4">
+                  <div className="space-y-2 mb-4">
                       <Button 
                         className="w-full flex items-center gap-2"
                         onClick={() => {
@@ -939,7 +937,6 @@ Time: ${new Date(event.start).toLocaleTimeString([], {hour: '2-digit', minute:'2
                         />
                       )}
                     </div>
-                  </div>
                 </CardContent>
               </Card>
             </div>
