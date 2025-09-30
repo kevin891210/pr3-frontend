@@ -285,12 +285,20 @@ const NoticePage = () => {
                       <tr key={notice.id} className="border-b hover:bg-gray-50">
                         <td className="py-3 px-4 font-medium">{notice.title}</td>
                         <td className="py-3 px-4 text-gray-600">
-                          {brand?.name || 'All Brands'}
-                          {notice.workspaceId === 'all' && brand && (
+                          {notice.brandId === 'all' ? (
+                            <span className="font-medium text-blue-600">All Brands</span>
+                          ) : (
+                            brand?.name || 'Unknown Brand'
+                          )}
+                          {notice.brandId === 'all' ? (
+                            <span className="ml-2 text-xs bg-purple-100 text-purple-600 px-2 py-1 rounded">
+                              Global Broadcast
+                            </span>
+                          ) : notice.workspaceId === 'all' && brand ? (
                             <span className="ml-2 text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded">
                               All Workspaces
                             </span>
-                          )}
+                          ) : null}
                         </td>
                         <td className="py-3 px-4 text-gray-600">
                           {new Date(notice.startTime).toLocaleString()}
@@ -394,10 +402,15 @@ const NoticePage = () => {
                     value={formData.brandId}
                     onChange={(e) => {
                       setFormData({...formData, brandId: e.target.value, workspaceId: ''});
-                      loadWorkspaces(e.target.value);
+                      if (e.target.value && e.target.value !== 'all') {
+                        loadWorkspaces(e.target.value);
+                      } else {
+                        setWorkspaces([]);
+                      }
                     }}
                   >
                     <option value="">{t('notice.selectBrand')}</option>
+                    <option value="all">All Brands</option>
                     {brands.map(brand => (
                       <option key={brand.id} value={brand.id}>{brand.name}</option>
                     ))}
@@ -409,10 +422,14 @@ const NoticePage = () => {
                     className="w-full p-2 border rounded-md"
                     value={formData.workspaceId}
                     onChange={(e) => setFormData({...formData, workspaceId: e.target.value})}
-                    disabled={!formData.brandId}
+                    disabled={!formData.brandId || formData.brandId === 'all'}
                   >
-                    <option value="">{t('notice.selectWorkspace')}</option>
-                    <option value="all">All Workspaces</option>
+                    <option value="">
+                      {formData.brandId === 'all' ? 'All Workspaces (Auto)' : t('notice.selectWorkspace')}
+                    </option>
+                    {formData.brandId && formData.brandId !== 'all' && (
+                      <option value="all">All Workspaces</option>
+                    )}
                     {Array.isArray(workspaces) && workspaces.map(workspace => (
                       <option key={workspace.id} value={workspace.id}>{workspace.name}</option>
                     ))}

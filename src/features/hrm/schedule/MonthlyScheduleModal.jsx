@@ -47,7 +47,17 @@ const MonthlyScheduleModal = ({
 
   const getMonthDates = () => {
     const daysInMonth = getDaysInMonth(formData.year, formData.month);
+    const firstDay = new Date(formData.year, formData.month - 1, 1);
+    const startDayOfWeek = firstDay.getDay(); // 0 = Sunday, 1 = Monday, etc.
+    
     const dates = [];
+    
+    // Add empty cells for days before the first day of the month
+    for (let i = 0; i < startDayOfWeek; i++) {
+      dates.push({ isEmpty: true });
+    }
+    
+    // Add actual days of the month
     for (let day = 1; day <= daysInMonth; day++) {
       const date = new Date(formData.year, formData.month - 1, day);
       dates.push({
@@ -235,7 +245,16 @@ const MonthlyScheduleModal = ({
                 {day}
               </div>
             ))}
-            {monthDates.map(({ day, date, dayName, isWeekend }) => {
+            {monthDates.map((dateInfo, index) => {
+              if (dateInfo.isEmpty) {
+                return (
+                  <div key={`empty-${index}`} className="p-2 min-h-[40px]">
+                    {/* Empty cell */}
+                  </div>
+                );
+              }
+              
+              const { day, date, dayName, isWeekend } = dateInfo;
               const isSelected = selectedDates.includes(date);
               const isScheduled = scheduledDates.includes(date);
               
@@ -254,7 +273,7 @@ const MonthlyScheduleModal = ({
                   {day}
                 </button>
               );
-            })}
+            })
           </div>
           <div className="flex gap-4 text-sm">
             <div className="flex items-center gap-1">
