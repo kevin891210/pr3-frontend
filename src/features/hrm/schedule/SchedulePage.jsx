@@ -210,7 +210,7 @@ const SchedulePage = () => {
         
         const event = {
           id: assignment.id,
-          title: `${memberName}\n${template.name} (${startTime}-${endTime})${template.is_cross_day ? ' 跨日' : ''}`,
+          title: `${memberName}\n${template.name} (${startTime}-${endTime})${template.is_cross_day ? ' Cross-Day' : ''}`,
           start: startDateTime,
           end: endDateTime,
           backgroundColor: memberColor.bg,
@@ -291,7 +291,7 @@ const SchedulePage = () => {
           if (start1 < end2 && start2 < end1) {
             conflicts.push({
               id: `conflict-${i}-${j}`,
-              message: `時間衝突: ${event1.title} 與 ${event2.title}`,
+              message: `Time Conflict: ${event1.title} and ${event2.title}`,
               events: [event1.id, event2.id]
             });
           }
@@ -317,7 +317,7 @@ const SchedulePage = () => {
     const endDate = new Date(event.end).toLocaleDateString();
     
     const timeDisplay = props.isCrossDay 
-      ? `${startDate} ${startTime} - ${endDate} ${endTime} (跨日班)`
+      ? `${startDate} ${startTime} - ${endDate} ${endTime} (Cross-Day Shift)`
       : `${startTime} - ${endTime}`;
     
     alert(`Shift Details:
@@ -789,7 +789,7 @@ Time: ${timeDisplay}`);
           <CardContent className="p-4">
             <div className="flex items-center gap-2 text-red-700 mb-2">
               <AlertTriangle className="w-5 h-5" />
-              <span className="font-medium">發現排班衝突</span>
+              <span className="font-medium">Schedule Conflicts Found</span>
             </div>
             <ul className="text-sm text-red-600 space-y-1">
               {conflicts.map(conflict => (
