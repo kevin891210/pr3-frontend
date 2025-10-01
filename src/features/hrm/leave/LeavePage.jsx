@@ -3,10 +3,10 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Plus, Calendar, Clock, FileText, CheckCircle, 
+import {
+  Plus, Calendar, Clock, FileText, CheckCircle,
   XCircle, AlertCircle, User, Eye, Users, AlertTriangle,
-  Edit, Trash2, Bell 
+  Edit, Trash2, Bell
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import apiClient from '../../../services/api';
@@ -16,6 +16,7 @@ import SearchableSelect from '../../../components/ui/searchable-select';
 import useWebSocket from '../../../hooks/useWebSocket';
 import { useToast } from '../../../components/ui/toast';
 import ResponsiveTable from '../../../components/ui/responsive-table';
+import AgentLeaveConfig from './components/AgentLeaveConfig';
 
 const LeavePage = () => {
   const [leaveTypes, setLeaveTypes] = useState([]);
@@ -51,7 +52,7 @@ const LeavePage = () => {
   const [brandMembers, setBrandMembers] = useState([]);
   const { user, hasPermission } = useAuthStore();
   const [alertDialog, setAlertDialog] = useState({ open: false, type: 'info', title: '', message: '' });
-  const [activeTab, setActiveTab] = useState('requests'); // 'requests', 'categories', or 'manage'
+  const [activeTab, setActiveTab] = useState('requests'); // 'requests', 'categories', 'manage', or 'agent-config'
   const [showLeaveTypeModal, setShowLeaveTypeModal] = useState(false);
   const [editingLeaveType, setEditingLeaveType] = useState(null);
   const [leaveTypeFormData, setLeaveTypeFormData] = useState({
@@ -623,6 +624,15 @@ const LeavePage = () => {
             Manage Leave Types
           </button>
         )}
+
+        {hasPermission('leave.admin') && (
+          <button
+            className={`px-4 py-2 text-sm font-medium ${activeTab === 'agent-config' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500'}`}
+            onClick={() => setActiveTab('agent-config')}
+          >
+            Agent Configuration
+          </button>
+        )}
       </div>
 
       {activeTab === 'requests' && (
@@ -972,7 +982,7 @@ const LeavePage = () => {
                       </Button>
                     </div>
                   </div>
-                  
+
                   <div className="space-y-2 text-sm text-gray-600">
                     <div>Quota: {type.quota} days</div>
                     <div className="flex gap-4">
@@ -990,18 +1000,22 @@ const LeavePage = () => {
                 </CardContent>
               </Card>
             ))}
-            
+
             {leaveTypes.length === 0 && (
               <div className="col-span-full">
-                <EmptyState 
-                  type="leave" 
-                  title="No Leave Types" 
-                  description="Click 'Add Leave Type' to create your first leave type." 
+                <EmptyState
+                  type="leave"
+                  title="No Leave Types"
+                  description="Click 'Add Leave Type' to create your first leave type."
                 />
               </div>
             )}
           </div>
         </div>
+      )}
+
+      {activeTab === 'agent-config' && (
+        <AgentLeaveConfig />
       )}
 
       {/* Apply Leave Dialog */}
