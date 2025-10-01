@@ -12,13 +12,14 @@ const AgentLeaveConfig = () => {
   const [brands, setBrands] = useState([]);
   const [selectedBrand, setSelectedBrand] = useState('');
   const [members, setMembers] = useState([]);
-  const [selectedMember, setSelectedMember] = useState(null);
+  const [selectedMembers, setSelectedMembers] = useState([]); // 改為多選
   const [leaveTypes, setLeaveTypes] = useState([]);
   const [agentConfigs, setAgentConfigs] = useState([]);
   const [showConfigDialog, setShowConfigDialog] = useState(false);
   const [editingConfigs, setEditingConfigs] = useState({});
   const [alertDialog, setAlertDialog] = useState({ open: false, type: 'info', title: '', message: '' });
   const [loading, setLoading] = useState(false);
+  const [selectAll, setSelectAll] = useState(false);
 
   useEffect(() => {
     loadBrands();
@@ -32,10 +33,24 @@ const AgentLeaveConfig = () => {
   }, [selectedBrand]);
 
   useEffect(() => {
-    if (selectedMember) {
-      loadAgentConfigs(selectedMember);
+    if (selectedMembers.length === 1) {
+      loadAgentConfigs(selectedMembers[0]);
+    } else if (selectedMembers.length === 0) {
+      setAgentConfigs([]);
+      setEditingConfigs({});
+    } else {
+      // 多選時顯示預設值
+      const configs = {};
+      leaveTypes.forEach(type => {
+        configs[type.id] = {
+          id: null,
+          days_per_year: type.days_per_year || 14
+        };
+      });
+      setEditingConfigs(configs);
+      setAgentConfigs([]);
     }
-  }, [selectedMember]);
+  }, [selectedMembers, leaveTypes]);
 
   const loadBrands = async () => {
     try {
@@ -124,12 +139,12 @@ const AgentLeaveConfig = () => {
   };
 
   const handleSaveConfigs = async () => {
-    if (!selectedMember) {
+    if (selectedMembers.length === 0) {
       setAlertDialog({
         open: true,
         type: 'warning',
         title: 'Warning',
-        message: 'Please select a member first'
+        message: 'Please select at least one member'
       });
       return;
     }
@@ -143,17 +158,24 @@ const AgentLeaveConfig = () => {
         days_per_year: editingConfigs[leaveTypeId].days_per_year
       }));
 
-      await apiClient.createBatchAgentLeaveConfigs(selectedMember, configs);
+      // 為每個選中的 member 批次建立配置
+      const promises = selectedMembers.map(memberId =>
+        apiClient.createBatchAgentLeaveConfigs(memberId, configs)
+      );
+
+      await Promise.all(promises);
 
       setAlertDialog({
         open: true,
         type: 'success',
         title: 'Success',
-        message: 'Agent leave configurations saved successfully'
+        message: `Successfully saved configurations for ${selectedMembers.length} member(s)`
       });
 
-      // 重新載入配置
-      await loadAgentConfigs(selectedMember);
+      // 如果只選了一個，重新載入配置
+      if (selectedMembers.length === 1) {
+        await loadAgentConfigs(selectedMembers[0]);
+      }
     } catch (error) {
       setAlertDialog({
         open: true,
@@ -168,14 +190,30 @@ const AgentLeaveConfig = () => {
 
   const handleBrandChange = (brandId) => {
     setSelectedBrand(brandId);
-    setSelectedMember(null);
+    setSelectedMembers([]);
     setMembers([]);
     setAgentConfigs([]);
     setEditingConfigs({});
+    setSelectAll(false);
   };
 
-  const handleMemberChange = (memberId) => {
-    setSelectedMember(memberId);
+  const handleMemberToggle = (memberId) => {
+    setSelectedMembers(prev => {
+      if (prev.includes(memberId)) {
+        return prev.filter(id => id !== memberId);
+      } else {
+        return [...prev, memberId];
+      }
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (selectAll) {
+      setSelectedMembers([]);
+    } else {
+      setSelectedMembers(members.map(m => m.id));
+    }
+    setSelectAll(!selectAll);
   };
 
   return (
@@ -205,27 +243,63 @@ const AgentLeaveConfig = () => {
             </div>
 
             {/* Member Selection */}
-            {selectedBrand && (
+            {selectedBrand && members.length > 0 && (
               <div>
-                <label className="block text-sm font-medium mb-2">Select Agent/Member</label>
-                <SearchableSelect
-                  value={selectedMember || ''}
-                  onChange={handleMemberChange}
-                  placeholder="Select a member..."
-                  searchPlaceholder="Search members..."
-                  options={members.map(member => ({
-                    value: member.id,
-                    label: `${member.name || member.username || member.email || member.id} (${member.role || 'Member'})`
-                  }))}
-                />
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium">Select Agents/Members</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="select-all"
+                      checked={selectAll}
+                      onChange={handleSelectAll}
+                      className="rounded border-gray-300"
+                    />
+                    <label htmlFor="select-all" className="text-sm text-gray-600 cursor-pointer">
+                      Select All ({selectedMembers.length}/{members.length})
+                    </label>
+                  </div>
+                </div>
+                <div className="border rounded-md max-h-64 overflow-y-auto bg-white">
+                  {members.map(member => (
+                    <div
+                      key={member.id}
+                      className="flex items-center gap-3 p-3 hover:bg-gray-50 border-b last:border-b-0 cursor-pointer"
+                      onClick={() => handleMemberToggle(member.id)}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedMembers.includes(member.id)}
+                        onChange={() => handleMemberToggle(member.id)}
+                        className="rounded border-gray-300"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      <div className="flex-1">
+                        <div className="font-medium">
+                          {member.name || member.username || member.email || member.id}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {member.role || 'Member'} {member.email && `• ${member.email}`}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
             {/* Leave Type Configuration */}
-            {selectedMember && leaveTypes.length > 0 && (
+            {selectedMembers.length > 0 && leaveTypes.length > 0 && (
               <div className="mt-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-md font-semibold">Leave Type Allowances</h3>
+                  <h3 className="text-md font-semibold">
+                    Leave Type Allowances
+                    {selectedMembers.length > 1 && (
+                      <span className="ml-2 text-sm font-normal text-gray-600">
+                        (Applying to {selectedMembers.length} members)
+                      </span>
+                    )}
+                  </h3>
                   <Button
                     onClick={handleSaveConfigs}
                     disabled={loading}
@@ -282,11 +356,11 @@ const AgentLeaveConfig = () => {
               />
             )}
 
-            {selectedBrand && !selectedMember && members.length > 0 && (
+            {selectedBrand && selectedMembers.length === 0 && members.length > 0 && (
               <EmptyState
                 type="leave"
-                title="No Member Selected"
-                description="Please select a member to configure their leave allowances."
+                title="No Members Selected"
+                description="Please select one or more members to configure their leave allowances."
               />
             )}
           </div>
