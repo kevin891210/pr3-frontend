@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { X, Calendar } from 'lucide-react';
 import apiClient from '../../services/api';
 
-const RequestLeaveModal = ({ isOpen, onClose }) => {
+const RequestLeaveModal = ({ isOpen, onClose, leaveBalance = [] }) => {
   const [formData, setFormData] = useState({
     type: '',
     startDate: '',
@@ -14,6 +14,7 @@ const RequestLeaveModal = ({ isOpen, onClose }) => {
   });
   const [loading, setLoading] = useState(false);
   const [leaveTypes, setLeaveTypes] = useState([]);
+  const [availableLeaveTypes, setAvailableLeaveTypes] = useState([]);
 
   useEffect(() => {
     if (isOpen) {
@@ -21,14 +22,29 @@ const RequestLeaveModal = ({ isOpen, onClose }) => {
     }
   }, [isOpen]);
 
+  useEffect(() => {
+    // 根據 leaveBalance 過濾出可用的請假類型（總天數 > 0）
+    if (Array.isArray(leaveBalance) && leaveBalance.length > 0) {
+      const validBalances = leaveBalance.filter(balance => balance.total_days > 0);
+      const validTypeIds = new Set(validBalances.map(balance => balance.leave_type_id));
+
+      const filtered = leaveTypes.filter(type => validTypeIds.has(type.id));
+      setAvailableLeaveTypes(filtered);
+
+      // 設定預設選擇第一個可用的請假類型
+      if (filtered.length > 0 && !formData.type) {
+        setFormData(prev => ({ ...prev, type: filtered[0].code || filtered[0].id }));
+      }
+    } else {
+      setAvailableLeaveTypes(leaveTypes);
+    }
+  }, [leaveTypes, leaveBalance]);
+
   const loadLeaveTypes = async () => {
     try {
       const response = await apiClient.getAgentLeaveTypes();
       const typesData = response.data || response;
       setLeaveTypes(Array.isArray(typesData) ? typesData : []);
-      if (typesData.length > 0) {
-        setFormData(prev => ({ ...prev, type: typesData[0].code || typesData[0].id }));
-      }
     } catch (error) {
       console.error('Failed to load leave types:', error);
       setLeaveTypes([
@@ -36,7 +52,6 @@ const RequestLeaveModal = ({ isOpen, onClose }) => {
         { id: 'sick', code: 'SICK', name: 'Sick Leave' },
         { id: 'personal', code: 'PERSONAL', name: 'Personal Leave' }
       ]);
-      setFormData(prev => ({ ...prev, type: 'annual' }));
     }
   };
 
@@ -45,12 +60,12 @@ const RequestLeaveModal = ({ isOpen, onClose }) => {
     setLoading(true);
     try {
       // Format data for API
-      const selectedType = leaveTypes.find(type => (type.code || type.id) === formData.type);
+      const selectedType = availableLeaveTypes.find(type => (type.code || type.id) === formData.type);
       const memberId = localStorage.getItem('member_id');
       const startDate = new Date(formData.startDate);
       const endDate = new Date(formData.endDate);
       const days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
-      
+
       const leaveData = {
         member_id: memberId,
         leave_type_id: selectedType?.id || formData.type,
@@ -59,11 +74,11 @@ const RequestLeaveModal = ({ isOpen, onClose }) => {
         days: formData.isHalfDay ? 0.5 : days,
         reason: formData.reason
       };
-      
+
       await apiClient.submitLeaveRequest(leaveData);
       alert('Leave request submitted successfully!');
       onClose();
-      setFormData({ type: leaveTypes[0]?.code || '', startDate: '', endDate: '', reason: '', isHalfDay: false });
+      setFormData({ type: availableLeaveTypes[0]?.code || '', startDate: '', endDate: '', reason: '', isHalfDay: false });
     } catch (error) {
       console.error('Failed to submit leave request:', error);
       alert('Failed to submit leave request: ' + error.message);
@@ -94,12 +109,17 @@ const RequestLeaveModal = ({ isOpen, onClose }) => {
               required
             >
               <option value="">Select Leave Type</option>
-              {leaveTypes.map(type => (
+              {availableLeaveTypes.map(type => (
                 <option key={type.id} value={type.code || type.id}>
                   {type.name}
                 </option>
               ))}
             </select>
+            {availableLeaveTypes.length === 0 && (
+              <p className="text-sm text-red-500 mt-2">
+                No leave types available. Please contact your administrator.
+              </p>
+            )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

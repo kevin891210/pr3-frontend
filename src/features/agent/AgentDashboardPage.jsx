@@ -190,12 +190,14 @@ const AgentDashboardPage = () => {
               <CardContent className="pt-0">
                 {Array.isArray(leaveBalance) && leaveBalance.length > 0 ? (
                   <div className="space-y-3">
-                    {leaveBalance.map((balance) => (
-                      <div key={balance.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                        <span className="text-sm font-medium text-gray-700">{balance.leave_type_name}</span>
-                        <span className="font-bold text-blue-600">{balance.remaining_days} days</span>
-                      </div>
-                    ))}
+                    {leaveBalance
+                      .filter(balance => balance.total_days > 0) // 過濾掉總天數為 0 的請假類型
+                      .map((balance) => (
+                        <div key={balance.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                          <span className="text-sm font-medium text-gray-700">{balance.leave_type_name}</span>
+                          <span className="font-bold text-blue-600">{balance.remaining_days} days</span>
+                        </div>
+                      ))}
                   </div>
                 ) : (
                   <p className="text-gray-500 text-center py-4">No leave balance data</p>
@@ -278,9 +280,10 @@ const AgentDashboardPage = () => {
       </main>
 
       {/* Request Leave Modal */}
-      <RequestLeaveModal 
+      <RequestLeaveModal
         isOpen={showLeaveModal}
         onClose={() => setShowLeaveModal(false)}
+        leaveBalance={leaveBalance}
       />
     </div>
   );
