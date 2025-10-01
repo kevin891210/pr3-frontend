@@ -88,7 +88,7 @@ const AttendanceRecords = () => {
   };
 
   const StatusBadge = ({ status }) => {
-    const config = statusConfig[status];
+    const config = statusConfig[status] || statusConfig['error'];
     const Icon = config.icon;
     
     return (

@@ -86,8 +86,8 @@ const AttendanceApiLogs = () => {
       
       const response = await apiClient.getAttendanceApiLogs(workspaceId, params);
       
-      if (response.data && Array.isArray(response.data)) {
-        setApiLogs(response.data);
+      if (response.data && response.data.logs && Array.isArray(response.data.logs)) {
+        setApiLogs(response.data.logs);
       } else {
         setApiLogs([]);
       }
@@ -111,7 +111,7 @@ const AttendanceApiLogs = () => {
   };
 
   const StatusBadge = ({ status }) => {
-    const config = statusConfig[status];
+    const config = statusConfig[status] || statusConfig['error'];
     const Icon = config.icon;
     
     return (
