@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { 
   Clock, BarChart3, Settings, FileText, Monitor, 
@@ -13,6 +13,20 @@ import AttendanceMonitor from './components/AttendanceMonitor';
 const AttendancePage = () => {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('dashboard');
+
+  // 監聽標籤頁切換事件
+  useEffect(() => {
+    const handleTabSwitch = (event) => {
+      if (event.detail && event.detail.tab) {
+        setActiveTab(event.detail.tab);
+      }
+    };
+
+    window.addEventListener('switchAttendanceTab', handleTabSwitch);
+    return () => {
+      window.removeEventListener('switchAttendanceTab', handleTabSwitch);
+    };
+  }, []);
 
   const tabs = [
     { 

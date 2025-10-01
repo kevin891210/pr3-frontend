@@ -57,8 +57,21 @@ const AttendanceDashboard = () => {
         }
       }
       
-      if (monitoringRes.data && monitoringRes.data.realtimeStatus && Array.isArray(monitoringRes.data.realtimeStatus)) {
-        setRealtimeStatus(monitoringRes.data.realtimeStatus);
+      // 處理監控數據和實時狀態
+      if (monitoringRes.data) {
+        if (monitoringRes.data.realtimeStatus && Array.isArray(monitoringRes.data.realtimeStatus)) {
+          setRealtimeStatus(monitoringRes.data.realtimeStatus);
+        } else {
+          // 如果沒有 realtimeStatus，創建一個基於當前工作區的默認狀態
+          setRealtimeStatus([{
+            id: workspaceId,
+            workspace: `Workspace ${workspaceId}`,
+            status: 'completed',
+            onlineCount: monitoringRes.data.today_schedules || 0,
+            scheduledCount: monitoringRes.data.today_schedules || 0,
+            nextCheck: 300
+          }]);
+        }
       }
     } catch (error) {
       console.error('Failed to load dashboard data:', error);
@@ -109,8 +122,9 @@ const AttendanceDashboard = () => {
   };
 
   const handleViewAnomalies = () => {
-    // Navigate to attendance records with anomaly filter
-    window.location.href = '/attendance?tab=records&filter=anomalies';
+    // 切換到記錄標籤頁並顯示異常過濾
+    const event = new CustomEvent('switchAttendanceTab', { detail: { tab: 'records', filter: 'anomalies' } });
+    window.dispatchEvent(event);
   };
 
   const handleExportReport = async () => {
@@ -118,13 +132,21 @@ const AttendanceDashboard = () => {
       const workspaceId = user?.workspace_id || localStorage.getItem('workspace_id') || '1';
       const today = new Date().toISOString().split('T')[0];
       
-      await apiClient.exportAttendanceProof(workspaceId, {
+      const response = await apiClient.exportAttendanceProof(workspaceId, {
         start_date: today,
         end_date: today,
         format: 'pdf'
       });
       
-      alert(t('attendance.exportSuccess'));
+      if (response.success) {
+        // 創建下載鏈接
+        const link = document.createElement('a');
+        link.href = response.data.export_url;
+        link.download = `attendance_proof_${today}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
     } catch (error) {
       console.error('Failed to export report:', error);
       alert(t('attendance.exportFailed') + ': ' + error.message);
@@ -132,8 +154,9 @@ const AttendanceDashboard = () => {
   };
 
   const handleSystemSettings = () => {
-    // Navigate to attendance settings
-    window.location.href = '/attendance?tab=settings';
+    // 切換到設定標籤頁
+    const event = new CustomEvent('switchAttendanceTab', { detail: { tab: 'settings' } });
+    window.dispatchEvent(event);
   };
 
   if (loading) {
@@ -151,12 +174,15 @@ const AttendanceDashboard = () => {
       {/* Error Message */}
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
-          <div className="text-red-800">Error: {error}</div>
+          <div className="text-red-800">連接錯誤: {error}</div>
+          <div className="text-sm text-red-600 mt-1">
+            請檢查後端服務是否正常運行，或聯繫系統管理員。
+          </div>
           <button 
             onClick={loadDashboardData}
             className="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
           >
-            Retry
+            重試連接
           </button>
         </div>
       )}
@@ -224,24 +250,26 @@ const AttendanceDashboard = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {realtimeStatus.map((workspace) => (
+          {realtimeStatus.length > 0 ? realtimeStatus.map((workspace) => (
             <div key={workspace.id} className="border rounded-lg p-4">
               <div className="flex items-center justify-between mb-3">
                 <h4 className="font-medium">{workspace.workspace}</h4>
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[workspace.status]}`}>
-                  {t(`attendance.status.${workspace.status}`)}
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[workspace.status] || 'text-gray-600'}`}>
+                  {workspace.status === 'completed' ? '已完成' : 
+                   workspace.status === 'checking' ? '檢查中' : 
+                   workspace.status === 'idle' ? '待機中' : '未知'}
                 </span>
               </div>
               
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span>{t('attendance.onlineCount')}:</span>
+                  <span>在線人數:</span>
                   <span className="font-medium">{workspace.onlineCount}/{workspace.scheduledCount}</span>
                 </div>
                 
                 {workspace.nextCheck > 0 && (
                   <div className="flex justify-between">
-                    <span>{t('attendance.nextCheck')}:</span>
+                    <span>下次檢查:</span>
                     <span className="font-medium">{Math.floor(workspace.nextCheck / 60)}:{(workspace.nextCheck % 60).toString().padStart(2, '0')}</span>
                   </div>
                 )}
@@ -252,10 +280,15 @@ const AttendanceDashboard = () => {
                 className="w-full mt-3 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded text-sm font-medium"
               >
                 <Play className="w-4 h-4 inline mr-1" />
-                {t('attendance.manualCheck')}
+                手動檢查
               </button>
             </div>
-          ))}
+          )) : (
+            <div className="col-span-full text-center py-8 text-gray-500">
+              <div className="text-lg mb-2">暫無工作區數據</div>
+              <div className="text-sm">請確認已配置工作區並有排班記錄</div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -263,7 +296,7 @@ const AttendanceDashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Attendance Trend */}
         <div className="bg-white p-6 rounded-lg border">
-          <h3 className="text-lg font-semibold mb-4">{t('attendance.weeklyTrend')}</h3>
+          <h3 className="text-lg font-semibold mb-4">本週出勤趨勢</h3>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={attendanceTrend}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -277,7 +310,7 @@ const AttendanceDashboard = () => {
 
         {/* Quick Actions */}
         <div className="bg-white p-6 rounded-lg border">
-          <h3 className="text-lg font-semibold mb-4">{t('attendance.quickActions')}</h3>
+          <h3 className="text-lg font-semibold mb-4">快速操作</h3>
           <div className="space-y-3">
             <button 
               onClick={handleViewAnomalies}
@@ -286,8 +319,8 @@ const AttendanceDashboard = () => {
               <div className="flex items-center gap-3">
                 <CheckCircle className="w-5 h-5 text-green-600" />
                 <div>
-                  <p className="font-medium">{t('attendance.viewTodayAnomalies')}</p>
-                  <p className="text-sm text-gray-600">{t('attendance.checkAnomaliesDesc')}</p>
+                  <p className="font-medium">查看今日異常</p>
+                  <p className="text-sm text-gray-600">檢查遲到、早退或缺勤記錄</p>
                 </div>
               </div>
             </button>
@@ -299,8 +332,8 @@ const AttendanceDashboard = () => {
               <div className="flex items-center gap-3">
                 <FileText className="w-5 h-5 text-blue-600" />
                 <div>
-                  <p className="font-medium">{t('attendance.exportTodayReport')}</p>
-                  <p className="text-sm text-gray-600">{t('attendance.exportReportDesc')}</p>
+                  <p className="font-medium">導出今日報表</p>
+                  <p className="text-sm text-gray-600">生成 PDF 格式的出勤證明</p>
                 </div>
               </div>
             </button>
@@ -312,8 +345,8 @@ const AttendanceDashboard = () => {
               <div className="flex items-center gap-3">
                 <Settings className="w-5 h-5 text-purple-600" />
                 <div>
-                  <p className="font-medium">{t('attendance.systemSettings')}</p>
-                  <p className="text-sm text-gray-600">{t('attendance.configureSettings')}</p>
+                  <p className="font-medium">系統設定</p>
+                  <p className="text-sm text-gray-600">配置出勤檢查參數</p>
                 </div>
               </div>
             </button>
