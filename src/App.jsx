@@ -32,7 +32,7 @@ function App() {
   const [configLoaded, setConfigLoaded] = useState(false);
   const [initialized, setInitialized] = useState(false);
   const [error, setError] = useState(null);
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, userType } = useAuthStore();
 
   useEffect(() => {
     loadAppConfig()
@@ -70,10 +70,23 @@ function App() {
     };
   }, [initialized]);
 
-  const ProtectedRoute = ({ children }) => {
+  const ProtectedRoute = ({ children, allowedUserTypes = ['admin', 'agent'] }) => {
     if (!isAuthenticated) {
       return <Navigate to="/login" />;
     }
+
+    // 檢查用戶類型是否允許訪問
+    if (!allowedUserTypes.includes(userType)) {
+      // Agent 試圖訪問 admin 頁面，重定向到 agent-dashboard
+      if (userType === 'agent') {
+        return <Navigate to="/agent-dashboard" />;
+      }
+      // Admin 試圖訪問 agent 專屬頁面（如果需要的話）
+      if (userType === 'admin') {
+        return <Navigate to="/dashboard" />;
+      }
+    }
+
     // 使用 MobileLayout 來提供響應式體驗
     return <MobileLayout>{children}</MobileLayout>;
   };
@@ -122,76 +135,76 @@ function App() {
             isAuthenticated ? <Navigate to="/dashboard" /> : <LoginPage />
           } 
         />
-        <Route 
-          path="/agent-login" 
+        <Route
+          path="/agent-login"
           element={
-            !initialized ? <Navigate to="/setup" /> : 
+            !initialized ? <Navigate to="/setup" /> :
             isAuthenticated ? <Navigate to="/agent-dashboard" /> : <AgentLoginPage />
-          } 
+          }
         />
-        <Route 
-          path="/agent-dashboard" 
-          element={<AgentDashboardPage />} 
+        <Route
+          path="/agent-dashboard"
+          element={<ProtectedRoute allowedUserTypes={['agent']}><AgentDashboardPage /></ProtectedRoute>}
         />
-        <Route 
-          path="/dashboard" 
-          element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} 
+        <Route
+          path="/dashboard"
+          element={<ProtectedRoute allowedUserTypes={['admin']}><DashboardPage /></ProtectedRoute>}
         />
-        <Route 
-          path="/system" 
-          element={<ProtectedRoute><SystemPage /></ProtectedRoute>} 
+        <Route
+          path="/system"
+          element={<ProtectedRoute allowedUserTypes={['admin']}><SystemPage /></ProtectedRoute>}
         />
-        <Route 
-          path="/brands" 
-          element={<ProtectedRoute><BrandPage /></ProtectedRoute>} 
+        <Route
+          path="/brands"
+          element={<ProtectedRoute allowedUserTypes={['admin']}><BrandPage /></ProtectedRoute>}
         />
-        <Route 
-          path="/users" 
-          element={<ProtectedRoute><UserPage /></ProtectedRoute>} 
+        <Route
+          path="/users"
+          element={<ProtectedRoute allowedUserTypes={['admin']}><UserPage /></ProtectedRoute>}
         />
-        <Route 
-          path="/schedule" 
-          element={<ProtectedRoute><SchedulePage /></ProtectedRoute>} 
+        <Route
+          path="/schedule"
+          element={<ProtectedRoute allowedUserTypes={['admin']}><SchedulePage /></ProtectedRoute>}
         />
-        <Route 
-          path="/leave" 
-          element={<ProtectedRoute><LeavePage /></ProtectedRoute>} 
+        <Route
+          path="/leave"
+          element={<ProtectedRoute allowedUserTypes={['admin']}><LeavePage /></ProtectedRoute>}
         />
-        <Route 
-          path="/notice" 
-          element={<ProtectedRoute><NoticePage /></ProtectedRoute>} 
+        <Route
+          path="/notice"
+          element={<ProtectedRoute allowedUserTypes={['admin']}><NoticePage /></ProtectedRoute>}
         />
-        <Route 
-          path="/agent" 
-          element={<ProtectedRoute><AgentPage /></ProtectedRoute>} 
+        <Route
+          path="/agent"
+          element={<ProtectedRoute allowedUserTypes={['admin']}><AgentPage /></ProtectedRoute>}
         />
-        <Route 
-          path="/agent-monitor" 
-          element={<ProtectedRoute><AgentMonitorPage /></ProtectedRoute>} 
+        <Route
+          path="/agent-monitor"
+          element={<ProtectedRoute allowedUserTypes={['admin']}><AgentMonitorPage /></ProtectedRoute>}
         />
-        <Route 
-          path="/agent-monitor-v2" 
-          element={<ProtectedRoute><AgentMonitorV2Page /></ProtectedRoute>} 
+        <Route
+          path="/agent-monitor-v2"
+          element={<ProtectedRoute allowedUserTypes={['admin']}><AgentMonitorV2Page /></ProtectedRoute>}
         />
-        <Route 
-          path="/test" 
-          element={<ProtectedRoute><TestPage /></ProtectedRoute>} 
+        <Route
+          path="/test"
+          element={<ProtectedRoute allowedUserTypes={['admin']}><TestPage /></ProtectedRoute>}
         />
-        <Route 
-          path="/mobile-test" 
-          element={<ProtectedRoute><MobileTestPage /></ProtectedRoute>} 
+        <Route
+          path="/mobile-test"
+          element={<ProtectedRoute allowedUserTypes={['admin']}><MobileTestPage /></ProtectedRoute>}
         />
-        <Route 
-          path="/salary" 
-          element={<ProtectedRoute><SalaryPage /></ProtectedRoute>} 
+        <Route
+          path="/salary"
+          element={<ProtectedRoute allowedUserTypes={['admin']}><SalaryPage /></ProtectedRoute>}
         />
-        <Route 
-          path="/attendance" 
-          element={<ProtectedRoute><AttendancePage /></ProtectedRoute>} 
+        <Route
+          path="/attendance"
+          element={<ProtectedRoute allowedUserTypes={['admin']}><AttendancePage /></ProtectedRoute>}
         />
-        <Route 
-          path="/permissions" 
-          element={<ProtectedRoute><PermissionPage /></ProtectedRoute>} 
+        <Route
+          path="/permissions"
+          element={<ProtectedRoute allowedUserTypes={['admin']}><PermissionPage /></ProtectedRoute>}
         />
         <Route 
           path="/" 

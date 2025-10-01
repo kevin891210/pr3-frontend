@@ -107,7 +107,7 @@ const MobileLayout = ({ children }) => {
             </div>
             <div className="hidden md:block">
               <span className="text-sm text-gray-600">
-                {user?.name || user?.username || user?.email || 'User'} ({user?.role || 'Guest'})
+                {user?.member_name || user?.name || user?.username || user?.email || 'User'} ({user?.role || 'Agent'})
               </span>
             </div>
             <button
@@ -150,7 +150,7 @@ const MobileLayout = ({ children }) => {
             <User className="w-8 h-8 text-gray-400" />
             <div>
               <div className="font-medium text-sm">
-                {user?.name || user?.username || user?.email || 'User'}
+                {user?.member_name || user?.name || user?.username || user?.email || 'User'}
               </div>
               <div className="text-xs text-gray-500">
                 {user?.role || 'Guest'}

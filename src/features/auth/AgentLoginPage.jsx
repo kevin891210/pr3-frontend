@@ -97,7 +97,7 @@ const AgentLoginPage = () => {
         brand_id: brand_id || credentials.brandId
       }, token);
       
-      // 登入成功後導向 agent dashboard
+      // 登入成功後導向 agent dashboard（Agent 專屬頁面）
       window.location.href = '/agent-dashboard';
     } catch (error) {
       console.error('Agent login error:', error);

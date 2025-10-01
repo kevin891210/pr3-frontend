@@ -14,6 +14,7 @@ export const useAuthStore = create(
       user: null,
       token: null,
       isAuthenticated: false,
+      userType: null, // 'admin' or 'agent'
       
       /**
        * 使用者登入方法
@@ -24,7 +25,10 @@ export const useAuthStore = create(
         if (token) {
           apiClient.setToken(token);
         }
-        
+
+        // 判斷用戶類型：如果有 member_id 就是 agent，否則是 admin
+        const userType = userData.member_id ? 'agent' : 'admin';
+
         // 登入後獲取用戶權限
         let enhancedUserData = userData;
         if (token) {
@@ -40,11 +44,12 @@ export const useAuthStore = create(
             console.warn('Failed to fetch user permissions:', error);
           }
         }
-        
+
         set({
           user: enhancedUserData,
           token,
-          isAuthenticated: true
+          isAuthenticated: true,
+          userType
         });
         
         // 儲存 Agent 相關資訊到 localStorage
@@ -79,7 +84,8 @@ export const useAuthStore = create(
         set({
           user: null,
           token: null,
-          isAuthenticated: false
+          isAuthenticated: false,
+          userType: null
         });
         
         // 清除 Agent 相關資訊

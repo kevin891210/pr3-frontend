@@ -27,23 +27,15 @@ const LoginPage = () => {
       });
       
       if (response.success) {
-        // 新格式：data 直接是 JWT token
-        const token = response.data;
-        
+        // 從後端獲取 token 和用戶資訊
+        const { token, user } = response.data;
+
         // 設定 token 到 API 客戶端
         apiClient.setToken(token);
-        
-        // 創建預設用戶資訊（因為 /users/me 端點不存在）
-        const userData = {
-          id: 'admin',
-          email: credentials.username,
-          name: 'Administrator',
-          role: 'Owner'
-        };
-        
+
         // 儲存用戶資訊和 token
-        login(userData, token);
-        
+        login(user, token);
+
         // 登入成功後導向 dashboard
         window.location.href = '/dashboard';
       } else {
