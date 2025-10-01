@@ -1,12 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Settings, Edit, Trash2, Save, X } from 'lucide-react';
+import { Settings, Save } from 'lucide-react';
 import apiClient from '../../../../services/api';
 import EmptyState from '../../../../components/ui/empty-state';
-import SearchableSelect from '../../../../components/ui/searchable-select';
 
 const AgentLeaveConfig = () => {
   const [brands, setBrands] = useState([]);
@@ -14,8 +13,6 @@ const AgentLeaveConfig = () => {
   const [members, setMembers] = useState([]);
   const [selectedMembers, setSelectedMembers] = useState([]); // 改為多選
   const [leaveTypes, setLeaveTypes] = useState([]);
-  const [agentConfigs, setAgentConfigs] = useState([]);
-  const [showConfigDialog, setShowConfigDialog] = useState(false);
   const [editingConfigs, setEditingConfigs] = useState({});
   const [alertDialog, setAlertDialog] = useState({ open: false, type: 'info', title: '', message: '' });
   const [loading, setLoading] = useState(false);
@@ -36,7 +33,6 @@ const AgentLeaveConfig = () => {
     if (selectedMembers.length === 1) {
       loadAgentConfigs(selectedMembers[0]);
     } else if (selectedMembers.length === 0) {
-      setAgentConfigs([]);
       setEditingConfigs({});
     } else {
       // 多選時顯示預設值
@@ -48,7 +44,6 @@ const AgentLeaveConfig = () => {
         };
       });
       setEditingConfigs(configs);
-      setAgentConfigs([]);
     }
   }, [selectedMembers, leaveTypes]);
 
@@ -90,7 +85,6 @@ const AgentLeaveConfig = () => {
       setLoading(true);
       const response = await apiClient.getAgentLeaveConfigs(memberId);
       const configsData = response.data || response;
-      setAgentConfigs(Array.isArray(configsData) ? configsData : []);
 
       // 初始化編輯狀態
       const configs = {};
@@ -113,7 +107,6 @@ const AgentLeaveConfig = () => {
       setEditingConfigs(configs);
     } catch (error) {
       console.error('Failed to load agent configs:', error);
-      setAgentConfigs([]);
       // 初始化為預設值
       const configs = {};
       leaveTypes.forEach(type => {
@@ -192,7 +185,6 @@ const AgentLeaveConfig = () => {
     setSelectedBrand(brandId);
     setSelectedMembers([]);
     setMembers([]);
-    setAgentConfigs([]);
     setEditingConfigs({});
     setSelectAll(false);
   };
@@ -348,7 +340,7 @@ const AgentLeaveConfig = () => {
               />
             )}
 
-            {selectedBrand && !selectedMember && members.length === 0 && (
+            {selectedBrand && members.length === 0 && (
               <EmptyState
                 type="leave"
                 title="No Members Found"
