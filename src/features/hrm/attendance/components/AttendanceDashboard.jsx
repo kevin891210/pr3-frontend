@@ -33,14 +33,11 @@ const AttendanceDashboard = () => {
     try {
       setError(null);
       
-      // 獲取所有品牌和工作區的統計數據
-      const [brandsRes, statisticsRes] = await Promise.all([
-        apiClient.getBrands(),
-        apiClient.getAllWorkspacesAttendanceStats()
-      ]);
+      // 直接獲取所有工作區統計數據（包含品牌信息）
+      const statisticsRes = await apiClient.getAllWorkspacesAttendanceStats();
       
-      if (!brandsRes.data || brandsRes.data.length === 0) {
-        throw new Error('No brands found');
+      if (!statisticsRes.data || statisticsRes.data.length === 0) {
+        throw new Error('No workspace data found');
       }
       
       // 處理統計數據
@@ -78,30 +75,17 @@ const AttendanceDashboard = () => {
         }
       }
       
-      // 獲取所有品牌工作區的實時狀態
-      const realtimeData = [];
-      for (const brand of brandsRes.data) {
-        try {
-          const workspacesRes = await apiClient.getBrandWorkspaces(brand.id);
-          if (workspacesRes.data) {
-            for (const workspace of workspacesRes.data) {
-              const monitoringRes = await apiClient.getAttendanceMonitoring(workspace.id);
-              realtimeData.push({
-                id: workspace.id,
-                workspace: `${brand.name} - ${workspace.name}`,
-                brandId: brand.id,
-                brandName: brand.name,
-                status: 'completed',
-                onlineCount: monitoringRes.data?.today_schedules || 0,
-                scheduledCount: monitoringRes.data?.today_schedules || 0,
-                nextCheck: 300
-              });
-            }
-          }
-        } catch (error) {
-          console.error(`Failed to load workspace data for brand ${brand.name}:`, error);
-        }
-      }
+      // 使用統計數據中的工作區信息創建實時狀態
+      const realtimeData = statisticsRes.data.map(workspaceStats => ({
+        id: workspaceStats.workspaceId,
+        workspace: `${workspaceStats.brandName} - ${workspaceStats.workspaceName}`,
+        brandId: workspaceStats.brandId,
+        brandName: workspaceStats.brandName,
+        status: 'completed',
+        onlineCount: workspaceStats.todayAttendance.present,
+        scheduledCount: workspaceStats.todayAttendance.present + workspaceStats.todayAttendance.absent,
+        nextCheck: 300
+      }));
       
       setRealtimeStatus(realtimeData);
     } catch (error) {
