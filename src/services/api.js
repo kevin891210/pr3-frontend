@@ -1127,6 +1127,10 @@ class ApiClient {
     return this.request(`/api/v1/attendance/statistics?${query}`);
   }
 
+  async getAllWorkspacesAttendanceStats() {
+    return this.request('/api/v1/attendance/all-workspaces-stats');
+  }
+
   // Attendance Monitoring APIs
   async getAttendanceMonitoring(workspaceId) {
     if (!workspaceId) {

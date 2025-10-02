@@ -33,46 +33,77 @@ const AttendanceDashboard = () => {
     try {
       setError(null);
       
-      const workspaceId = user?.workspace_id || localStorage.getItem('workspace_id') || '1';
-      
-      if (!workspaceId) {
-        throw new Error('Workspace ID not found. Please login again.');
-      }
-      
-      const [statisticsRes, monitoringRes] = await Promise.all([
-        apiClient.getAttendanceStatistics(workspaceId),
-        apiClient.getAttendanceMonitoring(workspaceId)
+      // 獲取所有品牌和工作區的統計數據
+      const [brandsRes, statisticsRes] = await Promise.all([
+        apiClient.getBrands(),
+        apiClient.getAllWorkspacesAttendanceStats()
       ]);
       
+      if (!brandsRes.data || brandsRes.data.length === 0) {
+        throw new Error('No brands found');
+      }
+      
+      // 處理統計數據
       if (statisticsRes.data) {
-        setStats({
-          todayAttendance: statisticsRes.data.todayAttendance || { present: 0, absent: 0, late: 0, leave: 0 },
-          weeklyRate: statisticsRes.data.weeklyRate || 0,
-          avgWorkHours: statisticsRes.data.avgWorkHours || 0,
-          overtimeHours: statisticsRes.data.overtimeHours || 0
+        const aggregatedStats = {
+          todayAttendance: { present: 0, absent: 0, late: 0, leave: 0 },
+          weeklyRate: 0,
+          avgWorkHours: 0,
+          overtimeHours: 0
+        };
+        
+        // 聚合所有工作區的數據
+        statisticsRes.data.forEach(workspaceStats => {
+          if (workspaceStats.todayAttendance) {
+            aggregatedStats.todayAttendance.present += workspaceStats.todayAttendance.present || 0;
+            aggregatedStats.todayAttendance.absent += workspaceStats.todayAttendance.absent || 0;
+            aggregatedStats.todayAttendance.late += workspaceStats.todayAttendance.late || 0;
+            aggregatedStats.todayAttendance.leave += workspaceStats.todayAttendance.leave || 0;
+          }
         });
         
-        if (statisticsRes.data.attendanceTrend && Array.isArray(statisticsRes.data.attendanceTrend)) {
-          setAttendanceTrend(statisticsRes.data.attendanceTrend);
+        // 計算平均值
+        const workspaceCount = statisticsRes.data.length;
+        if (workspaceCount > 0) {
+          aggregatedStats.weeklyRate = statisticsRes.data.reduce((sum, ws) => sum + (ws.weeklyRate || 0), 0) / workspaceCount;
+          aggregatedStats.avgWorkHours = statisticsRes.data.reduce((sum, ws) => sum + (ws.avgWorkHours || 0), 0) / workspaceCount;
+          aggregatedStats.overtimeHours = statisticsRes.data.reduce((sum, ws) => sum + (ws.overtimeHours || 0), 0);
+        }
+        
+        setStats(aggregatedStats);
+        
+        // 設置趨勢數據（使用第一個工作區的數據作為示例）
+        if (statisticsRes.data[0]?.attendanceTrend) {
+          setAttendanceTrend(statisticsRes.data[0].attendanceTrend);
         }
       }
       
-      // 處理監控數據和實時狀態
-      if (monitoringRes.data) {
-        if (monitoringRes.data.realtimeStatus && Array.isArray(monitoringRes.data.realtimeStatus)) {
-          setRealtimeStatus(monitoringRes.data.realtimeStatus);
-        } else {
-          // 如果沒有 realtimeStatus，創建一個基於當前工作區的默認狀態
-          setRealtimeStatus([{
-            id: workspaceId,
-            workspace: `Workspace ${workspaceId}`,
-            status: 'completed',
-            onlineCount: monitoringRes.data.today_schedules || 0,
-            scheduledCount: monitoringRes.data.today_schedules || 0,
-            nextCheck: 300
-          }]);
+      // 獲取所有品牌工作區的實時狀態
+      const realtimeData = [];
+      for (const brand of brandsRes.data) {
+        try {
+          const workspacesRes = await apiClient.getBrandWorkspaces(brand.id);
+          if (workspacesRes.data) {
+            for (const workspace of workspacesRes.data) {
+              const monitoringRes = await apiClient.getAttendanceMonitoring(workspace.id);
+              realtimeData.push({
+                id: workspace.id,
+                workspace: `${brand.name} - ${workspace.name}`,
+                brandId: brand.id,
+                brandName: brand.name,
+                status: 'completed',
+                onlineCount: monitoringRes.data?.today_schedules || 0,
+                scheduledCount: monitoringRes.data?.today_schedules || 0,
+                nextCheck: 300
+              });
+            }
+          }
+        } catch (error) {
+          console.error(`Failed to load workspace data for brand ${brand.name}:`, error);
         }
       }
+      
+      setRealtimeStatus(realtimeData);
     } catch (error) {
       console.error('Failed to load dashboard data:', error);
       setError(error.message);
@@ -89,13 +120,11 @@ const AttendanceDashboard = () => {
 
   const handleManualCheck = async (workspaceId) => {
     try {
-      const currentWorkspaceId = user?.workspace_id || localStorage.getItem('workspace_id') || '1';
-      
       setRealtimeStatus(prev => prev.map(ws => 
         ws.id === workspaceId ? { ...ws, status: 'checking' } : ws
       ));
       
-      await apiClient.syncAttendanceData(currentWorkspaceId, { target_workspace_id: workspaceId });
+      await apiClient.syncAttendanceData(workspaceId);
       
       // Refresh data after sync
       setTimeout(loadDashboardData, 2000);
@@ -107,11 +136,14 @@ const AttendanceDashboard = () => {
 
   const handleCheckAll = async () => {
     try {
-      const currentWorkspaceId = user?.workspace_id || localStorage.getItem('workspace_id') || '1';
-      
       setRealtimeStatus(prev => prev.map(ws => ({ ...ws, status: 'checking' })));
       
-      await apiClient.syncAttendanceData(currentWorkspaceId);
+      // 並行檢查所有工作區
+      const checkPromises = realtimeStatus.map(workspace => 
+        apiClient.syncAttendanceData(workspace.id)
+      );
+      
+      await Promise.allSettled(checkPromises);
       
       // Refresh data after sync
       setTimeout(loadDashboardData, 3000);
