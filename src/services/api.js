@@ -1142,3 +1142,6 @@ class ApiClient {
 
 export const apiClient = new ApiClient();
 export default apiClient;
+
+// Explicit function exports for direct import
+export const getAllWorkspacesAttendanceStats = () => apiClient.getAllWorkspacesAttendanceStats();

@@ -16,11 +16,18 @@ export const buildApiUrl = (path) => {
   const config = getConfig();
   const { baseUrl } = getApiConfig();
   
+  // Debug logging
+  console.log('buildApiUrl - config:', config);
+  console.log('buildApiUrl - baseUrl:', baseUrl);
+  console.log('buildApiUrl - path:', path);
+  
   if (!baseUrl || baseUrl === '') {
-    return path; // 返回相對路徑，讓 Vite 代理處理
+    console.warn('baseUrl is empty, using localhost fallback');
+    return `http://127.0.0.1:8000${path}`; // 使用配置中的 baseUrl 作為 fallback
   }
   
   const fullUrl = `${baseUrl.replace(/\/$/, '')}${path}`;
+  console.log('buildApiUrl - fullUrl:', fullUrl);
   return fullUrl;
 };
 
