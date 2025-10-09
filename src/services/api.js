@@ -815,61 +815,22 @@ class ApiClient {
     const response = await this.request(`/api/v1/leave-types/${typeId}`, {
       method: 'DELETE',
     });
-
+    
     // 清除快取以確保資料一致性
     storageManager.removeCache(CACHE_KEYS.LEAVE_TYPES);
-
+    
     return response;
   }
 
-  // Agent Leave Config APIs
-
-  /**
-   * 獲取 Agent 請假類別配置列表
-   */
-  async getAgentLeaveConfigs(memberId = null) {
-    return this.request(`/api/v1/agent-leave-configs${memberId ? `?member_id=${memberId}` : ''}`);
+  // Agent Leave Allowance APIs
+  async getAgentLeaveAllowances(memberId) {
+    return this.request(`/api/v1/agent-leave-allowances/${memberId}`);
   }
 
-  /**
-   * 創建 Agent 請假類別配置
-   */
-  async createAgentLeaveConfig(configData) {
-    return this.request('/api/v1/agent-leave-configs', {
-      method: 'POST',
-      body: configData,
-    });
-  }
-
-  /**
-   * 批次創建 Agent 請假類別配置
-   */
-  async createBatchAgentLeaveConfigs(memberId, configs) {
-    return this.request('/api/v1/agent-leave-configs/batch', {
-      method: 'POST',
-      body: {
-        member_id: memberId,
-        configs: configs
-      },
-    });
-  }
-
-  /**
-   * 更新 Agent 請假類別配置
-   */
-  async updateAgentLeaveConfig(configId, configData) {
-    return this.request(`/api/v1/agent-leave-configs/${configId}`, {
+  async updateAgentLeaveAllowances(memberId, allowances) {
+    return this.request(`/api/v1/agent-leave-allowances/${memberId}`, {
       method: 'PUT',
-      body: configData,
-    });
-  }
-
-  /**
-   * 刪除 Agent 請假類別配置
-   */
-  async deleteAgentLeaveConfig(configId) {
-    return this.request(`/api/v1/agent-leave-configs/${configId}`, {
-      method: 'DELETE',
+      body: { allowances },
     });
   }
 
@@ -1125,10 +1086,6 @@ class ApiClient {
     const allParams = { workspace_id: workspaceId, ...params };
     const query = new URLSearchParams(allParams).toString();
     return this.request(`/api/v1/attendance/statistics?${query}`);
-  }
-
-  async getAllWorkspacesAttendanceStats() {
-    return this.request('/api/v1/attendance/all-workspaces-stats');
   }
 
   // Attendance Monitoring APIs

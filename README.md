@@ -12,6 +12,10 @@
 - **國際化**：react-i18next（支援中英日三語）
 - **部署方案**：Docker + Nginx + AWS EC2
 
+## 📁 專案結構
+
+詳細的專案結構說明請參考 [PROJECT_STRUCTURE.md](./PROJECT_STRUCTURE.md)
+
 ## ✨ 核心功能
 
 ### 🔧 系統管理
@@ -65,36 +69,7 @@ docker compose up -d
 docker-compose -f docker-compose.prod.yml up -d
 ```
 
-## 📁 專案結構
 
-```
-src/
-├── components/           # 共用組件
-│   ├── ui/              # shadcn/ui 基礎組件
-│   ├── agent/           # Agent 專用組件
-│   └── calendar/        # 日曆組件
-├── features/            # 功能模組
-│   ├── auth/           # 認證系統
-│   ├── dashboard/      # 儀表板
-│   ├── brand/          # Brand 管理
-│   ├── user/           # 使用者管理
-│   ├── monitor/        # Agent 監控
-│   ├── agent/          # Agent 介面
-│   └── hrm/            # HRM 核心功能
-│       ├── schedule/   # 排班管理
-│       ├── leave/      # 請假管理
-│       ├── attendance/ # 智能打卡系統
-│       └── notice/     # 公告管理
-├── services/           # API 服務層
-├── store/              # 狀態管理
-├── locales/            # 國際化
-└── config/             # 配置管理
-
-ops/
-├── deploy/             # 部署腳本
-├── nginx/              # Nginx 配置
-└── config/             # Runtime 配置
-```
 
 ## ⚙️ 配置管理
 
@@ -582,10 +557,12 @@ vim /path/to/app-config.json
 
 ## 📚 文件資源
 
-- [部署指南](./DEPLOYMENT.md) - 完整部署說明
-- [開發指南](./docs/DEVELOPMENT_GUIDE.md) - 開發規範與指引
-- [API 整合](./docs/API_INTEGRATION.md) - 後端 API 整合說明
-- [專案概覽](./docs/PROJECT_OVERVIEW.md) - 架構與功能概覽
+- [專案結構](./PROJECT_STRUCTURE.md) - 詳細的專案結構說明
+- [部署指南](./docs/deployment/) - 完整部署說明
+- [開發指南](./docs/guides/DEVELOPMENT_GUIDE.md) - 開發規範與指引
+- [API 整合](./docs/api/) - 後端 API 整合說明
+- [專案概覽](./docs/guides/PROJECT_OVERVIEW.md) - 架構與功能概覽
+- [UI 設計規範](./docs/frontend/UI_DESIGN_SPECIFICATION.md) - UI/UX 設計規範
 
 ## 🐛 已知問題與解決方案
 

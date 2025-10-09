@@ -4,15 +4,12 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Clock, Users, AlertTriangle, Edit, Trash2, Calendar, Upload } from 'lucide-react';
+import { Plus, Clock, Users, AlertTriangle, Edit, Trash2 } from 'lucide-react';
 import apiClient from '../../../services/api';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../../components/ui/dialog.jsx';
 import EmptyState from '../../../components/ui/empty-state';
 import SearchableSelect from '../../../components/ui/searchable-select';
 import Modal from '../../../components/ui/modal';
-import MonthlyScheduleModal from './MonthlyScheduleModal';
-import CsvImportModal from './CsvImportModal';
-
 
 const SchedulePage = () => {
   const [events, setEvents] = useState([]);
@@ -53,8 +50,8 @@ const SchedulePage = () => {
   const [showAssignmentModal, setShowAssignmentModal] = useState(false);
   const [editingAssignment, setEditingAssignment] = useState(null);
   const [deleteAssignmentDialog, setDeleteAssignmentDialog] = useState({ open: false, assignmentId: null, assignmentTitle: '' });
-  const [showMonthlyModal, setShowMonthlyModal] = useState(false);
-  const [showCsvImportModal, setShowCsvImportModal] = useState(false);
+  const [showPastAssignments, setShowPastAssignments] = useState(false);
+  const [calendarViewMode, setCalendarViewMode] = useState('calendar'); // 'calendar', 'resource', 'list'
 
   useEffect(() => {
     loadShiftCategories();
@@ -153,8 +150,8 @@ const SchedulePage = () => {
 
       // 轉換 API 資料為 FullCalendar 格式
       const formattedEvents = await Promise.all(rawAssignments.map(async (assignment) => {
-        // 找到對應的 shift template
-        let template = formattedTemplates.find(t => t.id === assignment.shift_template_id);
+        // 使用 JOIN 查詢返回的 shift_template 資訊，或從本地模板查找
+        let template = assignment.shift_template || formattedTemplates.find(t => t.id === assignment.shift_template_id);
         
         if (!template) {
           console.warn('Template not found for assignment:', assignment, 'Available templates:', formattedTemplates.map(t => t.id));
@@ -173,27 +170,28 @@ const SchedulePage = () => {
         
         // 組合日期和時間，確保格式正確
         const assignmentDate = assignment.date;
-        const startTime = template.start_time;
-        const endTime = template.end_time;
+        const startTime = template.start_time || '09:00';
+        const endTime = template.end_time || '18:00';
         
-        // 驗證日期和時間格式
-        if (!assignmentDate || !startTime || !endTime) {
-          console.warn('Missing date or time data for assignment:', assignment);
+        // 驗證日期格式
+        if (!assignmentDate) {
+          console.warn('Missing date data for assignment:', assignment);
           return null;
         }
         
-        const startDateTime = `${assignmentDate}T${startTime}`;
-        let endDateTime;
-        
-        // 處理跨日排班
-        if (template.is_cross_day) {
-          // 如果是跨日班，結束時間是隔天
+        // 處理跨日班次
+        let startDateTime, endDateTime;
+        if (template.is_cross_day && startTime > endTime) {
+          // 跨日班次：開始時間在當天，結束時間在隔天
+          startDateTime = `${assignmentDate}T${startTime}:00`;
           const nextDay = new Date(assignmentDate);
           nextDay.setDate(nextDay.getDate() + 1);
           const nextDayStr = nextDay.toISOString().split('T')[0];
-          endDateTime = `${nextDayStr}T${endTime}`;
+          endDateTime = `${nextDayStr}T${endTime}:00`;
         } else {
-          endDateTime = `${assignmentDate}T${endTime}`;
+          // 一般班次：同一天
+          startDateTime = `${assignmentDate}T${startTime}:00`;
+          endDateTime = `${assignmentDate}T${endTime}:00`;
         }
         
         // 驗證生成的日期時間是否有效
@@ -210,7 +208,7 @@ const SchedulePage = () => {
         
         const event = {
           id: assignment.id,
-          title: `${memberName}\n${template.name} (${startTime}-${endTime})${template.is_cross_day ? ' Cross-Day' : ''}`,
+          title: `${memberName}\n${template.name} (${startTime}-${endTime})`,
           start: startDateTime,
           end: endDateTime,
           backgroundColor: memberColor.bg,
@@ -223,7 +221,8 @@ const SchedulePage = () => {
             templateName: template.name,
             assignmentDate: assignment.date,
             createdAt: assignment.created_at,
-            isCrossDay: template.is_cross_day
+            startTime: startTime,
+            endTime: endTime
           }
         };
         
@@ -291,7 +290,7 @@ const SchedulePage = () => {
           if (start1 < end2 && start2 < end1) {
             conflicts.push({
               id: `conflict-${i}-${j}`,
-              message: `Time Conflict: ${event1.title} and ${event2.title}`,
+              message: `時間衝突: ${event1.title} 與 ${event2.title}`,
               events: [event1.id, event2.id]
             });
           }
@@ -311,20 +310,11 @@ const SchedulePage = () => {
     const event = info.event;
     const props = event.extendedProps;
     
-    const startTime = new Date(event.start).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-    const endTime = new Date(event.end).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-    const startDate = new Date(event.start).toLocaleDateString();
-    const endDate = new Date(event.end).toLocaleDateString();
-    
-    const timeDisplay = props.isCrossDay 
-      ? `${startDate} ${startTime} - ${endDate} ${endTime} (Cross-Day Shift)`
-      : `${startTime} - ${endTime}`;
-    
     alert(`Shift Details:
 Member: ${props.memberName || 'Unknown'}
 Shift: ${props.templateName || 'Unknown'}
 Date: ${props.assignmentDate || 'Unknown'}
-Time: ${timeDisplay}`);
+Time: ${new Date(event.start).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - ${new Date(event.end).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`);
   };
 
   const handleEditShift = (template) => {
@@ -498,64 +488,6 @@ Time: ${timeDisplay}`);
       });
     }
     setDeleteAssignmentDialog({ open: false, assignmentId: null, assignmentTitle: '' });
-  };
-
-  // Handle monthly schedule submission
-  const handleMonthlySubmit = async (assignments) => {
-    try {
-      // Create all assignments in batch
-      const promises = assignments.map(assignment => 
-        apiClient.createScheduleAssignment(assignment)
-      );
-      
-      await Promise.all(promises);
-      
-      setAlertDialog({
-        open: true,
-        type: 'success',
-        title: 'Batch Assignment Success',
-        message: `Successfully created ${assignments.length} schedule assignments`
-      });
-      
-      setShowMonthlyModal(false);
-      await loadScheduleData();
-    } catch (error) {
-      setAlertDialog({
-        open: true,
-        type: 'danger',
-        title: 'Batch Assignment Failed',
-        message: `Failed to create assignments: ${error.message}`
-      });
-    }
-  };
-
-  // Handle CSV import submission
-  const handleCsvImportSubmit = async (assignments) => {
-    try {
-      // Create all assignments in batch
-      const promises = assignments.map(assignment => 
-        apiClient.createScheduleAssignment(assignment)
-      );
-      
-      await Promise.all(promises);
-      
-      setAlertDialog({
-        open: true,
-        type: 'success',
-        title: 'CSV Import Success',
-        message: `Successfully imported ${assignments.length} schedule assignments`
-      });
-      
-      setShowCsvImportModal(false);
-      await loadScheduleData();
-    } catch (error) {
-      setAlertDialog({
-        open: true,
-        type: 'danger',
-        title: 'CSV Import Failed',
-        message: `Failed to import assignments: ${error.message}`
-      });
-    }
   };
 
   // Handle shift assignment submission
@@ -789,7 +721,7 @@ Time: ${timeDisplay}`);
           <CardContent className="p-4">
             <div className="flex items-center gap-2 text-red-700 mb-2">
               <AlertTriangle className="w-5 h-5" />
-              <span className="font-medium">Schedule Conflicts Found</span>
+              <span className="font-medium">發現排班衝突</span>
             </div>
             <ul className="text-sm text-red-600 space-y-1">
               {conflicts.map(conflict => (
@@ -890,66 +822,79 @@ Time: ${timeDisplay}`);
                   <CardTitle>Shift Management</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-2 mb-4">
-                      <Button 
-                        className="w-full flex items-center gap-2"
-                        onClick={() => {
-                          setEditingAssignment(null);
-                          setAssignmentFormData({ brand_id: '', member_id: '', template_id: '', date: '', break_schedule: [] });
-                          setWorkspaceMembers([]);
-                          setShowAssignmentModal(true);
-                        }}
-                      >
-                        <Plus className="w-4 h-4" />
-                        Assign Shift
-                      </Button>
-                      
-                      <Button 
-                        className="w-full flex items-center gap-2"
-                        variant="outline"
-                        onClick={() => setShowMonthlyModal(true)}
-                      >
-                        <Calendar className="w-4 h-4" />
-                        Monthly Schedule
-                      </Button>
-                      
-                      <Button 
-                        className="w-full flex items-center gap-2"
-                        variant="outline"
-                        onClick={() => setShowCsvImportModal(true)}
-                      >
-                        <Upload className="w-4 h-4" />
-                        Import CSV
-                      </Button>
-                    </div>
+                  <div>
+                    <Button 
+                      className="w-full flex items-center gap-2 mb-4"
+                      onClick={() => {
+                        setEditingAssignment(null);
+                        setAssignmentFormData({ brand_id: '', member_id: '', template_id: '', date: '', break_schedule: [] });
+                        setWorkspaceMembers([]);
+                        setShowAssignmentModal(true);
+                      }}
+                    >
+                      <Plus className="w-4 h-4" />
+                      Assign Shift
+                    </Button>
                     
                     <div className="space-y-3">
-                      <h3 className="text-sm font-medium text-gray-700">Recent Assignments</h3>
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-sm font-medium text-gray-700">Recent Assignments</h3>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => setShowPastAssignments(!showPastAssignments)}
+                          className="text-xs"
+                        >
+                          {showPastAssignments ? 'Hide Past' : 'Show Past'}
+                        </Button>
+                      </div>
                       {Array.isArray(events) && events.length > 0 ? (
-                        events.slice(0, 5).map(event => (
-                          <Card key={event.id} className="p-3">
-                            <div className="flex items-center justify-between">
-                              <div className="flex-1">
-                                <div className="font-medium text-sm">{event.title}</div>
-                                <div className="text-xs text-gray-500">
-                                  {event.start && !isNaN(new Date(event.start)) ? (
-                                    `${new Date(event.start).toLocaleDateString()} - ${new Date(event.start).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`
-                                  ) : (
-                                    event.extendedProps?.assignmentDate || 'No Date'
-                                  )}
+                        (() => {
+                          const today = new Date();
+                          today.setHours(0, 0, 0, 0);
+                          
+                          const filteredEvents = showPastAssignments 
+                            ? events 
+                            : events.filter(event => {
+                                const eventDate = new Date(event.start);
+                                eventDate.setHours(0, 0, 0, 0);
+                                return eventDate >= today;
+                              });
+                          
+                          return filteredEvents.slice(0, 5).map(event => {
+                            const eventDate = new Date(event.start);
+                            eventDate.setHours(0, 0, 0, 0);
+                            const isPast = eventDate < today;
+                            
+                            return (
+                              <Card key={event.id} className={`p-3 ${isPast ? 'opacity-60 bg-gray-50' : ''}`}>
+                                <div className="flex items-center justify-between">
+                                  <div className="flex-1">
+                                    <div className={`font-medium text-sm ${isPast ? 'text-gray-500' : ''}`}>
+                                      {event.title}
+                                      {isPast && <span className="ml-2 text-xs text-gray-400">(Past)</span>}
+                                    </div>
+                                    <div className="text-xs text-gray-500">
+                                      {event.start && !isNaN(new Date(event.start)) ? (
+                                        `${new Date(event.start).toLocaleDateString()} - ${new Date(event.start).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`
+                                      ) : (
+                                        event.extendedProps?.assignmentDate || 'No Date'
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <Button size="sm" variant="outline" onClick={() => handleEditAssignment(event)}>
+                                      <Edit className="w-3 h-3" />
+                                    </Button>
+                                    <Button size="sm" variant="destructive" onClick={() => handleDeleteAssignment(event)}>
+                                      <Trash2 className="w-3 h-3" />
+                                    </Button>
+                                  </div>
                                 </div>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <Button size="sm" variant="outline" onClick={() => handleEditAssignment(event)}>
-                                  <Edit className="w-3 h-3" />
-                                </Button>
-                                <Button size="sm" variant="destructive" onClick={() => handleDeleteAssignment(event)}>
-                                  <Trash2 className="w-3 h-3" />
-                                </Button>
-                              </div>
-                            </div>
-                          </Card>
-                        ))
+                              </Card>
+                            );
+                          });
+                        })()
                       ) : (
                         <EmptyState 
                           type="schedule" 
@@ -958,6 +903,7 @@ Time: ${timeDisplay}`);
                         />
                       )}
                     </div>
+                  </div>
                 </CardContent>
               </Card>
             </div>
@@ -966,13 +912,29 @@ Time: ${timeDisplay}`);
             <div className="lg:col-span-3">
               <Card>
                 <CardHeader>
-                  <CardTitle>Schedule Calendar</CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle>Schedule Calendar</CardTitle>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-600">View:</span>
+                      <select
+                        className="text-sm border rounded px-2 py-1"
+                        value={calendarViewMode}
+                        onChange={(e) => setCalendarViewMode(e.target.value)}
+                      >
+                        <option value="calendar">Calendar</option>
+                        <option value="resource">By Employee</option>
+                        <option value="list">List</option>
+                        <option value="summary">Summary</option>
+                      </select>
+                    </div>
+                  </div>
                 </CardHeader>
                 <CardContent className="p-6">
                   <FullCalendarComponent
                     events={events}
                     onDateClick={handleDateClick}
                     onEventClick={handleEventClick}
+                    viewMode={calendarViewMode}
                   />
                 </CardContent>
               </Card>
@@ -1300,28 +1262,6 @@ Time: ${timeDisplay}`);
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Monthly Schedule Modal */}
-      <MonthlyScheduleModal
-        open={showMonthlyModal}
-        onOpenChange={setShowMonthlyModal}
-        brands={brands}
-        workspaceMembers={workspaceMembers}
-        shiftTemplates={shiftTemplates}
-        onBrandChange={loadBrandMembers}
-        onSubmit={handleMonthlySubmit}
-      />
-
-      {/* CSV Import Modal */}
-      <CsvImportModal
-        open={showCsvImportModal}
-        onOpenChange={setShowCsvImportModal}
-        brands={brands}
-        workspaceMembers={workspaceMembers}
-        shiftTemplates={shiftTemplates}
-        onBrandChange={loadBrandMembers}
-        onSubmit={handleCsvImportSubmit}
-      />
     </div>
   );
 };

@@ -28,4 +28,7 @@ dist-ssr
 .env.local
 .env.development.local
 .env.test.local
-.env.production.localpublic/config/app-config.json
+.env.production.local
+
+# Runtime config (keep template, ignore actual config)
+public/config/app-config.json

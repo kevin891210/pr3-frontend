@@ -45,7 +45,8 @@ const LeavePage = () => {
     endTime: '18:00',
     timezone: 'Asia/Taipei',
     reason: '',
-    isHalfDay: false
+    isHalfDay: false,
+    handoverList: ''
   });
   const [brands, setBrands] = useState([]);
   const [workspaces, setWorkspaces] = useState([]);
@@ -61,9 +62,13 @@ const LeavePage = () => {
     days_per_year: 14,
     allow_half_day: true,
     require_attachment: false,
-    description: ''
+    description: '',
+    handover_required_days: 0
   });
   const [deleteLeaveTypeDialog, setDeleteLeaveTypeDialog] = useState({ open: false, typeId: null, typeName: '' });
+  const [agentAllowances, setAgentAllowances] = useState({});
+  const [showAgentConfigModal, setShowAgentConfigModal] = useState(false);
+  const [selectedAgent, setSelectedAgent] = useState(null);
 
   const { subscribe } = useWebSocket('leave_requests');
   const { toast } = useToast();
@@ -374,13 +379,27 @@ const LeavePage = () => {
       const endDate = new Date(leaveFormData.endDate);
       const days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
       
+      // Check if handover list is required
+      const selectedType = leaveTypes.find(type => type.id == leaveFormData.typeId);
+      const handoverRequired = selectedType?.handover_required_days > 0 && days > selectedType.handover_required_days;
+      if (handoverRequired && !leaveFormData.handoverList.trim()) {
+        setAlertDialog({
+          open: true,
+          type: 'warning',
+          title: 'Handover List Required',
+          message: `Handover list is required for leave requests exceeding ${selectedType.handover_required_days} days.`
+        });
+        return;
+      }
+      
       const requestData = {
         member_id: leaveFormData.userId,
         leave_type_id: leaveFormData.typeId,
         start_date: leaveFormData.startDate,
         end_date: leaveFormData.endDate,
         days: days,
-        reason: leaveFormData.reason
+        reason: leaveFormData.reason,
+        ...(handoverRequired && { handover_list: leaveFormData.handoverList })
       };
       
       const response = await apiClient.createLeaveRequest(requestData);
@@ -403,7 +422,8 @@ const LeavePage = () => {
         endTime: '18:00',
         timezone: 'Asia/Taipei',
         reason: '',
-        isHalfDay: false
+        isHalfDay: false,
+        handoverList: ''
       });
       setBrandMembers([]);
       setMemberBalances({});
@@ -429,7 +449,8 @@ const LeavePage = () => {
       days_per_year: type.days_per_year || type.quota,
       allow_half_day: type.allow_half_day,
       require_attachment: type.require_attachment || false,
-      description: type.description || ''
+      description: type.description || '',
+      handover_required_days: type.handover_required_days || 0
     });
     setShowLeaveTypeModal(true);
   };
@@ -470,7 +491,7 @@ const LeavePage = () => {
       }
       setShowLeaveTypeModal(false);
       setEditingLeaveType(null);
-      setLeaveTypeFormData({ name: '', code: '', days_per_year: 14, allow_half_day: true, require_attachment: false, description: '' });
+      setLeaveTypeFormData({ name: '', code: '', days_per_year: 14, allow_half_day: true, require_attachment: false, description: '', handover_required_days: 0 });
     } catch (error) {
       setAlertDialog({
         open: true,
@@ -889,6 +910,61 @@ const LeavePage = () => {
         </div>
       )}
 
+      {activeTab === 'agent-config' && (
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <h2 className="text-lg font-semibold">Agent Leave Configuration</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {brandMembers.map(member => (
+              <Card key={member.id}>
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <h3 className="font-medium">{member.name}</h3>
+                      <p className="text-sm text-gray-600">{member.role || 'Member'}</p>
+                    </div>
+                    <Button size="sm" variant="outline" onClick={() => {
+                      setSelectedAgent(member);
+                      setShowAgentConfigModal(true);
+                    }}>
+                      <Edit className="w-3 h-3" />
+                    </Button>
+                  </div>
+                  
+                  <div className="space-y-2 text-sm">
+                    {leaveTypes.map(type => {
+                      const balance = memberBalances[member.id]?.[type.id];
+                      const allowance = balance?.total || type.days_per_year || 0;
+                      return (
+                        <div key={type.id} className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                          <span className="text-gray-700">{type.name}</span>
+                          <span className={`font-medium ${
+                            allowance === 0 ? 'text-red-600' : 'text-blue-600'
+                          }`}>
+                            {allowance} days
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+            
+            {brandMembers.length === 0 && (
+              <div className="col-span-full">
+                <EmptyState 
+                  type="user" 
+                  title="No Agents Found" 
+                  description="Select a brand to configure agent leave allowances." 
+                />
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {activeTab === 'categories' && (
         <div className="space-y-6">
           <div className="flex justify-between items-center">
@@ -985,6 +1061,9 @@ const LeavePage = () => {
 
                   <div className="space-y-2 text-sm text-gray-600">
                     <div>Quota: {type.quota} days</div>
+                    {type.handover_required_days > 0 && (
+                      <div className="text-orange-600">Handover required: >{type.handover_required_days} days</div>
+                    )}
                     <div className="flex gap-4">
                       <span className={type.allow_half_day ? 'text-green-600' : 'text-gray-400'}>
                         Half Day: {type.allow_half_day ? 'Yes' : 'No'}
@@ -1214,6 +1293,29 @@ const LeavePage = () => {
                   />
                 </div>
 
+                {(() => {
+                  const selectedType = leaveTypes.find(type => type.id == leaveFormData.typeId);
+                  const startDate = new Date(leaveFormData.startDate);
+                  const endDate = new Date(leaveFormData.endDate);
+                  const days = leaveFormData.startDate && leaveFormData.endDate ? Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1 : 0;
+                  const handoverRequired = selectedType?.handover_required_days > 0 && days > selectedType.handover_required_days;
+                  
+                  return handoverRequired ? (
+                    <div>
+                      <label className="block text-sm font-medium mb-2 text-orange-600">
+                        Handover List (Required for >{selectedType.handover_required_days} days) *
+                      </label>
+                      <textarea 
+                        className="w-full p-2 border border-orange-300 rounded-md h-20 resize-none"
+                        placeholder="Please provide detailed handover instructions"
+                        value={leaveFormData.handoverList}
+                        onChange={(e) => setLeaveFormData(prev => ({ ...prev, handoverList: e.target.value }))}
+                        required
+                      />
+                    </div>
+                  ) : null;
+                })()}
+
                 <div className="flex gap-2 pt-4">
                   <Button 
                     type="button"
@@ -1280,6 +1382,13 @@ const LeavePage = () => {
                 <label className="block text-sm font-medium text-gray-600">Applied Date</label>
                 <p className="font-medium">{new Date(selectedRequest.created_at).toLocaleString()}</p>
               </div>
+              
+              {selectedRequest.handover_list && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-600">Handover List</label>
+                  <p className="font-medium whitespace-pre-wrap">{selectedRequest.handover_list}</p>
+                </div>
+              )}
               
               {(selectedRequest.approve_reason || selectedRequest.reject_reason) && (
                 <div>
@@ -1397,6 +1506,21 @@ const LeavePage = () => {
                 </div>
                 
                 <div>
+                  <label className="block text-sm font-medium mb-2">Handover Required (days)</label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={leaveTypeFormData.handover_required_days || ''}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value) || 0;
+                      setLeaveTypeFormData(prev => ({ ...prev, handover_required_days: value }));
+                    }}
+                    placeholder="Days threshold for handover requirement"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">When leave exceeds this number of days, handover list is required</p>
+                </div>
+                
+                <div>
                   <label className="block text-sm font-medium mb-2">Description</label>
                   <textarea
                     className="w-full p-2 border rounded-md h-20 resize-none"
@@ -1441,6 +1565,72 @@ const LeavePage = () => {
                 </div>
               </CardContent>
             </form>
+          </Card>
+        </div>
+      )}
+
+      {/* Agent Configuration Modal */}
+      {showAgentConfigModal && selectedAgent && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <Card className="w-full max-w-md mx-4 max-h-[80vh] overflow-y-auto">
+            <CardHeader>
+              <CardTitle>Configure Leave Allowances - {selectedAgent.name}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {leaveTypes.map(type => {
+                const balance = memberBalances[selectedAgent.id]?.[type.id];
+                const currentAllowance = balance?.total || type.days_per_year || 0;
+                return (
+                  <div key={type.id} className="flex items-center justify-between p-3 border rounded">
+                    <div>
+                      <span className="font-medium">{type.name}</span>
+                      <p className="text-sm text-gray-600">Default: {type.days_per_year} days</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        min="0"
+                        value={agentAllowances[`${selectedAgent.id}_${type.id}`] ?? currentAllowance}
+                        onChange={(e) => {
+                          const value = parseInt(e.target.value) || 0;
+                          setAgentAllowances(prev => ({
+                            ...prev,
+                            [`${selectedAgent.id}_${type.id}`]: value
+                          }));
+                        }}
+                        className="w-20 text-center"
+                      />
+                      <span className="text-sm text-gray-500">days</span>
+                    </div>
+                  </div>
+                );
+              })}
+              
+              <div className="flex gap-2 pt-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setShowAgentConfigModal(false);
+                    setSelectedAgent(null);
+                    setAgentAllowances({});
+                  }}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={() => {
+                    // Save agent allowances logic here
+                    setShowAgentConfigModal(false);
+                    setSelectedAgent(null);
+                    setAgentAllowances({});
+                  }}
+                  className="flex-1"
+                >
+                  Save
+                </Button>
+              </div>
+            </CardContent>
           </Card>
         </div>
       )}

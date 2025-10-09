@@ -4,17 +4,18 @@ import { Input } from '@/components/ui/input';
 import { X, Calendar } from 'lucide-react';
 import apiClient from '../../services/api';
 
-const RequestLeaveModal = ({ isOpen, onClose, leaveBalance = [] }) => {
+const RequestLeaveModal = ({ isOpen, onClose }) => {
   const [formData, setFormData] = useState({
     type: '',
     startDate: '',
     endDate: '',
     reason: '',
-    isHalfDay: false
+    isHalfDay: false,
+    handoverList: ''
   });
   const [loading, setLoading] = useState(false);
   const [leaveTypes, setLeaveTypes] = useState([]);
-  const [availableLeaveTypes, setAvailableLeaveTypes] = useState([]);
+  const [leaveBalance, setLeaveBalance] = useState([]);
 
   useEffect(() => {
     if (isOpen) {
@@ -22,29 +23,37 @@ const RequestLeaveModal = ({ isOpen, onClose, leaveBalance = [] }) => {
     }
   }, [isOpen]);
 
-  useEffect(() => {
-    // 根據 leaveBalance 過濾出可用的請假類型（總天數 > 0）
-    if (Array.isArray(leaveBalance) && leaveBalance.length > 0) {
-      const validBalances = leaveBalance.filter(balance => balance.total_days > 0);
-      const validTypeIds = new Set(validBalances.map(balance => balance.leave_type_id));
-
-      const filtered = leaveTypes.filter(type => validTypeIds.has(type.id));
-      setAvailableLeaveTypes(filtered);
-
-      // 設定預設選擇第一個可用的請假類型
-      if (filtered.length > 0 && !formData.type) {
-        setFormData(prev => ({ ...prev, type: filtered[0].code || filtered[0].id }));
-      }
-    } else {
-      setAvailableLeaveTypes(leaveTypes);
-    }
-  }, [leaveTypes, leaveBalance]);
-
   const loadLeaveTypes = async () => {
     try {
       const response = await apiClient.getAgentLeaveTypes();
       const typesData = response.data || response;
-      setLeaveTypes(Array.isArray(typesData) ? typesData : []);
+      
+      // Load agent's leave balance to filter out 0-day allowances
+      const memberId = localStorage.getItem('member_id');
+      let balanceData = [];
+      if (memberId) {
+        try {
+          const balanceResponse = await apiClient.getLeaveBalance(memberId, new Date().getFullYear());
+          balanceData = balanceResponse.data || balanceResponse;
+          setLeaveBalance(Array.isArray(balanceData) ? balanceData : []);
+        } catch (balanceError) {
+          console.warn('Failed to load leave balance:', balanceError);
+        }
+      }
+      
+      // Filter out leave types with 0 days allowance
+      let availableTypes = Array.isArray(typesData) ? typesData : [];
+      if (Array.isArray(balanceData) && balanceData.length > 0) {
+        availableTypes = typesData.filter(type => {
+          const balance = balanceData.find(b => b.leave_type_id === type.id);
+          return balance ? balance.total_days > 0 : true; // Show if no balance data or has allowance
+        });
+      }
+      
+      setLeaveTypes(availableTypes);
+      if (availableTypes.length > 0) {
+        setFormData(prev => ({ ...prev, type: availableTypes[0].code || availableTypes[0].id }));
+      }
     } catch (error) {
       console.error('Failed to load leave types:', error);
       setLeaveTypes([
@@ -52,6 +61,7 @@ const RequestLeaveModal = ({ isOpen, onClose, leaveBalance = [] }) => {
         { id: 'sick', code: 'SICK', name: 'Sick Leave' },
         { id: 'personal', code: 'PERSONAL', name: 'Personal Leave' }
       ]);
+      setFormData(prev => ({ ...prev, type: 'annual' }));
     }
   };
 
@@ -60,25 +70,35 @@ const RequestLeaveModal = ({ isOpen, onClose, leaveBalance = [] }) => {
     setLoading(true);
     try {
       // Format data for API
-      const selectedType = availableLeaveTypes.find(type => (type.code || type.id) === formData.type);
+      const selectedType = leaveTypes.find(type => (type.code || type.id) === formData.type);
       const memberId = localStorage.getItem('member_id');
       const startDate = new Date(formData.startDate);
       const endDate = new Date(formData.endDate);
       const days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
-
+      const actualDays = formData.isHalfDay ? 0.5 : days;
+      
+      // Check if handover list is required
+      const handoverRequired = selectedType?.handover_required_days > 0 && actualDays > selectedType.handover_required_days;
+      if (handoverRequired && !formData.handoverList.trim()) {
+        alert(`Handover list is required for leave requests exceeding ${selectedType.handover_required_days} days.`);
+        setLoading(false);
+        return;
+      }
+      
       const leaveData = {
         member_id: memberId,
         leave_type_id: selectedType?.id || formData.type,
         start_date: formData.startDate,
         end_date: formData.endDate,
-        days: formData.isHalfDay ? 0.5 : days,
-        reason: formData.reason
+        days: actualDays,
+        reason: formData.reason,
+        ...(handoverRequired && { handover_list: formData.handoverList })
       };
-
+      
       await apiClient.submitLeaveRequest(leaveData);
       alert('Leave request submitted successfully!');
       onClose();
-      setFormData({ type: availableLeaveTypes[0]?.code || '', startDate: '', endDate: '', reason: '', isHalfDay: false });
+      setFormData({ type: leaveTypes[0]?.code || '', startDate: '', endDate: '', reason: '', isHalfDay: false, handoverList: '' });
     } catch (error) {
       console.error('Failed to submit leave request:', error);
       alert('Failed to submit leave request: ' + error.message);
@@ -109,17 +129,16 @@ const RequestLeaveModal = ({ isOpen, onClose, leaveBalance = [] }) => {
               required
             >
               <option value="">Select Leave Type</option>
-              {availableLeaveTypes.map(type => (
-                <option key={type.id} value={type.code || type.id}>
-                  {type.name}
-                </option>
-              ))}
+              {leaveTypes.map(type => {
+                const balance = leaveBalance.find(b => b.leave_type_id === type.id);
+                const remaining = balance?.remaining_days || 0;
+                return (
+                  <option key={type.id} value={type.code || type.id}>
+                    {type.name} ({remaining} days remaining)
+                  </option>
+                );
+              })}
             </select>
-            {availableLeaveTypes.length === 0 && (
-              <p className="text-sm text-red-500 mt-2">
-                No leave types available. Please contact your administrator.
-              </p>
-            )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -168,6 +187,30 @@ const RequestLeaveModal = ({ isOpen, onClose, leaveBalance = [] }) => {
               required
             />
           </div>
+
+          {(() => {
+            const selectedType = leaveTypes.find(type => (type.code || type.id) === formData.type);
+            const startDate = new Date(formData.startDate);
+            const endDate = new Date(formData.endDate);
+            const days = formData.startDate && formData.endDate ? Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1 : 0;
+            const actualDays = formData.isHalfDay ? 0.5 : days;
+            const handoverRequired = selectedType?.handover_required_days > 0 && actualDays > selectedType.handover_required_days;
+            
+            return handoverRequired ? (
+              <div>
+                <label className="block text-sm font-medium mb-2 text-orange-600">
+                  Handover List (Required for >{selectedType.handover_required_days} days)
+                </label>
+                <textarea
+                  value={formData.handoverList}
+                  onChange={(e) => setFormData(prev => ({ ...prev, handoverList: e.target.value }))}
+                  className="w-full p-3 border border-orange-300 rounded-md h-24 resize-none text-base"
+                  placeholder="Please provide detailed handover instructions for your responsibilities"
+                  required
+                />
+              </div>
+            ) : null;
+          })()}
 
           <div className="flex flex-col sm:flex-row gap-3 pt-4">
             <Button type="button" variant="outline" onClick={onClose} className="flex-1 h-12">
