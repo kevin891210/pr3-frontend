@@ -25,31 +25,27 @@ const AgentLoginPage = () => {
 
   const loadBrands = async () => {
     try {
-      console.log('Loading brands...');
+      console.log('Loading agent brands...');
       const response = await apiClient.getAgentBrands();
-      console.log('Brands API response:', response);
+      console.log('Agent Brands API response:', response);
       
       const brandsData = response.data || response;
-      console.log('Brands data:', brandsData);
+      console.log('Agent Brands data:', brandsData);
       
       if (Array.isArray(brandsData)) {
-        // 先顯示所有 brands，不過濾 is_active
-        const allBrands = brandsData;
-        console.log('All brands:', allBrands);
-        
-        // 如果有 is_active 欄位，則過濾；否則顯示全部
-        const activeBrands = allBrands.filter(brand => 
+        // 過濾活躍的品牌
+        const activeBrands = brandsData.filter(brand => 
           brand.is_active === undefined || brand.is_active === true
         );
-        console.log('Active brands:', activeBrands);
+        console.log('Active agent brands:', activeBrands);
         
         setBrands(activeBrands);
       } else {
-        console.warn('Brands data is not an array:', brandsData);
+        console.warn('Agent brands data is not an array:', brandsData);
         setBrands([]);
       }
     } catch (error) {
-      console.error('Failed to load brands:', error);
+      console.error('Failed to load agent brands:', error);
       alert(`載入品牌失敗: ${error.message}`);
       setBrands([]);
     } finally {
@@ -162,6 +158,7 @@ const AgentLoginPage = () => {
                 {brands.map(brand => (
                   <option key={brand.id} value={brand.id}>
                     {brand.name}
+                    {brand.description && ` - ${brand.description}`}
                   </option>
                 ))}
               </select>

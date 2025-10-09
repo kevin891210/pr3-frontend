@@ -31,7 +31,7 @@ const AgentDashboardPage = () => {
       
       // Load notices
       try {
-        const noticesRes = await apiClient.getAgentNotices(user?.workspace_id);
+        const noticesRes = await apiClient.getNotices();
         setNotices(Array.isArray(noticesRes.data) ? noticesRes.data : []);
       } catch (noticesError) {
         console.warn('Failed to load notices:', noticesError.message);
@@ -87,7 +87,7 @@ const AgentDashboardPage = () => {
       
       // Load leave balance
       try {
-        const balanceRes = await apiClient.getAgentLeaveBalance(memberId);
+        const balanceRes = await apiClient.getLeaveBalance(memberId, new Date().getFullYear());
         const balanceData = balanceRes?.data || [];
         setLeaveBalance(Array.isArray(balanceData) ? balanceData : []);
       } catch (balanceError) {

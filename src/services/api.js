@@ -443,6 +443,10 @@ class ApiClient {
     return this.request(`/api/v1/agent/brands${query ? `?${query}` : ''}`);
   }
 
+  async getAgentBrandMembers(brandId) {
+    return this.request(`/api/v1/agent/brands/${brandId}/members`);
+  }
+
   /**
    * 取得監控用的 Brand 列表
    * 使用獨立的快取鍵值
@@ -738,7 +742,11 @@ class ApiClient {
   }
 
   async submitLeaveRequest(leaveData) {
-    return this.request('/api/v1/leave-requests', {
+    // Agent 使用專用的請假申請端點
+    const userType = localStorage.getItem('user_type');
+    const endpoint = userType === 'agent' ? '/api/v1/agent/leave-requests' : '/api/v1/leave-requests';
+    
+    return this.request(endpoint, {
       method: 'POST',
       body: leaveData
     });
