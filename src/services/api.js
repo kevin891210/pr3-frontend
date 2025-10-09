@@ -525,7 +525,11 @@ class ApiClient {
       }
     }
 
-    const response = await this.request(`/api/v1/workspaces-by-brand/${brandId}`);
+    // Use POST method instead of GET for workspaces-by-brand endpoint
+    const response = await this.request(`/api/v1/workspaces-by-brand`, {
+      method: 'POST',
+      body: { brand_id: brandId }
+    });
     
     // 儲存到快取
     if (useCache && response.data) {
