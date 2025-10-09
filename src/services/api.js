@@ -1123,6 +1123,10 @@ class ApiClient {
     });
   }
 
+  async getAllWorkspacesAttendanceStats() {
+    return this.request('/api/v1/attendance/all-workspaces-stats');
+  }
+
   /**
    * 清除所有快取
    * 用於登出或需要強制重新載入資料時
