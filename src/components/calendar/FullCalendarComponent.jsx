@@ -4,6 +4,7 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import ScheduleSummaryView from './ScheduleSummaryView';
+import EmployeeResourceView from './EmployeeResourceView';
 
 const FullCalendarComponent = ({ events = [], onDateClick, onEventClick, viewMode = 'calendar' }) => {
   console.log('FullCalendar received events:', events);
@@ -40,32 +41,19 @@ const FullCalendarComponent = ({ events = [], onDateClick, onEventClick, viewMod
 
   // 根據視圖模式選擇配置
   const getCalendarConfig = () => {
-    if (viewMode === 'list') {
-      return {
-        plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
-        initialView: 'listWeek',
-        headerToolbar: {
-          left: 'prev,next today',
-          center: 'title',
-          right: 'listWeek,listMonth'
-        },
-        events: events
-      };
-    } else {
-      return {
-        plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
-        initialView: 'dayGridMonth',
-        headerToolbar: {
-          left: 'prev,next today',
-          center: 'title',
-          right: 'dayGridMonth,timeGridWeek,timeGridDay'
-        },
-        events: events,
-        dayMaxEvents: false,
-        dayMaxEventRows: 10,
-        moreLinkClick: 'popover'
-      };
-    }
+    return {
+      plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
+      initialView: 'dayGridMonth',
+      headerToolbar: {
+        left: 'prev,next today',
+        center: 'title',
+        right: 'dayGridMonth,timeGridWeek,timeGridDay'
+      },
+      events: events,
+      dayMaxEvents: false,
+      dayMaxEventRows: 10,
+      moreLinkClick: 'popover'
+    };
   };
   
   const config = getCalendarConfig();
@@ -74,6 +62,17 @@ const FullCalendarComponent = ({ events = [], onDateClick, onEventClick, viewMod
   if (viewMode === 'summary') {
     return (
       <ScheduleSummaryView
+        events={events}
+        onDateClick={onDateClick}
+        onEventClick={onEventClick}
+      />
+    );
+  }
+
+  // 如果是資源視圖，使用自定義組件
+  if (viewMode === 'resource') {
+    return (
+      <EmployeeResourceView
         events={events}
         onDateClick={onDateClick}
         onEventClick={onEventClick}
