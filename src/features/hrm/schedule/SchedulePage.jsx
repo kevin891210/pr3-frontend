@@ -922,7 +922,6 @@ Time: ${new Date(event.start).toLocaleTimeString([], {hour: '2-digit', minute:'2
                         onChange={(e) => setCalendarViewMode(e.target.value)}
                       >
                         <option value="calendar">Calendar</option>
-                        <option value="resource">By Employee</option>
                         <option value="list">List</option>
                         <option value="summary">Summary</option>
                       </select>

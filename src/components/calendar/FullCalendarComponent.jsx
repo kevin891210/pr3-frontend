@@ -2,8 +2,6 @@ import React from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
-import resourceTimeGridPlugin from '@fullcalendar/resource-timegrid';
-import resourceDayGridPlugin from '@fullcalendar/resource-daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import ScheduleSummaryView from './ScheduleSummaryView';
 
@@ -26,13 +24,7 @@ const FullCalendarComponent = ({ events = [], onDateClick, onEventClick, viewMod
     return Array.from(memberMap.values());
   }, [events]);
   
-  // 為資源視圖轉換事件格式
-  const resourceEvents = React.useMemo(() => {
-    return events.map(event => ({
-      ...event,
-      resourceId: event.extendedProps?.memberId
-    }));
-  }, [events]);
+
 
   const handleDateClick = (info) => {
     if (onDateClick) {
@@ -48,21 +40,7 @@ const FullCalendarComponent = ({ events = [], onDateClick, onEventClick, viewMod
 
   // 根據視圖模式選擇配置
   const getCalendarConfig = () => {
-    if (viewMode === 'resource' && resources.length > 0) {
-      return {
-        plugins: [resourceDayGridPlugin, resourceTimeGridPlugin, interactionPlugin],
-        initialView: 'resourceDayGridMonth',
-        headerToolbar: {
-          left: 'prev,next today',
-          center: 'title',
-          right: 'resourceDayGridMonth,resourceTimeGridWeek,resourceTimeGridDay'
-        },
-        resources: resources,
-        events: resourceEvents,
-        resourceAreaHeaderContent: 'Employees',
-        resourceAreaWidth: '200px'
-      };
-    } else if (viewMode === 'list') {
+    if (viewMode === 'list') {
       return {
         plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
         initialView: 'listWeek',
