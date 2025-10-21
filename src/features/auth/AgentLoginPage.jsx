@@ -72,11 +72,14 @@ const AgentLoginPage = () => {
       
       // 檢查必要的回應欄位
       const data = response.data || response;
-      const { token, member_id, member_name, brand_id, third_party_token } = data;
+      const { token, member_id, member_name, email, brand_id, third_party_token } = data;
       
-      if (!token || !member_id || !member_name) {
-        throw new Error('Login response missing required fields: token, member_id, member_name');
+      if (!token || !member_id) {
+        throw new Error('Login response missing required fields: token, member_id');
       }
+      
+      // 使用 member_name 或 email 作為顯示名稱
+      const displayName = member_name || email || 'Agent User';
       
       // 儲存第三方 token
       if (third_party_token) {
@@ -88,7 +91,7 @@ const AgentLoginPage = () => {
       
       // 儲存用戶資訊
       login({ 
-        member_name: member_name, 
+        member_name: displayName, 
         member_id: member_id, 
         brand_id: brand_id || credentials.brandId
       }, token);
