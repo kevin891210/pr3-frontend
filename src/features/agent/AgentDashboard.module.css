@@ -1,0 +1,323 @@
+/* Agent Dashboard 重新設計樣式 */
+
+.dashboardContainer {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0e7ff 50%, #f3e8ff 100%);
+  min-height: 100vh;
+  position: relative;
+}
+
+.dashboardContainer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 20% 80%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(147, 51, 234, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 40% 40%, rgba(16, 185, 129, 0.1) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+.header {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.logoContainer {
+  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+  box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.3);
+  animation: logoFloat 3s ease-in-out infinite;
+}
+
+@keyframes logoFloat {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-2px); }
+}
+
+.greetingText {
+  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.statsCard {
+  background: linear-gradient(135deg, var(--gradient-from) 0%, var(--gradient-to) 100%);
+  border: none;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.statsCard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.statsCard:hover::before {
+  left: 100%;
+}
+
+.statsCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.2);
+}
+
+.blueGradient {
+  --gradient-from: #3b82f6;
+  --gradient-to: #2563eb;
+}
+
+.greenGradient {
+  --gradient-from: #10b981;
+  --gradient-to: #059669;
+}
+
+.purpleGradient {
+  --gradient-from: #8b5cf6;
+  --gradient-to: #7c3aed;
+}
+
+.orangeGradient {
+  --gradient-from: #f59e0b;
+  --gradient-to: #d97706;
+}
+
+.glassCard {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  animation: cardSlideUp 0.6s ease-out;
+}
+
+@keyframes cardSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.glassCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+}
+
+.iconContainer {
+  background: linear-gradient(135deg, var(--icon-from) 0%, var(--icon-to) 100%);
+  box-shadow: 0 4px 14px 0 rgba(var(--icon-shadow), 0.3);
+}
+
+.blueIcon {
+  --icon-from: #3b82f6;
+  --icon-to: #8b5cf6;
+  --icon-shadow: 59, 130, 246;
+}
+
+.greenIcon {
+  --icon-from: #10b981;
+  --icon-to: #059669;
+  --icon-shadow: 16, 185, 129;
+}
+
+.purpleIcon {
+  --icon-from: #8b5cf6;
+  --icon-to: #7c3aed;
+  --icon-shadow: 139, 92, 246;
+}
+
+.orangeIcon {
+  --icon-from: #f59e0b;
+  --icon-to: #d97706;
+  --icon-shadow: 245, 158, 11;
+}
+
+.progressBar {
+  background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+  transition: all 0.3s ease;
+}
+
+.leaveBalanceCard {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border: 1px solid #e2e8f0;
+  transition: all 0.3s ease;
+}
+
+.leaveBalanceCard:hover {
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.requestCard {
+  background: white;
+  border: 1px solid #e5e7eb;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.requestCard::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--status-color);
+  transition: width 0.3s ease;
+}
+
+.requestCard:hover::before {
+  width: 8px;
+}
+
+.requestCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.pendingStatus {
+  --status-color: #f59e0b;
+}
+
+.approvedStatus {
+  --status-color: #10b981;
+}
+
+.rejectedStatus {
+  --status-color: #ef4444;
+}
+
+.actionButton {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  border: none;
+  box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.3);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.actionButton::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.actionButton:hover::before {
+  left: 100%;
+}
+
+.actionButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
+}
+
+.emptyState {
+  opacity: 0.6;
+  transition: opacity 0.3s ease;
+}
+
+.emptyState:hover {
+  opacity: 0.8;
+}
+
+.loadingSpinner {
+  border-color: #3b82f6;
+  border-top-color: transparent;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+  .dashboardContainer {
+    padding-bottom: 2rem;
+  }
+  
+  .header {
+    padding: 1rem;
+  }
+  
+  .statsCard {
+    margin-bottom: 1rem;
+  }
+  
+  .glassCard {
+    margin-bottom: 1.5rem;
+  }
+}
+
+/* 深色模式支援 */
+@media (prefers-color-scheme: dark) {
+  .dashboardContainer {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #312e81 100%);
+  }
+  
+  .header {
+    background: rgba(15, 23, 42, 0.8);
+    border-bottom: 1px solid rgba(71, 85, 105, 0.3);
+  }
+  
+  .glassCard {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(71, 85, 105, 0.3);
+  }
+  
+  .leaveBalanceCard {
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    border: 1px solid #475569;
+  }
+  
+  .requestCard {
+    background: #1e293b;
+    border: 1px solid #475569;
+  }
+}
+
+/* 高對比度模式 */
+@media (prefers-contrast: high) {
+  .statsCard,
+  .glassCard,
+  .requestCard {
+    border: 2px solid #000;
+  }
+  
+  .actionButton {
+    border: 2px solid #000;
+  }
+}
+
+/* 減少動畫偏好 */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

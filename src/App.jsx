@@ -144,7 +144,12 @@ function App() {
         />
         <Route
           path="/agent-dashboard"
-          element={<ProtectedRoute allowedUserTypes={['agent']}><AgentDashboardPage /></ProtectedRoute>}
+          element={
+            !initialized ? <Navigate to="/setup" /> :
+            !isAuthenticated ? <Navigate to="/agent-login" /> :
+            userType !== 'agent' ? <Navigate to="/dashboard" /> :
+            <AgentDashboardPage />
+          }
         />
         <Route
           path="/dashboard"
